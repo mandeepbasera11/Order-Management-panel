@@ -49,7 +49,7 @@ export function Dashboard() {
         <div>
           <h2 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h2>
           <p className="text-muted-foreground mt-2">
-            Here's what's happening with your store today.
+            Tire sales overview across the USA.
           </p>
         </div>
         <DateRangePicker date={date} setDate={setDate} />
