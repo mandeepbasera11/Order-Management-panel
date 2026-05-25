@@ -109,7 +109,7 @@ export function Inventory() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold tracking-tight text-foreground">Inventory</h2>
-          <p className="text-muted-foreground mt-2">Manage your products and stock levels.</p>
+          <p className="text-muted-foreground mt-2">Manage your tire catalog and stock levels across US warehouses.</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
@@ -125,15 +125,15 @@ export function Inventory() {
             <div className="grid gap-4 py-2">
               <div className="grid gap-2">
                 <Label htmlFor="sku">SKU</Label>
-                <Input id="sku" value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} placeholder="SKU-1009" />
+                <Input id="sku" value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} placeholder="MICH-DEF-22555R17" />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="name">Name</Label>
-                <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Product name" />
+                <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Michelin Defender T+H 225/55R17" />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="category">Category</Label>
-                <Input id="category" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="Electronics" />
+                <Input id="category" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="All-Season, Performance, Winter, All-Terrain..." />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
