@@ -42,7 +42,7 @@ export function Sidebar({ active, onNavigate }: SidebarProps) {
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
               <Package className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="ml-2 text-lg font-semibold text-foreground">USA Tires</span>
+            <span className="ml-2 text-lg font-semibold text-foreground">DmTire Hub</span>
           </div>
         )}
         <button
