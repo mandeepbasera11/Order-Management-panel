@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { 
   LayoutDashboard, 
   TrendingUp, 
@@ -10,17 +9,23 @@ import {
   ChevronRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
 
 const navigation = [
-  { name: "Dashboard", icon: LayoutDashboard, current: true },
-  { name: "Sales", icon: TrendingUp, current: false },
-  { name: "Customers", icon: Users, current: false },
-  { name: "Inventory", icon: Package, current: false },
-  { name: "Reports", icon: BarChart3, current: false },
-  { name: "Settings", icon: Settings, current: false },
+  { name: "Dashboard", icon: LayoutDashboard },
+  { name: "Sales", icon: TrendingUp },
+  { name: "Customers", icon: Users },
+  { name: "Inventory", icon: Package },
+  { name: "Reports", icon: BarChart3 },
+  { name: "Settings", icon: Settings },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  active: string;
+  onNavigate: (name: string) => void;
+}
+
+export function Sidebar({ active, onNavigate }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
@@ -58,9 +63,10 @@ export function Sidebar() {
           {navigation.map((item) => (
             <li key={item.name}>
               <button
+                onClick={() => onNavigate(item.name)}
                 className={cn(
                   "w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200",
-                  item.current
+                  active === item.name
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted"
                 )}
