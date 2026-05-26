@@ -5,6 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
@@ -28,7 +35,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, Plus, Trash2, Loader2, Pencil, Columns3 } from "lucide-react";
+import {
+  Search,
+  Plus,
+  Trash2,
+  Loader2,
+  Pencil,
+  Columns3,
+  Upload,
+  Download,
+  Package,
+  Filter,
+  Boxes,
+  Tags,
+  Layers,
+  SlidersHorizontal,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -50,31 +72,87 @@ const statusFor = (stock: number) => {
 const emptyForm = { sku: "", name: "", category: "", price: "", stock: "" };
 
 type ColumnKey = "sku" | "name" | "category" | "price" | "stock" | "status";
-const ALL_COLUMNS: { key: ColumnKey; label: string }[] = [
-  { key: "sku", label: "SKU" },
-  { key: "name", label: "Product" },
-  { key: "category", label: "Category" },
-  { key: "price", label: "Price" },
-  { key: "stock", label: "Stock" },
-  { key: "status", label: "Status" },
+type ExtraKey =
+  | "manufacturerCode"
+  | "tireLoad"
+  | "tireSpeed"
+  | "plyRating"
+  | "brand"
+  | "size"
+  | "season"
+  | "warehouse";
+type AllColumnKey = ColumnKey | ExtraKey;
+const ALL_COLUMNS: { key: AllColumnKey; label: string; group: string }[] = [
+  { key: "sku", label: "GE SKU", group: "Core" },
+  { key: "name", label: "Item Name", group: "Core" },
+  { key: "category", label: "Category", group: "Core" },
+  { key: "manufacturerCode", label: "Manufacturer Code", group: "Specs" },
+  { key: "tireLoad", label: "Tire Load", group: "Specs" },
+  { key: "tireSpeed", label: "Tire Speed", group: "Specs" },
+  { key: "plyRating", label: "Ply Rating", group: "Specs" },
+  { key: "brand", label: "Brand", group: "Specs" },
+  { key: "size", label: "Size", group: "Specs" },
+  { key: "season", label: "Season", group: "Specs" },
+  { key: "price", label: "Price", group: "Inventory" },
+  { key: "stock", label: "Stock", group: "Inventory" },
+  { key: "warehouse", label: "Warehouse", group: "Inventory" },
+  { key: "status", label: "Status", group: "Inventory" },
 ];
+
+// Derive tire-spec fields from SKU/name so the row always has a sensible value.
+const deriveSpec = (p: Product) => {
+  const parts = p.sku.split("-");
+  const brand = parts[1] || p.name.split(" ")[0] || "—";
+  const manufacturerCode = parts[2] || parts[parts.length - 1] || "—";
+  const sizeMatch = p.name.match(/\d{3}\/\d{2}R\d{2}/);
+  const size = sizeMatch ? sizeMatch[0] : "—";
+  const loadMatch = p.name.match(/\b(\d{2,3})\b(?!\/)/);
+  const tireLoad = loadMatch ? loadMatch[1] : "—";
+  const speedMatch = p.name.match(/\b([HVWYTSQR])\b/);
+  const tireSpeed = speedMatch ? speedMatch[1] : "—";
+  const plyRating = "N/A";
+  const season = /winter/i.test(p.category)
+    ? "Winter"
+    : /performance/i.test(p.category)
+    ? "Summer"
+    : "All-Season";
+  return { brand, manufacturerCode, size, tireLoad, tireSpeed, plyRating, season };
+};
 
 export function Inventory() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [brandFilter, setBrandFilter] = useState<string>("all");
+  const [marketplaces, setMarketplaces] = useState<Record<string, boolean>>({
+    Amazon: false,
+    Walmart: false,
+    eBay: false,
+    Shopify: false,
+  });
+  const [pageSize, setPageSize] = useState<number>(100);
+  const [page, setPage] = useState<number>(1);
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [editing, setEditing] = useState<Product | null>(null);
   const [editForm, setEditForm] = useState(emptyForm);
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [visible, setVisible] = useState<Record<ColumnKey, boolean>>({
+  const [visible, setVisible] = useState<Record<AllColumnKey, boolean>>({
     sku: true,
     name: true,
     category: true,
+    manufacturerCode: true,
+    tireLoad: true,
+    tireSpeed: true,
+    plyRating: true,
+    brand: false,
+    size: false,
+    season: false,
     price: true,
     stock: true,
+    warehouse: false,
     status: true,
   });
 
@@ -170,19 +248,44 @@ export function Inventory() {
     load();
   };
 
-  const filtered = products.filter(
-    (p) =>
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.sku.toLowerCase().includes(search.toLowerCase()) ||
-      p.category.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = products.filter((p) => {
+    const q = search.toLowerCase();
+    const matchesSearch =
+      !q ||
+      p.name.toLowerCase().includes(q) ||
+      p.sku.toLowerCase().includes(q) ||
+      p.category.toLowerCase().includes(q);
+    const matchesCategory =
+      categoryFilter === "all" || p.category === categoryFilter;
+    const matchesBrand =
+      brandFilter === "all" || deriveSpec(p).brand === brandFilter;
+    return matchesSearch && matchesCategory && matchesBrand;
+  });
 
-  const allSelected = filtered.length > 0 && filtered.every((p) => selected.has(p.id));
+  const uniqueCategories = Array.from(new Set(products.map((p) => p.category)));
+  const uniqueBrands = Array.from(
+    new Set(products.map((p) => deriveSpec(p).brand))
+  );
+  const activeMarketplaces = Object.entries(marketplaces)
+    .filter(([, v]) => v)
+    .map(([k]) => k);
+  const filtersApplied =
+    !!search ||
+    categoryFilter !== "all" ||
+    brandFilter !== "all" ||
+    activeMarketplaces.length > 0;
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const pageStart = (safePage - 1) * pageSize;
+  const paged = filtered.slice(pageStart, pageStart + pageSize);
+
+  const allSelected = paged.length > 0 && paged.every((p) => selected.has(p.id));
   const toggleAll = () => {
     setSelected((s) => {
       const n = new Set(s);
-      if (allSelected) filtered.forEach((p) => n.delete(p.id));
-      else filtered.forEach((p) => n.add(p.id));
+      if (allSelected) paged.forEach((p) => n.delete(p.id));
+      else paged.forEach((p) => n.add(p.id));
       return n;
     });
   };
@@ -197,20 +300,106 @@ export function Inventory() {
   const visibleCount = ALL_COLUMNS.filter((c) => visible[c.key]).length;
   const colSpan = visibleCount + 2; // checkbox + actions
 
+  const exportCsv = () => {
+    const cols = ALL_COLUMNS.filter((c) => visible[c.key]);
+    const header = cols.map((c) => c.label).join(",");
+    const rows = filtered.map((p) => {
+      const spec = deriveSpec(p);
+      return cols
+        .map((c) => {
+          const val =
+            c.key === "status"
+              ? statusFor(p.stock).label
+              : c.key in spec
+              ? (spec as Record<string, string>)[c.key]
+              : c.key === "warehouse"
+              ? "Hickory, NC"
+              : (p as unknown as Record<string, unknown>)[c.key];
+          return `"${String(val ?? "").replace(/"/g, '""')}"`;
+        })
+        .join(",");
+    });
+    const blob = new Blob([[header, ...rows].join("\n")], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "tires-export.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("CSV exported");
+  };
+
+  const renderCell = (p: Product, key: AllColumnKey) => {
+    const spec = deriveSpec(p);
+    switch (key) {
+      case "sku":
+        return <span className="font-mono text-xs text-muted-foreground">{p.sku}</span>;
+      case "name":
+        return <span className="font-medium text-foreground">{p.name}</span>;
+      case "category":
+        return <Badge variant="outline">{p.category}</Badge>;
+      case "manufacturerCode":
+        return <span className="font-mono text-xs">{spec.manufacturerCode}</span>;
+      case "tireLoad":
+        return spec.tireLoad;
+      case "tireSpeed":
+        return spec.tireSpeed;
+      case "plyRating":
+        return <span className="text-muted-foreground">{spec.plyRating}</span>;
+      case "brand":
+        return spec.brand;
+      case "size":
+        return spec.size;
+      case "season":
+        return spec.season;
+      case "price":
+        return `$${Number(p.price).toFixed(2)}`;
+      case "stock":
+        return p.stock;
+      case "warehouse":
+        return <span className="text-muted-foreground">Hickory, NC</span>;
+      case "status": {
+        const s = statusFor(p.stock);
+        return <Badge variant={s.variant}>{s.label}</Badge>;
+      }
+    }
+  };
+
+  const groupedColumns = ALL_COLUMNS.reduce<Record<string, typeof ALL_COLUMNS>>((acc, c) => {
+    (acc[c.group] = acc[c.group] || []).push(c);
+    return acc;
+  }, {});
+
   return (
     <div className="flex-1 space-y-6 p-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight text-foreground">Inventory</h2>
-          <p className="text-muted-foreground mt-2">Manage your tire catalog and stock levels across US warehouses.</p>
+          <h2 className="text-3xl font-bold tracking-tight text-foreground">Manage Tires</h2>
+          <p className="text-muted-foreground mt-2">
+            Search, filter, and manage your full tire catalog.
+          </p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4" />
-              Add Product
-            </Button>
-          </DialogTrigger>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => toast.info("Import Tires coming soon")}>
+            <Upload className="w-4 h-4" /> Import Tires
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => toast.info("Merge Tires coming soon")}>
+            <Layers className="w-4 h-4" /> Merge Tires
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => toast.info("Import Marketplace coming soon")}>
+            <Upload className="w-4 h-4" /> Import Marketplace
+          </Button>
+          <Button variant="outline" size="sm" onClick={exportCsv}>
+            <Download className="w-4 h-4" /> Export CSV
+          </Button>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm">
+                <Plus className="w-4 h-4" /> Add Product
+              </Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Add Product</DialogTitle>
@@ -247,48 +436,168 @@ export function Inventory() {
               </Button>
             </DialogFooter>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
 
-      <div className="rounded-xl border border-border bg-card shadow-sm">
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <div className="relative w-full max-w-sm">
+      {/* Stats cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: "Total Tires", value: products.length.toLocaleString(), hint: "Total in database", Icon: Package },
+          { label: "Brands", value: uniqueBrands.length.toString(), hint: "All unique brands", Icon: Tags },
+          { label: "Categories", value: uniqueCategories.length.toString(), hint: "All unique categories", Icon: Boxes },
+          { label: "Filtered Results", value: filtersApplied ? filtered.length.toLocaleString() : "All", hint: filtersApplied ? "Filters applied" : "No filters applied", Icon: Filter },
+        ].map((s) => (
+          <div key={s.label} className="rounded-xl border border-border bg-card p-5 shadow-sm">
+            <div className="flex items-start justify-between">
+              <p className="text-sm text-muted-foreground">{s.label}</p>
+              <s.Icon className="w-4 h-4 text-muted-foreground" />
+            </div>
+            <p className="mt-2 text-3xl font-bold tracking-tight text-foreground">{s.value}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{s.hint}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Filters */}
+      <div className="rounded-xl border border-border bg-card p-5 shadow-sm space-y-4">
+        <div className="flex items-center gap-2">
+          <Filter className="w-4 h-4 text-muted-foreground" />
+          <h3 className="text-lg font-semibold">Filters</h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Search products..."
+              placeholder="Search by SKU, brand, model, size..."
               className="pl-9"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             />
+          </div>
+          <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v); setPage(1); }}>
+            <SelectTrigger><SelectValue placeholder="All Categories" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              {uniqueCategories.map((c) => (
+                <SelectItem key={c} value={c}>{c}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={brandFilter} onValueChange={(v) => { setBrandFilter(v); setPage(1); }}>
+            <SelectTrigger><SelectValue placeholder="All Brands" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Brands</SelectItem>
+              {uniqueBrands.map((b) => (
+                <SelectItem key={b} value={b}>{b}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div>
+            <Label className="text-sm font-medium">Marketplace</Label>
+            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2">
+              {Object.keys(marketplaces).map((m) => (
+                <label key={m} className="flex items-center gap-2 text-sm">
+                  <Checkbox
+                    checked={marketplaces[m]}
+                    onCheckedChange={(v) =>
+                      setMarketplaces((prev) => ({ ...prev, [m]: !!v }))
+                    }
+                  />
+                  {m}
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+        <Button className="w-full sm:w-auto" onClick={() => setPage(1)}>
+          <Search className="w-4 h-4" /> Search
+        </Button>
+      </div>
+
+      {/* Table */}
+      <div className="rounded-xl border border-border bg-card shadow-sm">
+        <div className="flex items-center justify-between p-4 border-b border-border">
+          <div>
+            <h3 className="text-lg font-semibold">Tires Details ({filtered.length.toLocaleString()})</h3>
+            <p className="text-sm text-muted-foreground">
+              Showing {filtered.length === 0 ? 0 : pageStart + 1}-{Math.min(pageStart + pageSize, filtered.length)} of {filtered.length.toLocaleString()} tires
+            </p>
           </div>
           <div className="flex items-center gap-3">
             {selected.size > 0 && (
               <span className="text-sm text-muted-foreground">{selected.size} selected</span>
             )}
+            <span className="text-sm text-muted-foreground hidden md:inline">Columns:</span>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm">
-                  <Columns3 className="w-4 h-4" />
-                  Columns
+                  <SlidersHorizontal className="w-4 h-4" />
+                  Select Columns
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
+              <DropdownMenuContent align="end" className="w-64 max-h-[28rem] overflow-y-auto">
+                <div className="flex items-center justify-between px-2 py-1.5">
+                  <DropdownMenuLabel className="p-0">Select columns</DropdownMenuLabel>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs"
+                      onClick={() =>
+                        setVisible(
+                          Object.fromEntries(ALL_COLUMNS.map((c) => [c.key, true])) as Record<AllColumnKey, boolean>
+                        )
+                      }
+                    >
+                      All
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs"
+                      onClick={() =>
+                        setVisible(
+                          Object.fromEntries(ALL_COLUMNS.map((c) => [c.key, false])) as Record<AllColumnKey, boolean>
+                        )
+                      }
+                    >
+                      None
+                    </Button>
+                  </div>
+                </div>
                 <DropdownMenuSeparator />
-                {ALL_COLUMNS.map((c) => (
-                  <DropdownMenuCheckboxItem
-                    key={c.key}
-                    checked={visible[c.key]}
-                    onCheckedChange={(v) =>
-                      setVisible((prev) => ({ ...prev, [c.key]: !!v }))
-                    }
-                  >
-                    {c.label}
-                  </DropdownMenuCheckboxItem>
+                {Object.entries(groupedColumns).map(([group, cols]) => (
+                  <div key={group}>
+                    <DropdownMenuLabel className="text-xs uppercase text-muted-foreground">{group}</DropdownMenuLabel>
+                    {cols.map((c) => (
+                      <DropdownMenuCheckboxItem
+                        key={c.key}
+                        checked={visible[c.key]}
+                        onCheckedChange={(v) =>
+                          setVisible((prev) => ({ ...prev, [c.key]: !!v }))
+                        }
+                      >
+                        {c.label}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                    <DropdownMenuSeparator />
+                  </div>
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
-            <p className="text-sm text-muted-foreground">{filtered.length} items</p>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground hidden md:inline">View Results:</span>
+              <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); setPage(1); }}>
+                <SelectTrigger className="h-9 w-20"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {[25, 50, 100, 200].map((n) => (
+                    <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <span className="text-sm text-muted-foreground hidden md:inline">Page {safePage} of {totalPages}</span>
           </div>
         </div>
         <Table>
@@ -301,12 +610,9 @@ export function Inventory() {
                   aria-label="Select all"
                 />
               </TableHead>
-              {visible.sku && <TableHead>SKU</TableHead>}
-              {visible.name && <TableHead>Product</TableHead>}
-              {visible.category && <TableHead>Category</TableHead>}
-              {visible.price && <TableHead>Price</TableHead>}
-              {visible.stock && <TableHead>Stock</TableHead>}
-              {visible.status && <TableHead>Status</TableHead>}
+              {ALL_COLUMNS.filter((c) => visible[c.key]).map((c) => (
+                <TableHead key={c.key}>{c.label}</TableHead>
+              ))}
               <TableHead className="w-24 text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -317,16 +623,14 @@ export function Inventory() {
                   <Loader2 className="w-5 h-5 animate-spin inline" />
                 </TableCell>
               </TableRow>
-            ) : filtered.length === 0 ? (
+            ) : paged.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={colSpan} className="text-center py-10 text-muted-foreground">
-                  No products found
+                  No tires found
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((item) => {
-                const status = statusFor(item.stock);
-                return (
+              paged.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell>
                       <Checkbox
@@ -335,38 +639,39 @@ export function Inventory() {
                         aria-label={`Select ${item.name}`}
                       />
                     </TableCell>
-                    {visible.sku && (
-                      <TableCell className="font-mono text-xs text-muted-foreground">{item.sku}</TableCell>
-                    )}
-                    {visible.name && (
-                      <TableCell className="font-medium text-foreground">{item.name}</TableCell>
-                    )}
-                    {visible.category && (
-                      <TableCell className="text-muted-foreground">{item.category}</TableCell>
-                    )}
-                    {visible.price && <TableCell>${Number(item.price).toFixed(2)}</TableCell>}
-                    {visible.stock && <TableCell>{item.stock}</TableCell>}
-                    {visible.status && (
-                      <TableCell>
-                        <Badge variant={status.variant}>{status.label}</Badge>
-                      </TableCell>
-                    )}
+                    {ALL_COLUMNS.filter((c) => visible[c.key]).map((c) => (
+                      <TableCell key={c.key}>{renderCell(item, c.key)}</TableCell>
+                    ))}
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => startEdit(item)} aria-label="Edit">
-                          <Pencil className="w-4 h-4 text-muted-foreground" />
+                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => startEdit(item)} aria-label="Edit">
+                          <Pencil className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)} aria-label="Delete">
-                          <Trash2 className="w-4 h-4 text-destructive" />
+                        <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => handleDelete(item.id)} aria-label="Delete">
+                          <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
                     </TableCell>
                   </TableRow>
-                );
-              })
+              ))
             )}
           </TableBody>
         </Table>
+        {filtered.length > 0 && (
+          <div className="flex items-center justify-between p-4 border-t border-border">
+            <p className="text-sm text-muted-foreground">
+              Page {safePage} of {totalPages}
+            </p>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" disabled={safePage === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+                Previous
+              </Button>
+              <Button variant="outline" size="sm" disabled={safePage === totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
