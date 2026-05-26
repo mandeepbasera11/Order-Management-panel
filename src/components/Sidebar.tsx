@@ -1,23 +1,43 @@
-import { 
-  LayoutDashboard, 
-  TrendingUp, 
-  Users, 
-  Package, 
-  BarChart3, 
-  Settings,
+import {
+  LayoutDashboard,
+  ShoppingBag,
+  CreditCard,
+  Building2,
+  Warehouse,
+  Package,
+  Car,
+  DollarSign,
+  Store,
+  FlaskConical,
+  Search,
+  BarChart3,
+  ShieldCheck,
+  Archive,
+  RefreshCw,
+  Server,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
 const navigation = [
   { name: "Dashboard", icon: LayoutDashboard },
-  { name: "Sales", icon: TrendingUp },
-  { name: "Customers", icon: Users },
-  { name: "Inventory", icon: Package },
+  { name: "Orders", icon: ShoppingBag },
+  { name: "POS", icon: CreditCard },
+  { name: "Vendors", icon: Building2 },
+  { name: "GE Tire Hickory Inventory", icon: Warehouse },
+  { name: "Manage Tires", icon: Package },
+  { name: "Vehicle Fitment", icon: Car },
+  { name: "Marketplace Pricing", icon: DollarSign },
+  { name: "Shopify Products", icon: Store },
+  { name: "Price Experiment", icon: FlaskConical },
+  { name: "Tires Reverse Lookup", icon: Search },
   { name: "Reports", icon: BarChart3 },
-  { name: "Settings", icon: Settings },
+  { name: "User Permissions", icon: ShieldCheck },
+  { name: "Order Archive", icon: Archive },
+  { name: "Listing Mirror Sync", icon: RefreshCw },
+  { name: "FTP Settings", icon: Server },
 ];
 
 interface SidebarProps {
@@ -58,7 +78,7 @@ export function Sidebar({ active, onNavigate }: SidebarProps) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4">
+      <nav className="flex-1 p-4 overflow-y-auto">
         <ul className="space-y-2">
           {navigation.map((item) => (
             <li key={item.name}>

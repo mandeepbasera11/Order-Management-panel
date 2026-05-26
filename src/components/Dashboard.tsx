@@ -1,38 +1,38 @@
 import { useState } from "react";
 import { DateRange } from "react-day-picker";
-import { DollarSign, TrendingUp, Users, ShoppingCart } from "lucide-react";
+import { DollarSign, Package, ShoppingCart, AlertTriangle } from "lucide-react";
 import { StatsCard } from "./StatsCard";
 import { SalesChart, CategoryChart } from "./Charts";
 import { DateRangePicker } from "./DateRangePicker";
 
 const stats = [
   {
-    title: "Total Revenue",
-    value: "$45,231.89",
-    change: "+20.1% from last month",
+    title: "Tire Revenue",
+    value: "$284,920",
+    change: "+18.4% from last month",
     changeType: "positive" as const,
     icon: DollarSign,
   },
   {
-    title: "Sales",
-    value: "+2,350",
-    change: "+180.1% from last month",
+    title: "Tires in Stock",
+    value: "12,847",
+    change: "+342 units this week",
     changeType: "positive" as const,
-    icon: TrendingUp,
+    icon: Package,
   },
   {
-    title: "Active Customers",
-    value: "+12,234",
-    change: "+19% from last month",
-    changeType: "positive" as const,
-    icon: Users,
-  },
-  {
-    title: "Orders",
-    value: "+573",
-    change: "+201 from last month",
+    title: "Tires Sold (MTD)",
+    value: "3,128",
+    change: "+22.6% from last month",
     changeType: "positive" as const,
     icon: ShoppingCart,
+  },
+  {
+    title: "Low Stock SKUs",
+    value: "47",
+    change: "Needs reorder",
+    changeType: "negative" as const,
+    icon: AlertTriangle,
   },
 ];
 
@@ -47,9 +47,9 @@ export function Dashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h2>
+          <h2 className="text-3xl font-bold tracking-tight text-foreground">Tire Sales Dashboard</h2>
           <p className="text-muted-foreground mt-2">
-            Tire sales overview across the USA.
+            Inventory, sales, and fitment performance across US warehouses.
           </p>
         </div>
         <DateRangePicker date={date} setDate={setDate} />

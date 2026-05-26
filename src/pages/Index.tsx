@@ -3,16 +3,40 @@ import { Sidebar } from "@/components/Sidebar";
 import { Navbar } from "@/components/Navbar";
 import { Dashboard } from "@/components/Dashboard";
 import { Inventory } from "@/components/Inventory";
+import { Placeholder } from "@/components/Placeholder";
+
+const descriptions: Record<string, string> = {
+  Orders: "Track and fulfill tire orders across all sales channels.",
+  POS: "In-store point-of-sale for walk-in tire customers.",
+  Vendors: "Manage tire manufacturers and distributor relationships.",
+  "GE Tire Hickory Inventory": "Warehouse-level stock for the Hickory facility.",
+  "Vehicle Fitment": "Match tires to vehicle make, model, and year.",
+  "Marketplace Pricing": "Compare and adjust pricing across marketplaces.",
+  "Shopify Products": "Sync and manage your Shopify tire catalog.",
+  "Price Experiment": "Run pricing A/B tests on selected tire SKUs.",
+  "Tires Reverse Lookup": "Find vehicles compatible with a given tire size.",
+  Reports: "Sales, inventory, and margin reports.",
+  "User Permissions": "Manage staff roles and access levels.",
+  "Order Archive": "Browse historical and completed orders.",
+  "Listing Mirror Sync": "Sync listings with Listing Mirror.",
+  "FTP Settings": "Configure FTP feeds for vendor inventory imports.",
+};
 
 const Index = () => {
   const [active, setActive] = useState("Dashboard");
+
+  const render = () => {
+    if (active === "Dashboard") return <Dashboard />;
+    if (active === "Manage Tires") return <Inventory />;
+    return <Placeholder title={active} description={descriptions[active]} />;
+  };
 
   return (
     <div className="min-h-screen bg-background flex">
       <Sidebar active={active} onNavigate={setActive} />
       <div className="flex-1 flex flex-col">
         <Navbar />
-        {active === "Inventory" ? <Inventory /> : <Dashboard />}
+        {render()}
       </div>
     </div>
   );

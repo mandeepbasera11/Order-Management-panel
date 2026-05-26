@@ -13,28 +13,28 @@ import {
 } from "recharts";
 
 const salesData = [
-  { name: "Jan", sales: 4000, revenue: 2400 },
-  { name: "Feb", sales: 3000, revenue: 1398 },
-  { name: "Mar", sales: 2000, revenue: 9800 },
-  { name: "Apr", sales: 2780, revenue: 3908 },
-  { name: "May", sales: 1890, revenue: 4800 },
-  { name: "Jun", sales: 2390, revenue: 3800 },
-  { name: "Jul", sales: 3490, revenue: 4300 },
+  { name: "Jan", sales: 1240, revenue: 186000 },
+  { name: "Feb", sales: 980, revenue: 142500 },
+  { name: "Mar", sales: 1420, revenue: 210800 },
+  { name: "Apr", sales: 1680, revenue: 248300 },
+  { name: "May", sales: 2150, revenue: 312400 },
+  { name: "Jun", sales: 2480, revenue: 358900 },
+  { name: "Jul", sales: 3128, revenue: 422600 },
 ];
 
 const categoryData = [
-  { name: "Electronics", sales: 4000 },
-  { name: "Clothing", sales: 3000 },
-  { name: "Books", sales: 2000 },
-  { name: "Home", sales: 2780 },
-  { name: "Sports", sales: 1890 },
+  { name: "All-Season", sales: 1840 },
+  { name: "Performance", sales: 1120 },
+  { name: "Winter", sales: 680 },
+  { name: "All-Terrain", sales: 920 },
+  { name: "Touring", sales: 560 },
 ];
 
 export function SalesChart() {
   return (
     <Card className="border-0 shadow-sm">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold text-foreground">Sales & Revenue Trends</CardTitle>
+        <CardTitle className="text-lg font-semibold text-foreground">Tires Sold & Revenue</CardTitle>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
@@ -85,7 +85,7 @@ export function CategoryChart() {
   return (
     <Card className="border-0 shadow-sm">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold text-foreground">Sales by Category</CardTitle>
+        <CardTitle className="text-lg font-semibold text-foreground">Tires Sold by Category</CardTitle>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
