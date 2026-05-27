@@ -595,14 +595,28 @@ export function Inventory() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => toast.info("Import Tires coming soon")}>
-            <Upload className="w-4 h-4" /> Import Tires
+          <input
+            ref={tireFileRef}
+            type="file"
+            accept=".csv,text/csv"
+            className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) importTires(f); }}
+          />
+          <input
+            ref={marketFileRef}
+            type="file"
+            accept=".csv,text/csv"
+            className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) importMarketplace(f); }}
+          />
+          <Button variant="outline" size="sm" disabled={importBusy} onClick={() => tireFileRef.current?.click()}>
+            {importBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />} Import Tires
           </Button>
-          <Button variant="outline" size="sm" onClick={() => toast.info("Merge Tires coming soon")}>
-            <Layers className="w-4 h-4" /> Merge Tires
+          <Button variant="outline" size="sm" disabled={bulkBusy || selected.size < 2} onClick={mergeSelected}>
+            <Layers className="w-4 h-4" /> Merge Tires{selected.size >= 2 ? ` (${selected.size})` : ""}
           </Button>
-          <Button variant="outline" size="sm" onClick={() => toast.info("Import Marketplace coming soon")}>
-            <Upload className="w-4 h-4" /> Import Marketplace
+          <Button variant="outline" size="sm" disabled={importBusy} onClick={() => marketFileRef.current?.click()}>
+            {importBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />} Import Marketplace
           </Button>
           <Button variant="outline" size="sm" onClick={exportCsv}>
             <Download className="w-4 h-4" /> Export CSV
