@@ -960,6 +960,73 @@ export function Inventory() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Bulk edit {selected.size} tire{selected.size === 1 ? "" : "s"}</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="grid gap-2">
+              <Label>Mode</Label>
+              <Select
+                value={bulkForm.mode}
+                onValueChange={(v) => setBulkForm({ ...bulkForm, mode: v as "set" | "adjust" })}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="set">Set to value</SelectItem>
+                  <SelectItem value="adjust">Adjust by (+/-)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {bulkForm.mode === "set"
+                  ? "Replaces the field on every selected tire."
+                  : "Adds the value (use negative numbers to decrease)."}
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="bulk-price">Price</Label>
+                <Input
+                  id="bulk-price"
+                  type="number"
+                  step="0.01"
+                  placeholder="Leave blank to skip"
+                  value={bulkForm.price}
+                  onChange={(e) => setBulkForm({ ...bulkForm, price: e.target.value })}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="bulk-stock">Stock</Label>
+                <Input
+                  id="bulk-stock"
+                  type="number"
+                  placeholder="Leave blank to skip"
+                  value={bulkForm.stock}
+                  onChange={(e) => setBulkForm({ ...bulkForm, stock: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="bulk-category">Category</Label>
+              <Input
+                id="bulk-category"
+                placeholder="Leave blank to skip"
+                value={bulkForm.category}
+                onChange={(e) => setBulkForm({ ...bulkForm, category: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkOpen(false)}>Cancel</Button>
+            <Button onClick={applyBulkUpdate} disabled={bulkBusy}>
+              {bulkBusy && <Loader2 className="w-4 h-4 animate-spin" />}
+              Apply to {selected.size}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
