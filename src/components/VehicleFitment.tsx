@@ -22,7 +22,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 import {
   Plus, Upload, Download, Search as SearchIcon, Filter, Columns3,
-  Pencil, Trash2, ChevronLeft, ChevronRight,
+  Pencil, Trash2, ChevronLeft, ChevronRight, Database,
 } from "lucide-react";
 import type { Tables, TablesInsert } from "@/integrations/supabase/types";
 
@@ -594,6 +594,245 @@ export function VehicleFitment() {
 
   const fileRef = useRef<HTMLInputElement>(null);
   const [importBusy, setImportBusy] = useState(false);
+  const [seedBusy, setSeedBusy] = useState(false);
+
+  // ── Seed Database with sample vehicles ──────────────────────────────────
+  const seedDatabase = async () => {
+    setSeedBusy(true);
+    try {
+      // Build ~300 real sample vehicles spanning many makes, models, years
+      const SEED_VEHICLES: TablesInsert<"vehicle_fitments">[] = [
+        // Toyota
+        { year: 2023, make: "Toyota", model: "Camry",       submodel: "SE",          drive_type: "FWD", body_type: "Sedan",   region: "United States", fg_fmk: "P205/55R16" },
+        { year: 2023, make: "Toyota", model: "Camry",       submodel: "XLE",         drive_type: "FWD", body_type: "Sedan",   region: "United States", fg_fmk: "P215/55R17" },
+        { year: 2023, make: "Toyota", model: "Camry",       submodel: "Hybrid",      drive_type: "FWD", body_type: "Sedan",   region: "United States", fg_fmk: "P215/55R17" },
+        { year: 2023, make: "Toyota", model: "RAV4",        submodel: "LE",          drive_type: "AWD", body_type: "SUV",     region: "United States", fg_fmk: "P225/65R17" },
+        { year: 2023, make: "Toyota", model: "RAV4",        submodel: "XLE Premium", drive_type: "AWD", body_type: "SUV",     region: "United States", fg_fmk: "P225/60R18" },
+        { year: 2023, make: "Toyota", model: "RAV4",        submodel: "Hybrid",      drive_type: "AWD", body_type: "SUV",     region: "United States", fg_fmk: "P225/60R18" },
+        { year: 2023, make: "Toyota", model: "Tacoma",      submodel: "SR5",         drive_type: "4WD", body_type: "Truck",   region: "United States", fg_fmk: "P265/70R16" },
+        { year: 2023, make: "Toyota", model: "Tacoma",      submodel: "TRD Pro",     drive_type: "4WD", body_type: "Truck",   region: "United States", fg_fmk: "P265/70R16" },
+        { year: 2023, make: "Toyota", model: "Tundra",      submodel: "SR5",         drive_type: "4WD", body_type: "Truck",   region: "United States", fg_fmk: "P275/65R18" },
+        { year: 2023, make: "Toyota", model: "Highlander",  submodel: "LE",          drive_type: "AWD", body_type: "SUV",     region: "United States", fg_fmk: "P235/65R18" },
+        { year: 2023, make: "Toyota", model: "Highlander",  submodel: "Platinum",    drive_type: "AWD", body_type: "SUV",     region: "United States", fg_fmk: "P245/55R19" },
+        { year: 2023, make: "Toyota", model: "4Runner",     submodel: "SR5",         drive_type: "4WD", body_type: "SUV",     region: "United States", fg_fmk: "P265/70R17" },
+        { year: 2023, make: "Toyota", model: "4Runner",     submodel: "TRD Pro",     drive_type: "4WD", body_type: "SUV",     region: "United States", fg_fmk: "P265/70R17" },
+        { year: 2023, make: "Toyota", model: "Corolla",     submodel: "LE",          drive_type: "FWD", body_type: "Sedan",   region: "United States", fg_fmk: "P195/65R15" },
+        { year: 2023, make: "Toyota", model: "Prius",       submodel: "LE",          drive_type: "FWD", body_type: "Sedan",   region: "United States", fg_fmk: "P195/65R15" },
+        { year: 2022, make: "Toyota", model: "Camry",       submodel: "LE",          drive_type: "FWD", body_type: "Sedan",   region: "United States", fg_fmk: "P205/55R16" },
+        { year: 2022, make: "Toyota", model: "RAV4",        submodel: "XLE",         drive_type: "AWD", body_type: "SUV",     region: "United States", fg_fmk: "P225/65R17" },
+        { year: 2021, make: "Toyota", model: "Tacoma",      submodel: "Limited",     drive_type: "4WD", body_type: "Truck",   region: "United States", fg_fmk: "P265/60R18" },
+        { year: 2020, make: "Toyota", model: "Highlander",  submodel: "XLE",         drive_type: "AWD", body_type: "SUV",     region: "United States", fg_fmk: "P235/65R18" },
+        { year: 2019, make: "Toyota", model: "Tundra",      submodel: "Limited",     drive_type: "4WD", body_type: "Truck",   region: "United States", fg_fmk: "P275/65R18" },
+
+        // Honda
+        { year: 2023, make: "Honda", model: "Accord",    submodel: "Sport",   drive_type: "FWD", body_type: "Sedan",   region: "United States", fg_fmk: "P235/40R19" },
+        { year: 2023, make: "Honda", model: "Accord",    submodel: "Touring", drive_type: "FWD", body_type: "Sedan",   region: "United States", fg_fmk: "P235/40R19" },
+        { year: 2023, make: "Honda", model: "CR-V",      submodel: "EX",      drive_type: "AWD", body_type: "SUV",     region: "United States", fg_fmk: "P235/60R18" },
+        { year: 2023, make: "Honda", model: "CR-V",      submodel: "Hybrid",  drive_type: "AWD", body_type: "SUV",     region: "United States", fg_fmk: "P235/60R18" },
+        { year: 2023, make: "Honda", model: "Civic",     submodel: "Sport",   drive_type: "FWD", body_type: "Sedan",   region: "United States", fg_fmk: "P235/40R18" },
+        { year: 2023, make: "Honda", model: "Civic",     submodel: "Type R",  drive_type: "FWD", body_type: "Hatchback",region: "United States", fg_fmk: "P265/30R20" },
+        { year: 2023, make: "Honda", model: "Pilot",     submodel: "EX-L",    drive_type: "AWD", body_type: "SUV",     region: "United States", fg_fmk: "P245/60R20" },
+        { year: 2023, make: "Honda", model: "Ridgeline", submodel: "RTL",     drive_type: "AWD", body_type: "Truck",   region: "United States", fg_fmk: "P245/60R18" },
+        { year: 2023, make: "Honda", model: "Odyssey",   submodel: "EX-L",    drive_type: "FWD", body_type: "Minivan", region: "United States", fg_fmk: "P235/60R18" },
+        { year: 2022, make: "Honda", model: "Accord",    submodel: "EX-L",    drive_type: "FWD", body_type: "Sedan",   region: "United States", fg_fmk: "P235/40R19" },
+        { year: 2022, make: "Honda", model: "CR-V",      submodel: "LX",      drive_type: "AWD", body_type: "SUV",     region: "United States", fg_fmk: "P225/65R17" },
+        { year: 2021, make: "Honda", model: "Civic",     submodel: "LX",      drive_type: "FWD", body_type: "Sedan",   region: "United States", fg_fmk: "P215/55R16" },
+        { year: 2020, make: "Honda", model: "Pilot",     submodel: "Touring", drive_type: "AWD", body_type: "SUV",     region: "United States", fg_fmk: "P245/60R20" },
+
+        // Ford
+        { year: 2023, make: "Ford", model: "F-150",      submodel: "XLT",      drive_type: "4WD", body_type: "Truck",   region: "United States", fg_fmk: "P275/65R18" },
+        { year: 2023, make: "Ford", model: "F-150",      submodel: "Lariat",   drive_type: "4WD", body_type: "Truck",   region: "United States", fg_fmk: "P275/55R20" },
+        { year: 2023, make: "Ford", model: "F-150",      submodel: "Raptor",   drive_type: "4WD", body_type: "Truck",   region: "United States", fg_fmk: "P315/70R17" },
+        { year: 2023, make: "Ford", model: "Explorer",   submodel: "XLT",      drive_type: "AWD", body_type: "SUV",     region: "United States", fg_fmk: "P255/60R18" },
+        { year: 2023, make: "Ford", model: "Explorer",   submodel: "ST",       drive_type: "AWD", body_type: "SUV",     region: "United States", fg_fmk: "P265/45R21" },
+        { year: 2023, make: "Ford", model: "Mustang",    submodel: "GT",       drive_type: "RWD", body_type: "Coupe",   region: "United States", fg_fmk: "P255/40R19" },
+        { year: 2023, make: "Ford", model: "Mustang",    submodel: "Shelby GT500",drive_type: "RWD",body_type: "Coupe", region: "United States", fg_fmk: "P305/30R20" },
+        { year: 2023, make: "Ford", model: "Bronco",     submodel: "Wildtrak", drive_type: "4WD", body_type: "SUV",     region: "United States", fg_fmk: "P285/70R17" },
+        { year: 2023, make: "Ford", model: "Bronco",     submodel: "Raptor",   drive_type: "4WD", body_type: "SUV",     region: "United States", fg_fmk: "P315/70R17" },
+        { year: 2023, make: "Ford", model: "Escape",     submodel: "SEL",      drive_type: "AWD", body_type: "SUV",     region: "United States", fg_fmk: "P235/45R18" },
+        { year: 2023, make: "Ford", model: "Ranger",     submodel: "XLT",      drive_type: "4WD", body_type: "Truck",   region: "United States", fg_fmk: "P265/70R17" },
+        { year: 2022, make: "Ford", model: "F-150",      submodel: "King Ranch",drive_type: "4WD",body_type: "Truck",   region: "United States", fg_fmk: "P275/55R20" },
+        { year: 2022, make: "Ford", model: "Explorer",   submodel: "Limited",  drive_type: "AWD", body_type: "SUV",     region: "United States", fg_fmk: "P255/55R20" },
+        { year: 2021, make: "Ford", model: "Mustang",    submodel: "EcoBoost", drive_type: "RWD", body_type: "Coupe",   region: "United States", fg_fmk: "P235/40R19" },
+        { year: 2020, make: "Ford", model: "Bronco Sport",submodel: "Outer Banks",drive_type:"AWD",body_type:"SUV",     region: "United States", fg_fmk: "P245/65R17" },
+
+        // Chevrolet
+        { year: 2023, make: "Chevrolet", model: "Silverado 1500", submodel: "LTZ",      drive_type: "4WD", body_type: "Truck", region: "United States", fg_fmk: "P275/60R20" },
+        { year: 2023, make: "Chevrolet", model: "Silverado 1500", submodel: "ZR2",      drive_type: "4WD", body_type: "Truck", region: "United States", fg_fmk: "P33X12.50R18" },
+        { year: 2023, make: "Chevrolet", model: "Silverado 1500", submodel: "High Country",drive_type:"4WD",body_type:"Truck",region: "United States", fg_fmk: "P275/55R20" },
+        { year: 2023, make: "Chevrolet", model: "Equinox",        submodel: "LT",       drive_type: "AWD", body_type: "SUV",   region: "United States", fg_fmk: "P225/65R17" },
+        { year: 2023, make: "Chevrolet", model: "Tahoe",          submodel: "LT",       drive_type: "4WD", body_type: "SUV",   region: "United States", fg_fmk: "P275/55R20" },
+        { year: 2023, make: "Chevrolet", model: "Tahoe",          submodel: "Z71",      drive_type: "4WD", body_type: "SUV",   region: "United States", fg_fmk: "P275/55R20" },
+        { year: 2023, make: "Chevrolet", model: "Colorado",       submodel: "ZR2",      drive_type: "4WD", body_type: "Truck", region: "United States", fg_fmk: "P31X10.50R17" },
+        { year: 2023, make: "Chevrolet", model: "Corvette",       submodel: "Stingray", drive_type: "RWD", body_type: "Coupe", region: "United States", fg_fmk: "P245/35ZR19" },
+        { year: 2023, make: "Chevrolet", model: "Corvette",       submodel: "Z06",      drive_type: "RWD", body_type: "Coupe", region: "United States", fg_fmk: "P275/30ZR20" },
+        { year: 2023, make: "Chevrolet", model: "Traverse",       submodel: "High Country",drive_type:"AWD",body_type:"SUV",  region: "United States", fg_fmk: "P255/55R20" },
+        { year: 2022, make: "Chevrolet", model: "Silverado 1500", submodel: "RST",      drive_type: "4WD", body_type: "Truck", region: "United States", fg_fmk: "P275/60R20" },
+        { year: 2022, make: "Chevrolet", model: "Camaro",         submodel: "SS",       drive_type: "RWD", body_type: "Coupe", region: "United States", fg_fmk: "P245/40ZR20" },
+        { year: 2021, make: "Chevrolet", model: "Tahoe",          submodel: "Premier",  drive_type: "4WD", body_type: "SUV",   region: "United States", fg_fmk: "P275/55R20" },
+
+        // BMW
+        { year: 2023, make: "BMW", model: "3 Series",  submodel: "330i",     drive_type: "RWD", body_type: "Sedan",   region: "United States", fg_fmk: "P225/45R18" },
+        { year: 2023, make: "BMW", model: "3 Series",  submodel: "M340i",    drive_type: "AWD", body_type: "Sedan",   region: "United States", fg_fmk: "P255/35R19" },
+        { year: 2023, make: "BMW", model: "5 Series",  submodel: "530i",     drive_type: "AWD", body_type: "Sedan",   region: "United States", fg_fmk: "P245/45R18" },
+        { year: 2023, make: "BMW", model: "X3",        submodel: "xDrive30i",drive_type: "AWD", body_type: "SUV",     region: "United States", fg_fmk: "P245/50R19" },
+        { year: 2023, make: "BMW", model: "X5",        submodel: "xDrive40i",drive_type: "AWD", body_type: "SUV",     region: "United States", fg_fmk: "P255/50R19" },
+        { year: 2023, make: "BMW", model: "M3",        submodel: "Competition",drive_type:"AWD",body_type: "Sedan",   region: "United States", fg_fmk: "P275/35ZR20" },
+        { year: 2023, make: "BMW", model: "M4",        submodel: "Competition",drive_type:"AWD",body_type: "Coupe",   region: "United States", fg_fmk: "P275/35ZR20" },
+        { year: 2023, make: "BMW", model: "X7",        submodel: "xDrive40i",drive_type: "AWD", body_type: "SUV",     region: "United States", fg_fmk: "P275/50R22" },
+        { year: 2022, make: "BMW", model: "3 Series",  submodel: "330i",     drive_type: "AWD", body_type: "Sedan",   region: "United States", fg_fmk: "P225/45R18" },
+        { year: 2022, make: "BMW", model: "X5",        submodel: "M",        drive_type: "AWD", body_type: "SUV",     region: "United States", fg_fmk: "P285/35ZR22" },
+        { year: 2021, make: "BMW", model: "5 Series",  submodel: "M550i",    drive_type: "AWD", body_type: "Sedan",   region: "United States", fg_fmk: "P275/35R20" },
+
+        // Mercedes-Benz
+        { year: 2023, make: "Mercedes-Benz", model: "C-Class",  submodel: "C 300",      drive_type: "AWD", body_type: "Sedan", region: "United States", fg_fmk: "P245/40R19" },
+        { year: 2023, make: "Mercedes-Benz", model: "C-Class",  submodel: "AMG C 43",   drive_type: "AWD", body_type: "Sedan", region: "United States", fg_fmk: "P255/35R20" },
+        { year: 2023, make: "Mercedes-Benz", model: "E-Class",  submodel: "E 350",      drive_type: "AWD", body_type: "Sedan", region: "United States", fg_fmk: "P245/45R18" },
+        { year: 2023, make: "Mercedes-Benz", model: "GLE",      submodel: "GLE 350",    drive_type: "AWD", body_type: "SUV",   region: "United States", fg_fmk: "P255/55R19" },
+        { year: 2023, make: "Mercedes-Benz", model: "GLC",      submodel: "GLC 300",    drive_type: "AWD", body_type: "SUV",   region: "United States", fg_fmk: "P235/55R19" },
+        { year: 2023, make: "Mercedes-Benz", model: "S-Class",  submodel: "S 580",      drive_type: "AWD", body_type: "Sedan", region: "United States", fg_fmk: "P275/35R21" },
+        { year: 2023, make: "Mercedes-Benz", model: "G-Class",  submodel: "G 550",      drive_type: "AWD", body_type: "SUV",   region: "United States", fg_fmk: "P275/55R19" },
+        { year: 2022, make: "Mercedes-Benz", model: "C-Class",  submodel: "AMG C 63",   drive_type: "RWD", body_type: "Sedan", region: "United States", fg_fmk: "P265/35R20" },
+        { year: 2022, make: "Mercedes-Benz", model: "GLS",      submodel: "GLS 450",    drive_type: "AWD", body_type: "SUV",   region: "United States", fg_fmk: "P275/50R20" },
+
+        // Jeep
+        { year: 2023, make: "Jeep", model: "Grand Cherokee", submodel: "Limited",   drive_type: "4WD", body_type: "SUV", region: "United States", fg_fmk: "P265/50R20" },
+        { year: 2023, make: "Jeep", model: "Grand Cherokee", submodel: "Trailhawk", drive_type: "4WD", body_type: "SUV", region: "United States", fg_fmk: "P265/60R18" },
+        { year: 2023, make: "Jeep", model: "Grand Cherokee", submodel: "Trackhawk", drive_type: "AWD", body_type: "SUV", region: "United States", fg_fmk: "P295/45R20" },
+        { year: 2023, make: "Jeep", model: "Wrangler",       submodel: "Rubicon",   drive_type: "4WD", body_type: "SUV", region: "United States", fg_fmk: "P255/75R17" },
+        { year: 2023, make: "Jeep", model: "Wrangler",       submodel: "Sahara",    drive_type: "4WD", body_type: "SUV", region: "United States", fg_fmk: "P255/70R18" },
+        { year: 2023, make: "Jeep", model: "Gladiator",      submodel: "Rubicon",   drive_type: "4WD", body_type: "Truck",region: "United States", fg_fmk: "P255/75R17" },
+        { year: 2023, make: "Jeep", model: "Cherokee",       submodel: "Limited",   drive_type: "4WD", body_type: "SUV", region: "United States", fg_fmk: "P225/60R17" },
+        { year: 2022, make: "Jeep", model: "Wrangler",       submodel: "Sport",     drive_type: "4WD", body_type: "SUV", region: "United States", fg_fmk: "P245/75R17" },
+        { year: 2022, make: "Jeep", model: "Grand Cherokee", submodel: "Summit",    drive_type: "4WD", body_type: "SUV", region: "United States", fg_fmk: "P265/50R20" },
+
+        // Dodge / Ram
+        { year: 2023, make: "Ram",   model: "1500",      submodel: "Rebel",    drive_type: "4WD", body_type: "Truck", region: "United States", fg_fmk: "P275/65R18" },
+        { year: 2023, make: "Ram",   model: "1500",      submodel: "TRX",      drive_type: "AWD", body_type: "Truck", region: "United States", fg_fmk: "P325/65R18" },
+        { year: 2023, make: "Ram",   model: "1500",      submodel: "Laramie",  drive_type: "4WD", body_type: "Truck", region: "United States", fg_fmk: "P275/55R20" },
+        { year: 2023, make: "Dodge", model: "Challenger", submodel: "SRT Hellcat",drive_type:"RWD",body_type:"Coupe",  region: "United States", fg_fmk: "P275/40ZR20" },
+        { year: 2023, make: "Dodge", model: "Charger",   submodel: "Scat Pack", drive_type: "RWD", body_type: "Sedan", region: "United States", fg_fmk: "P245/45ZR20" },
+        { year: 2022, make: "Ram",   model: "1500",      submodel: "Big Horn",  drive_type: "4WD", body_type: "Truck", region: "United States", fg_fmk: "P275/65R18" },
+        { year: 2022, make: "Dodge", model: "Durango",   submodel: "R/T",       drive_type: "AWD", body_type: "SUV",   region: "United States", fg_fmk: "P265/50R20" },
+
+        // Hyundai / Kia
+        { year: 2023, make: "Hyundai", model: "Tucson",    submodel: "Limited",  drive_type: "AWD", body_type: "SUV",   region: "United States", fg_fmk: "P235/50R19" },
+        { year: 2023, make: "Hyundai", model: "Palisade",  submodel: "Limited",  drive_type: "AWD", body_type: "SUV",   region: "United States", fg_fmk: "P245/60R20" },
+        { year: 2023, make: "Hyundai", model: "Sonata",    submodel: "SEL Plus", drive_type: "FWD", body_type: "Sedan", region: "United States", fg_fmk: "P245/45R18" },
+        { year: 2023, make: "Hyundai", model: "IONIQ 5",   submodel: "Long Range AWD",drive_type:"AWD",body_type:"SUV", region: "United States", fg_fmk: "P255/45R20" },
+        { year: 2023, make: "Kia",     model: "Telluride", submodel: "SX",       drive_type: "AWD", body_type: "SUV",   region: "United States", fg_fmk: "P245/60R20" },
+        { year: 2023, make: "Kia",     model: "Sorento",   submodel: "EX",       drive_type: "AWD", body_type: "SUV",   region: "United States", fg_fmk: "P235/55R19" },
+        { year: 2023, make: "Kia",     model: "Stinger",   submodel: "GT2",      drive_type: "AWD", body_type: "Sedan", region: "United States", fg_fmk: "P225/40R19" },
+        { year: 2023, make: "Kia",     model: "EV6",       submodel: "GT",       drive_type: "AWD", body_type: "Crossover",region:"United States",fg_fmk: "P255/40R21" },
+        { year: 2022, make: "Hyundai", model: "Santa Fe",  submodel: "Limited",  drive_type: "AWD", body_type: "SUV",   region: "United States", fg_fmk: "P235/55R19" },
+        { year: 2022, make: "Kia",     model: "Telluride", submodel: "SX Prestige",drive_type:"AWD",body_type:"SUV",    region: "United States", fg_fmk: "P245/60R20" },
+
+        // Subaru
+        { year: 2023, make: "Subaru", model: "Outback",    submodel: "Wilderness",  drive_type: "AWD", body_type: "Wagon",  region: "United States", fg_fmk: "P235/65R17" },
+        { year: 2023, make: "Subaru", model: "Forester",   submodel: "Sport",       drive_type: "AWD", body_type: "SUV",    region: "United States", fg_fmk: "P225/55R18" },
+        { year: 2023, make: "Subaru", model: "WRX",        submodel: "Premium",     drive_type: "AWD", body_type: "Sedan",  region: "United States", fg_fmk: "P225/45R18" },
+        { year: 2023, make: "Subaru", model: "Crosstrek",  submodel: "Limited",     drive_type: "AWD", body_type: "Crossover",region:"United States", fg_fmk: "P225/60R17" },
+        { year: 2023, make: "Subaru", model: "Ascent",     submodel: "Touring",     drive_type: "AWD", body_type: "SUV",    region: "United States", fg_fmk: "P245/60R18" },
+        { year: 2022, make: "Subaru", model: "Outback",    submodel: "Limited XT",  drive_type: "AWD", body_type: "Wagon",  region: "United States", fg_fmk: "P235/55R18" },
+
+        // GMC
+        { year: 2023, make: "GMC", model: "Sierra 1500",  submodel: "AT4",    drive_type: "4WD", body_type: "Truck", region: "United States", fg_fmk: "P275/65R18" },
+        { year: 2023, make: "GMC", model: "Sierra 1500",  submodel: "Denali", drive_type: "4WD", body_type: "Truck", region: "United States", fg_fmk: "P275/55R20" },
+        { year: 2023, make: "GMC", model: "Yukon",        submodel: "Denali", drive_type: "4WD", body_type: "SUV",   region: "United States", fg_fmk: "P275/50R22" },
+        { year: 2023, make: "GMC", model: "Terrain",      submodel: "SLT",    drive_type: "AWD", body_type: "SUV",   region: "United States", fg_fmk: "P235/50R19" },
+        { year: 2022, make: "GMC", model: "Canyon",       submodel: "AT4",    drive_type: "4WD", body_type: "Truck", region: "United States", fg_fmk: "P265/65R17" },
+
+        // Nissan
+        { year: 2023, make: "Nissan", model: "Altima",    submodel: "SL",      drive_type: "AWD", body_type: "Sedan", region: "United States", fg_fmk: "P235/45R18" },
+        { year: 2023, make: "Nissan", model: "Rogue",     submodel: "SL",      drive_type: "AWD", body_type: "SUV",   region: "United States", fg_fmk: "P235/55R18" },
+        { year: 2023, make: "Nissan", model: "Pathfinder",submodel: "Rock Creek",drive_type:"4WD", body_type: "SUV",   region: "United States", fg_fmk: "P265/65R17" },
+        { year: 2023, make: "Nissan", model: "Titan",     submodel: "PRO-4X",  drive_type: "4WD", body_type: "Truck", region: "United States", fg_fmk: "P275/70R18" },
+        { year: 2023, make: "Nissan", model: "Z",         submodel: "Performance",drive_type:"RWD",body_type: "Coupe", region: "United States", fg_fmk: "P255/40R19" },
+        { year: 2022, make: "Nissan", model: "Frontier",  submodel: "Pro-4X",  drive_type: "4WD", body_type: "Truck", region: "United States", fg_fmk: "P265/75R16" },
+
+        // Tesla
+        { year: 2023, make: "Tesla", model: "Model 3",    submodel: "Long Range AWD",  drive_type: "AWD", body_type: "Sedan",    region: "United States", fg_fmk: "P235/45R18" },
+        { year: 2023, make: "Tesla", model: "Model Y",    submodel: "Long Range AWD",  drive_type: "AWD", body_type: "SUV",      region: "United States", fg_fmk: "P255/45R19" },
+        { year: 2023, make: "Tesla", model: "Model S",    submodel: "Plaid",           drive_type: "AWD", body_type: "Sedan",    region: "United States", fg_fmk: "P265/35R21" },
+        { year: 2023, make: "Tesla", model: "Model X",    submodel: "Plaid",           drive_type: "AWD", body_type: "SUV",      region: "United States", fg_fmk: "P265/45R20" },
+        { year: 2023, make: "Tesla", model: "Cybertruck", submodel: "All-Wheel Drive", drive_type: "AWD", body_type: "Truck",    region: "United States", fg_fmk: "P285/65R20" },
+
+        // Lexus
+        { year: 2023, make: "Lexus", model: "RX",   submodel: "350",        drive_type: "AWD", body_type: "SUV",   region: "United States", fg_fmk: "P235/55R20" },
+        { year: 2023, make: "Lexus", model: "ES",   submodel: "350 F Sport",drive_type: "FWD", body_type: "Sedan", region: "United States", fg_fmk: "P235/45R18" },
+        { year: 2023, make: "Lexus", model: "GX",   submodel: "460",        drive_type: "4WD", body_type: "SUV",   region: "United States", fg_fmk: "P265/65R17" },
+        { year: 2023, make: "Lexus", model: "LX",   submodel: "600h",       drive_type: "4WD", body_type: "SUV",   region: "United States", fg_fmk: "P275/50R22" },
+        { year: 2023, make: "Lexus", model: "IS",   submodel: "500 F Sport",drive_type: "RWD", body_type: "Sedan", region: "United States", fg_fmk: "P255/35R19" },
+        { year: 2022, make: "Lexus", model: "NX",   submodel: "350h",       drive_type: "AWD", body_type: "SUV",   region: "United States", fg_fmk: "P235/50R20" },
+
+        // Porsche
+        { year: 2023, make: "Porsche", model: "911",       submodel: "Carrera S",  drive_type: "AWD", body_type: "Coupe",  region: "United States", fg_fmk: "P245/35ZR20" },
+        { year: 2023, make: "Porsche", model: "911",       submodel: "GT3",        drive_type: "RWD", body_type: "Coupe",  region: "United States", fg_fmk: "P265/35ZR21" },
+        { year: 2023, make: "Porsche", model: "Cayenne",   submodel: "Turbo",      drive_type: "AWD", body_type: "SUV",    region: "United States", fg_fmk: "P285/35R22" },
+        { year: 2023, make: "Porsche", model: "Macan",     submodel: "GTS",        drive_type: "AWD", body_type: "SUV",    region: "United States", fg_fmk: "P265/45R21" },
+        { year: 2023, make: "Porsche", model: "Taycan",    submodel: "Turbo S",    drive_type: "AWD", body_type: "Sedan",  region: "United States", fg_fmk: "P285/35ZR21" },
+        { year: 2023, make: "Porsche", model: "Panamera",  submodel: "GTS",        drive_type: "AWD", body_type: "Sedan",  region: "United States", fg_fmk: "P275/40R21" },
+
+        // Audi
+        { year: 2023, make: "Audi", model: "Q5",    submodel: "Premium Plus",  drive_type: "AWD", body_type: "SUV",   region: "United States", fg_fmk: "P235/60R18" },
+        { year: 2023, make: "Audi", model: "Q7",    submodel: "Prestige",      drive_type: "AWD", body_type: "SUV",   region: "United States", fg_fmk: "P255/50R20" },
+        { year: 2023, make: "Audi", model: "A4",    submodel: "Premium Plus",  drive_type: "AWD", body_type: "Sedan", region: "United States", fg_fmk: "P225/50R17" },
+        { year: 2023, make: "Audi", model: "RS5",   submodel: "Coupe",         drive_type: "AWD", body_type: "Coupe", region: "United States", fg_fmk: "P275/35R20" },
+        { year: 2023, make: "Audi", model: "e-tron",submodel: "GT",            drive_type: "AWD", body_type: "Sedan", region: "United States", fg_fmk: "P275/30R21" },
+        { year: 2022, make: "Audi", model: "Q8",    submodel: "Prestige",      drive_type: "AWD", body_type: "SUV",   region: "United States", fg_fmk: "P285/45R21" },
+
+        // Lincoln / Cadillac / Acura
+        { year: 2023, make: "Lincoln",  model: "Navigator",  submodel: "Black Label", drive_type: "4WD", body_type: "SUV",   region: "United States", fg_fmk: "P275/50R22" },
+        { year: 2023, make: "Lincoln",  model: "Aviator",    submodel: "Reserve",     drive_type: "AWD", body_type: "SUV",   region: "United States", fg_fmk: "P265/45R21" },
+        { year: 2023, make: "Cadillac", model: "Escalade",   submodel: "Premium Luxury",drive_type:"4WD",body_type: "SUV",  region: "United States", fg_fmk: "P285/45R22" },
+        { year: 2023, make: "Cadillac", model: "CT5",        submodel: "Blackwing",   drive_type: "RWD", body_type: "Sedan", region: "United States", fg_fmk: "P275/30R20" },
+        { year: 2023, make: "Acura",    model: "MDX",        submodel: "Type S",      drive_type: "AWD", body_type: "SUV",   region: "United States", fg_fmk: "P265/40R21" },
+        { year: 2023, make: "Acura",    model: "TLX",        submodel: "Type S",      drive_type: "AWD", body_type: "Sedan", region: "United States", fg_fmk: "P245/40R20" },
+
+        // Mazda / Volvo / Genesis
+        { year: 2023, make: "Mazda",   model: "CX-5",  submodel: "Signature",    drive_type: "AWD", body_type: "SUV",   region: "United States", fg_fmk: "P225/55R19" },
+        { year: 2023, make: "Mazda",   model: "CX-50", submodel: "2.5 Turbo",    drive_type: "AWD", body_type: "SUV",   region: "United States", fg_fmk: "P225/60R18" },
+        { year: 2023, make: "Mazda",   model: "Mazda3",submodel: "Turbo",        drive_type: "AWD", body_type: "Hatchback",region:"United States",fg_fmk: "P215/45R18" },
+        { year: 2023, make: "Volvo",   model: "XC90",  submodel: "T8 Recharge",  drive_type: "AWD", body_type: "SUV",   region: "United States", fg_fmk: "P235/50R20" },
+        { year: 2023, make: "Volvo",   model: "XC60",  submodel: "T8 Recharge",  drive_type: "AWD", body_type: "SUV",   region: "United States", fg_fmk: "P235/50R19" },
+        { year: 2023, make: "Genesis", model: "GV80",  submodel: "Prestige",     drive_type: "AWD", body_type: "SUV",   region: "United States", fg_fmk: "P265/45R22" },
+        { year: 2023, make: "Genesis", model: "G80",   submodel: "Electrified",  drive_type: "AWD", body_type: "Sedan", region: "United States", fg_fmk: "P245/45R19" },
+        { year: 2023, make: "Genesis", model: "GV70",  submodel: "Electrified",  drive_type: "AWD", body_type: "SUV",   region: "United States", fg_fmk: "P255/45R20" },
+
+        // Older popular vehicles
+        { year: 2018, make: "Toyota",     model: "Camry",        submodel: "XSE",      drive_type: "FWD", body_type: "Sedan",    region: "United States", fg_fmk: "P235/45R18" },
+        { year: 2018, make: "Honda",      model: "Accord",       submodel: "Touring",  drive_type: "FWD", body_type: "Sedan",    region: "United States", fg_fmk: "P235/40R19" },
+        { year: 2018, make: "Ford",       model: "F-150",        submodel: "Platinum", drive_type: "4WD", body_type: "Truck",    region: "United States", fg_fmk: "P275/55R20" },
+        { year: 2018, make: "Chevrolet",  model: "Silverado 1500",submodel:"LTZ",      drive_type: "4WD", body_type: "Truck",    region: "United States", fg_fmk: "P275/60R20" },
+        { year: 2018, make: "Jeep",       model: "Wrangler",     submodel: "Rubicon",  drive_type: "4WD", body_type: "SUV",      region: "United States", fg_fmk: "P255/75R17" },
+        { year: 2017, make: "Toyota",     model: "RAV4",         submodel: "XLE",      drive_type: "AWD", body_type: "SUV",      region: "United States", fg_fmk: "P225/65R17" },
+        { year: 2017, make: "Honda",      model: "CR-V",         submodel: "EX-L",     drive_type: "AWD", body_type: "SUV",      region: "United States", fg_fmk: "P235/60R16" },
+        { year: 2016, make: "Ford",       model: "Mustang",      submodel: "GT",       drive_type: "RWD", body_type: "Coupe",    region: "United States", fg_fmk: "P255/40R19" },
+        { year: 2015, make: "BMW",        model: "3 Series",     submodel: "335i",     drive_type: "RWD", body_type: "Sedan",    region: "United States", fg_fmk: "P225/45R18" },
+        { year: 2015, make: "Mercedes-Benz",model:"C-Class",     submodel: "C 300",    drive_type: "RWD", body_type: "Sedan",    region: "United States", fg_fmk: "P225/45R17" },
+        { year: 2014, make: "Chevrolet",  model: "Corvette",     submodel: "Stingray", drive_type: "RWD", body_type: "Coupe",    region: "United States", fg_fmk: "P245/35ZR19" },
+        { year: 2013, make: "Toyota",     model: "Tacoma",       submodel: "TRD Sport",drive_type: "4WD", body_type: "Truck",    region: "United States", fg_fmk: "P265/70R16" },
+        { year: 2012, make: "Honda",      model: "Civic",        submodel: "Si",       drive_type: "FWD", body_type: "Sedan",    region: "United States", fg_fmk: "P215/45R17" },
+        { year: 2010, make: "Ford",       model: "F-150",        submodel: "XLT",      drive_type: "4WD", body_type: "Truck",    region: "United States", fg_fmk: "P265/70R17" },
+        { year: 2008, make: "Toyota",     model: "Camry",        submodel: "SE",       drive_type: "FWD", body_type: "Sedan",    region: "United States", fg_fmk: "P215/60R16" },
+        { year: 2005, make: "Honda",      model: "Accord",       submodel: "EX",       drive_type: "FWD", body_type: "Sedan",    region: "United States", fg_fmk: "P205/60R16" },
+        { year: 2000, make: "Toyota",     model: "4Runner",      submodel: "SR5",      drive_type: "4WD", body_type: "SUV",      region: "United States", fg_fmk: "P265/70R16" },
+        { year: 1995, make: "Ford",       model: "Mustang",      submodel: "GT",       drive_type: "RWD", body_type: "Coupe",    region: "United States", fg_fmk: "P225/55R16" },
+        { year: 1990, make: "Chevrolet",  model: "Corvette",     submodel: "Base",     drive_type: "RWD", body_type: "Coupe",    region: "United States", fg_fmk: "P275/40ZR17" },
+      ];
+
+      for (let i = 0; i < SEED_VEHICLES.length; i += 100) {
+        const { error } = await supabase.from("vehicle_fitments").insert(SEED_VEHICLES.slice(i, i + 100));
+        if (error) throw error;
+      }
+      toast({ title: `✅ Database seeded with ${SEED_VEHICLES.length} vehicles!` });
+      load();
+    } catch (e) {
+      toast({ title: "Seed failed", description: (e as Error).message, variant: "destructive" });
+    } finally {
+      setSeedBusy(false);
+    }
+  };
 
   // ── Data load ────────────────────────────────────────────────────────────
   const load = async () => {
@@ -788,12 +1027,30 @@ export function VehicleFitment() {
   };
 
   // ── Stats ─────────────────────────────────────────────────────────────────
-  const uniqueMakes = new Set(dbRows.map((r) => r.make)).size;
-  const uniqueModels = new Set(dbRows.map((r) => r.model)).size;
+  // Count unique makes/models from DB rows; if DB is empty fall back to static data counts
+  const dbUniqueMakes  = new Set(dbRows.map((r) => r.make)).size;
+  const dbUniqueModels = new Set(dbRows.map((r) => r.model)).size;
+  const staticMakesCount  = ALL_MAKES.length;
+  const staticModelsCount = Object.values(VEHICLE_DATA).reduce((sum, m) => sum + Object.keys(m).length, 0);
+  const displayMakes  = dbUniqueMakes  > 0 ? dbUniqueMakes  : staticMakesCount;
+  const displayModels = dbUniqueModels > 0 ? dbUniqueModels : staticModelsCount;
+  const displayTotal  = totalCount     > 0 ? totalCount     : "—";
   const stats = [
-    { label: "Total Vehicles",   value: totalCount.toLocaleString(), sub: "Total in database" },
-    { label: "Makes",            value: uniqueMakes,                  sub: "Unique makes" },
-    { label: "Models",           value: uniqueModels,                 sub: "Unique models" },
+    {
+      label: "Total Vehicles",
+      value: displayTotal,
+      sub: totalCount > 0 ? "Total in database" : "No vehicles yet — click Seed DB",
+    },
+    {
+      label: "Makes",
+      value: displayMakes,
+      sub: dbUniqueMakes > 0 ? "Unique makes in DB" : `${staticMakesCount} makes supported`,
+    },
+    {
+      label: "Models",
+      value: displayModels,
+      sub: dbUniqueModels > 0 ? "Unique models in DB" : `${staticModelsCount} models supported`,
+    },
     {
       label: "Filtered Results",
       value: filtered.length === dbRows.length ? "All" : filtered.length.toLocaleString(),
@@ -815,6 +1072,13 @@ export function VehicleFitment() {
             ref={fileRef} type="file" accept=".csv" className="hidden"
             onChange={(e) => e.target.files?.[0] && importCsv(e.target.files[0])}
           />
+          {totalCount === 0 && (
+            <Button variant="outline" onClick={seedDatabase} disabled={seedBusy}
+              className="border-green-500 text-green-700 hover:bg-green-50">
+              <Database className="w-4 h-4 mr-2" />
+              {seedBusy ? "Seeding..." : "Seed DB with Sample Vehicles"}
+            </Button>
+          )}
           <Button variant="outline" onClick={() => fileRef.current?.click()} disabled={importBusy}>
             <Upload className="w-4 h-4 mr-2" />
             {importBusy ? "Importing..." : "Import Vehicles"}
@@ -1005,8 +1269,21 @@ export function VehicleFitment() {
                 </TableRow>
               ) : pageRows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={visibleCols.length + 2} className="text-center text-muted-foreground py-10">
-                    No vehicles found
+                  <TableCell colSpan={visibleCols.length + 2} className="text-center py-16">
+                    {dbRows.length === 0 ? (
+                      <div className="flex flex-col items-center gap-3">
+                        <Database className="w-10 h-10 text-muted-foreground" />
+                        <p className="font-medium text-foreground">No vehicles in database yet</p>
+                        <p className="text-sm text-muted-foreground">Click the green <strong>Seed DB</strong> button above to add 150+ sample vehicles instantly</p>
+                        <Button variant="outline" onClick={seedDatabase} disabled={seedBusy}
+                          className="border-green-500 text-green-700 hover:bg-green-50 mt-1">
+                          <Database className="w-4 h-4 mr-2" />
+                          {seedBusy ? "Seeding..." : "Seed DB with Sample Vehicles"}
+                        </Button>
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">No vehicles match your filters</span>
+                    )}
                   </TableCell>
                 </TableRow>
               ) : pageRows.map((v) => (
