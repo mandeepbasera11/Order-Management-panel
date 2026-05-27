@@ -52,6 +52,7 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import type { TablesUpdate } from "@/integrations/supabase/types";
 import { toast } from "sonner";
 
 type Product = {
@@ -288,7 +289,7 @@ export function Inventory() {
         const priceDelta = hasPrice ? Number(bulkForm.price) : 0;
         const stockDelta = hasStock ? Number(bulkForm.stock) : 0;
         for (const p of targets) {
-          const payload: Record<string, number | string> = {};
+          const payload: TablesUpdate<"products"> = {};
           if (hasPrice) payload.price = Math.max(0, Number(p.price) + priceDelta);
           if (hasStock) payload.stock = Math.max(0, p.stock + stockDelta);
           if (hasCategory) payload.category = bulkForm.category.trim();
@@ -296,7 +297,7 @@ export function Inventory() {
           if (error) throw error;
         }
       } else {
-        const payload: Record<string, number | string> = {};
+        const payload: TablesUpdate<"products"> = {};
         if (hasPrice) payload.price = Number(bulkForm.price);
         if (hasStock) payload.stock = Number(bulkForm.stock);
         if (hasCategory) payload.category = bulkForm.category.trim();
@@ -400,7 +401,7 @@ export function Inventory() {
         if (!sku) { skipped++; continue; }
         const priceStr = pick(r, ["price", "marketplace price", "market_price"]);
         const stockStr = pick(r, ["stock", "qty", "quantity"]);
-        const payload: Record<string, number> = {};
+        const payload: TablesUpdate<"products"> = {};
         if (priceStr !== "") payload.price = Number(priceStr);
         if (stockStr !== "") payload.stock = Number(stockStr);
         if (Object.keys(payload).length === 0) { skipped++; continue; }
