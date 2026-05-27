@@ -32,7 +32,7 @@ const Index = () => {
     if (active === "Dashboard") return <Dashboard />;
     if (active === "Manage Tires") return <Inventory />;
     if (active === "Vehicle Fitment") return <VehicleFitment />;
-    if (active === "marketplace pricing") return <marketplacepricing />;
+    if (active === "Marketplace Pricing") return <MarketplacePricing />;
     if (active === "Shopify Products") return <ShopifyProducts />;
     if (active === "Price Experiment") return <PriceExperiment />;
     return <Placeholder title={active} description={descriptions[active]} />;
