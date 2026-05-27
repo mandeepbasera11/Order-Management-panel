@@ -744,6 +744,27 @@ export function Inventory() {
 
       {/* Table */}
       <div className="rounded-xl border border-border bg-card shadow-sm">
+        {selected.size > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-border bg-accent/40">
+            <p className="text-sm font-medium">
+              {selected.size} tire{selected.size === 1 ? "" : "s"} selected
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button size="sm" variant="outline" disabled={bulkBusy} onClick={() => setBulkOpen(true)}>
+                <Pencil className="w-4 h-4" /> Bulk Edit
+              </Button>
+              <Button size="sm" variant="outline" disabled={bulkBusy} onClick={bulkSetOutOfStock}>
+                Mark Out of Stock
+              </Button>
+              <Button size="sm" variant="destructive" disabled={bulkBusy} onClick={bulkDelete}>
+                {bulkBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Delete
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>
+                Clear
+              </Button>
+            </div>
+          </div>
+        )}
         <div className="flex items-center justify-between p-4 border-b border-border">
           <div>
             <h3 className="text-lg font-semibold">Tires Details ({filtered.length.toLocaleString()})</h3>
