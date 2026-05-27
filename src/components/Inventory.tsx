@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -52,6 +52,7 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import type { TablesUpdate } from "@/integrations/supabase/types";
 import { toast } from "sonner";
 
 type Product = {
@@ -70,6 +71,47 @@ const statusFor = (stock: number) => {
 };
 
 const emptyForm = { sku: "", name: "", category: "", price: "", stock: "" };
+
+// ---------- CSV utilities ----------
+const parseCsv = (text: string): Record<string, string>[] => {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let cur = "";
+  let inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (text[i + 1] === '"') { cur += '"'; i++; }
+        else inQuotes = false;
+      } else cur += ch;
+    } else {
+      if (ch === '"') inQuotes = true;
+      else if (ch === ",") { row.push(cur); cur = ""; }
+      else if (ch === "\n" || ch === "\r") {
+        if (ch === "\r" && text[i + 1] === "\n") i++;
+        row.push(cur); cur = "";
+        if (row.some((c) => c.length)) rows.push(row);
+        row = [];
+      } else cur += ch;
+    }
+  }
+  if (cur.length || row.length) { row.push(cur); if (row.some((c) => c.length)) rows.push(row); }
+  if (rows.length === 0) return [];
+  const headers = rows[0].map((h) => h.trim().toLowerCase());
+  return rows.slice(1).map((r) => {
+    const obj: Record<string, string> = {};
+    headers.forEach((h, idx) => { obj[h] = (r[idx] ?? "").trim(); });
+    return obj;
+  });
+};
+
+const pick = (row: Record<string, string>, keys: string[]) => {
+  for (const k of keys) {
+    if (row[k] !== undefined && row[k] !== "") return row[k];
+  }
+  return "";
+};
 
 type ColumnKey = "sku" | "name" | "category" | "price" | "stock" | "status";
 type ExtraKey =
@@ -139,6 +181,12 @@ export function Inventory() {
   const [editing, setEditing] = useState<Product | null>(null);
   const [editForm, setEditForm] = useState(emptyForm);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkForm, setBulkForm] = useState({ price: "", stock: "", category: "", mode: "set" as "set" | "adjust" });
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [importBusy, setImportBusy] = useState(false);
+  const tireFileRef = useRef<HTMLInputElement>(null);
+  const marketFileRef = useRef<HTMLInputElement>(null);
   const [visible, setVisible] = useState<Record<AllColumnKey, boolean>>({
     sku: true,
     name: true,
@@ -208,6 +256,171 @@ export function Inventory() {
       n.delete(id);
       return n;
     });
+  };
+
+  // ---------- Bulk actions ----------
+  const bulkDelete = async () => {
+    const ids = Array.from(selected);
+    if (ids.length === 0) return;
+    if (!confirm(`Delete ${ids.length} selected tire(s)? This cannot be undone.`)) return;
+    setBulkBusy(true);
+    const { error } = await supabase.from("products").delete().in("id", ids);
+    setBulkBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success(`${ids.length} tire(s) deleted`);
+    setProducts((p) => p.filter((x) => !selected.has(x.id)));
+    setSelected(new Set());
+  };
+
+  const applyBulkUpdate = async () => {
+    const ids = Array.from(selected);
+    if (ids.length === 0) return;
+    const hasPrice = bulkForm.price !== "";
+    const hasStock = bulkForm.stock !== "";
+    const hasCategory = bulkForm.category.trim() !== "";
+    if (!hasPrice && !hasStock && !hasCategory) {
+      return toast.error("Enter at least one field to update");
+    }
+    setBulkBusy(true);
+    try {
+      if (bulkForm.mode === "adjust" && (hasPrice || hasStock)) {
+        // Per-row adjust: read selected, compute, update individually
+        const targets = products.filter((p) => selected.has(p.id));
+        const priceDelta = hasPrice ? Number(bulkForm.price) : 0;
+        const stockDelta = hasStock ? Number(bulkForm.stock) : 0;
+        for (const p of targets) {
+          const payload: TablesUpdate<"products"> = {};
+          if (hasPrice) payload.price = Math.max(0, Number(p.price) + priceDelta);
+          if (hasStock) payload.stock = Math.max(0, p.stock + stockDelta);
+          if (hasCategory) payload.category = bulkForm.category.trim();
+          const { error } = await supabase.from("products").update(payload).eq("id", p.id);
+          if (error) throw error;
+        }
+      } else {
+        const payload: TablesUpdate<"products"> = {};
+        if (hasPrice) payload.price = Number(bulkForm.price);
+        if (hasStock) payload.stock = Number(bulkForm.stock);
+        if (hasCategory) payload.category = bulkForm.category.trim();
+        const { error } = await supabase.from("products").update(payload).in("id", ids);
+        if (error) throw error;
+      }
+      toast.success(`${ids.length} tire(s) updated`);
+      setBulkOpen(false);
+      setBulkForm({ price: "", stock: "", category: "", mode: "set" });
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Bulk update failed");
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  const bulkSetOutOfStock = async () => {
+    const ids = Array.from(selected);
+    if (ids.length === 0) return;
+    setBulkBusy(true);
+    const { error } = await supabase.from("products").update({ stock: 0 }).in("id", ids);
+    setBulkBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success(`${ids.length} tire(s) marked Out of Stock`);
+    await load();
+  };
+
+  // ---------- Merge selected duplicates ----------
+  const mergeSelected = async () => {
+    const ids = Array.from(selected);
+    if (ids.length < 2) return toast.error("Select at least 2 tires to merge");
+    const items = products.filter((p) => ids.includes(p.id));
+    const primary = items[0];
+    const totalStock = items.reduce((sum, p) => sum + (p.stock || 0), 0);
+    const avgPrice = items.reduce((sum, p) => sum + Number(p.price || 0), 0) / items.length;
+    if (!confirm(`Merge ${items.length} tires into "${primary.name}"? Stock will be summed (${totalStock}) and price averaged ($${avgPrice.toFixed(2)}).`)) return;
+    setBulkBusy(true);
+    try {
+      const { error: updErr } = await supabase
+        .from("products")
+        .update({ stock: totalStock, price: Number(avgPrice.toFixed(2)) })
+        .eq("id", primary.id);
+      if (updErr) throw updErr;
+      const toDelete = items.slice(1).map((p) => p.id);
+      if (toDelete.length) {
+        const { error: delErr } = await supabase.from("products").delete().in("id", toDelete);
+        if (delErr) throw delErr;
+      }
+      toast.success(`Merged ${items.length} tires into "${primary.name}"`);
+      setSelected(new Set());
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Merge failed");
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  // ---------- CSV imports ----------
+  const importTires = async (file: File) => {
+    setImportBusy(true);
+    try {
+      const text = await file.text();
+      const rows = parseCsv(text);
+      if (rows.length === 0) { toast.error("CSV is empty"); return; }
+      const records = rows
+        .map((r) => ({
+          sku: pick(r, ["sku", "ge sku", "ge_sku"]),
+          name: pick(r, ["name", "item name", "product", "item_name"]),
+          category: pick(r, ["category"]) || "Uncategorized",
+          price: Number(pick(r, ["price"])) || 0,
+          stock: Number(pick(r, ["stock", "qty", "quantity"])) || 0,
+        }))
+        .filter((r) => r.sku && r.name);
+      if (records.length === 0) { toast.error("No valid rows (need SKU and Name columns)"); return; }
+      const { error } = await supabase
+        .from("products")
+        .upsert(records, { onConflict: "sku" });
+      if (error) throw error;
+      toast.success(`Imported ${records.length} tire(s)`);
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Import failed");
+    } finally {
+      setImportBusy(false);
+      if (tireFileRef.current) tireFileRef.current.value = "";
+    }
+  };
+
+  const importMarketplace = async (file: File) => {
+    setImportBusy(true);
+    try {
+      const text = await file.text();
+      const rows = parseCsv(text);
+      if (rows.length === 0) { toast.error("CSV is empty"); return; }
+      let matched = 0;
+      let skipped = 0;
+      for (const r of rows) {
+        const sku = pick(r, ["sku", "ge sku", "ge_sku"]);
+        if (!sku) { skipped++; continue; }
+        const priceStr = pick(r, ["price", "marketplace price", "market_price"]);
+        const stockStr = pick(r, ["stock", "qty", "quantity"]);
+        const payload: TablesUpdate<"products"> = {};
+        if (priceStr !== "") payload.price = Number(priceStr);
+        if (stockStr !== "") payload.stock = Number(stockStr);
+        if (Object.keys(payload).length === 0) { skipped++; continue; }
+        const { error, count } = await supabase
+          .from("products")
+          .update(payload, { count: "exact" })
+          .eq("sku", sku);
+        if (error) throw error;
+        if (count && count > 0) matched++;
+        else skipped++;
+      }
+      toast.success(`Marketplace import: ${matched} updated, ${skipped} skipped`);
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Marketplace import failed");
+    } finally {
+      setImportBusy(false);
+      if (marketFileRef.current) marketFileRef.current.value = "";
+    }
   };
 
   const startEdit = (p: Product) => {
@@ -382,14 +595,28 @@ export function Inventory() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => toast.info("Import Tires coming soon")}>
-            <Upload className="w-4 h-4" /> Import Tires
+          <input
+            ref={tireFileRef}
+            type="file"
+            accept=".csv,text/csv"
+            className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) importTires(f); }}
+          />
+          <input
+            ref={marketFileRef}
+            type="file"
+            accept=".csv,text/csv"
+            className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) importMarketplace(f); }}
+          />
+          <Button variant="outline" size="sm" disabled={importBusy} onClick={() => tireFileRef.current?.click()}>
+            {importBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />} Import Tires
           </Button>
-          <Button variant="outline" size="sm" onClick={() => toast.info("Merge Tires coming soon")}>
-            <Layers className="w-4 h-4" /> Merge Tires
+          <Button variant="outline" size="sm" disabled={bulkBusy || selected.size < 2} onClick={mergeSelected}>
+            <Layers className="w-4 h-4" /> Merge Tires{selected.size >= 2 ? ` (${selected.size})` : ""}
           </Button>
-          <Button variant="outline" size="sm" onClick={() => toast.info("Import Marketplace coming soon")}>
-            <Upload className="w-4 h-4" /> Import Marketplace
+          <Button variant="outline" size="sm" disabled={importBusy} onClick={() => marketFileRef.current?.click()}>
+            {importBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />} Import Marketplace
           </Button>
           <Button variant="outline" size="sm" onClick={exportCsv}>
             <Download className="w-4 h-4" /> Export CSV
@@ -517,6 +744,27 @@ export function Inventory() {
 
       {/* Table */}
       <div className="rounded-xl border border-border bg-card shadow-sm">
+        {selected.size > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-border bg-accent/40">
+            <p className="text-sm font-medium">
+              {selected.size} tire{selected.size === 1 ? "" : "s"} selected
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button size="sm" variant="outline" disabled={bulkBusy} onClick={() => setBulkOpen(true)}>
+                <Pencil className="w-4 h-4" /> Bulk Edit
+              </Button>
+              <Button size="sm" variant="outline" disabled={bulkBusy} onClick={bulkSetOutOfStock}>
+                Mark Out of Stock
+              </Button>
+              <Button size="sm" variant="destructive" disabled={bulkBusy} onClick={bulkDelete}>
+                {bulkBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Delete
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>
+                Clear
+              </Button>
+            </div>
+          </div>
+        )}
         <div className="flex items-center justify-between p-4 border-b border-border">
           <div>
             <h3 className="text-lg font-semibold">Tires Details ({filtered.length.toLocaleString()})</h3>
@@ -708,6 +956,73 @@ export function Inventory() {
             <Button onClick={handleUpdate} disabled={saving}>
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
               Save changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Bulk edit {selected.size} tire{selected.size === 1 ? "" : "s"}</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="grid gap-2">
+              <Label>Mode</Label>
+              <Select
+                value={bulkForm.mode}
+                onValueChange={(v) => setBulkForm({ ...bulkForm, mode: v as "set" | "adjust" })}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="set">Set to value</SelectItem>
+                  <SelectItem value="adjust">Adjust by (+/-)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {bulkForm.mode === "set"
+                  ? "Replaces the field on every selected tire."
+                  : "Adds the value (use negative numbers to decrease)."}
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="bulk-price">Price</Label>
+                <Input
+                  id="bulk-price"
+                  type="number"
+                  step="0.01"
+                  placeholder="Leave blank to skip"
+                  value={bulkForm.price}
+                  onChange={(e) => setBulkForm({ ...bulkForm, price: e.target.value })}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="bulk-stock">Stock</Label>
+                <Input
+                  id="bulk-stock"
+                  type="number"
+                  placeholder="Leave blank to skip"
+                  value={bulkForm.stock}
+                  onChange={(e) => setBulkForm({ ...bulkForm, stock: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="bulk-category">Category</Label>
+              <Input
+                id="bulk-category"
+                placeholder="Leave blank to skip"
+                value={bulkForm.category}
+                onChange={(e) => setBulkForm({ ...bulkForm, category: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkOpen(false)}>Cancel</Button>
+            <Button onClick={applyBulkUpdate} disabled={bulkBusy}>
+              {bulkBusy && <Loader2 className="w-4 h-4 animate-spin" />}
+              Apply to {selected.size}
             </Button>
           </DialogFooter>
         </DialogContent>
