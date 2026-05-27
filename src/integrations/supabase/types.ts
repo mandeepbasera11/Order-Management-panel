@@ -47,6 +47,48 @@ export type Database = {
         }
         Relationships: []
       }
+      vehicle_fitments: {
+        Row: {
+          body_type: string | null
+          created_at: string
+          drive_type: string | null
+          fg_fmk: string | null
+          id: string
+          make: string
+          model: string
+          region: string | null
+          submodel: string | null
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          body_type?: string | null
+          created_at?: string
+          drive_type?: string | null
+          fg_fmk?: string | null
+          id?: string
+          make: string
+          model: string
+          region?: string | null
+          submodel?: string | null
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          body_type?: string | null
+          created_at?: string
+          drive_type?: string | null
+          fg_fmk?: string | null
+          id?: string
+          make?: string
+          model?: string
+          region?: string | null
+          submodel?: string | null
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
