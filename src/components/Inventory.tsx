@@ -180,6 +180,12 @@ export function Inventory() {
   const [editing, setEditing] = useState<Product | null>(null);
   const [editForm, setEditForm] = useState(emptyForm);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkForm, setBulkForm] = useState({ price: "", stock: "", category: "", mode: "set" as "set" | "adjust" });
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [importBusy, setImportBusy] = useState(false);
+  const tireFileRef = useRef<HTMLInputElement>(null);
+  const marketFileRef = useRef<HTMLInputElement>(null);
   const [visible, setVisible] = useState<Record<AllColumnKey, boolean>>({
     sku: true,
     name: true,
@@ -249,6 +255,171 @@ export function Inventory() {
       n.delete(id);
       return n;
     });
+  };
+
+  // ---------- Bulk actions ----------
+  const bulkDelete = async () => {
+    const ids = Array.from(selected);
+    if (ids.length === 0) return;
+    if (!confirm(`Delete ${ids.length} selected tire(s)? This cannot be undone.`)) return;
+    setBulkBusy(true);
+    const { error } = await supabase.from("products").delete().in("id", ids);
+    setBulkBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success(`${ids.length} tire(s) deleted`);
+    setProducts((p) => p.filter((x) => !selected.has(x.id)));
+    setSelected(new Set());
+  };
+
+  const applyBulkUpdate = async () => {
+    const ids = Array.from(selected);
+    if (ids.length === 0) return;
+    const hasPrice = bulkForm.price !== "";
+    const hasStock = bulkForm.stock !== "";
+    const hasCategory = bulkForm.category.trim() !== "";
+    if (!hasPrice && !hasStock && !hasCategory) {
+      return toast.error("Enter at least one field to update");
+    }
+    setBulkBusy(true);
+    try {
+      if (bulkForm.mode === "adjust" && (hasPrice || hasStock)) {
+        // Per-row adjust: read selected, compute, update individually
+        const targets = products.filter((p) => selected.has(p.id));
+        const priceDelta = hasPrice ? Number(bulkForm.price) : 0;
+        const stockDelta = hasStock ? Number(bulkForm.stock) : 0;
+        for (const p of targets) {
+          const payload: Record<string, number | string> = {};
+          if (hasPrice) payload.price = Math.max(0, Number(p.price) + priceDelta);
+          if (hasStock) payload.stock = Math.max(0, p.stock + stockDelta);
+          if (hasCategory) payload.category = bulkForm.category.trim();
+          const { error } = await supabase.from("products").update(payload).eq("id", p.id);
+          if (error) throw error;
+        }
+      } else {
+        const payload: Record<string, number | string> = {};
+        if (hasPrice) payload.price = Number(bulkForm.price);
+        if (hasStock) payload.stock = Number(bulkForm.stock);
+        if (hasCategory) payload.category = bulkForm.category.trim();
+        const { error } = await supabase.from("products").update(payload).in("id", ids);
+        if (error) throw error;
+      }
+      toast.success(`${ids.length} tire(s) updated`);
+      setBulkOpen(false);
+      setBulkForm({ price: "", stock: "", category: "", mode: "set" });
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Bulk update failed");
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  const bulkSetOutOfStock = async () => {
+    const ids = Array.from(selected);
+    if (ids.length === 0) return;
+    setBulkBusy(true);
+    const { error } = await supabase.from("products").update({ stock: 0 }).in("id", ids);
+    setBulkBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success(`${ids.length} tire(s) marked Out of Stock`);
+    await load();
+  };
+
+  // ---------- Merge selected duplicates ----------
+  const mergeSelected = async () => {
+    const ids = Array.from(selected);
+    if (ids.length < 2) return toast.error("Select at least 2 tires to merge");
+    const items = products.filter((p) => ids.includes(p.id));
+    const primary = items[0];
+    const totalStock = items.reduce((sum, p) => sum + (p.stock || 0), 0);
+    const avgPrice = items.reduce((sum, p) => sum + Number(p.price || 0), 0) / items.length;
+    if (!confirm(`Merge ${items.length} tires into "${primary.name}"? Stock will be summed (${totalStock}) and price averaged ($${avgPrice.toFixed(2)}).`)) return;
+    setBulkBusy(true);
+    try {
+      const { error: updErr } = await supabase
+        .from("products")
+        .update({ stock: totalStock, price: Number(avgPrice.toFixed(2)) })
+        .eq("id", primary.id);
+      if (updErr) throw updErr;
+      const toDelete = items.slice(1).map((p) => p.id);
+      if (toDelete.length) {
+        const { error: delErr } = await supabase.from("products").delete().in("id", toDelete);
+        if (delErr) throw delErr;
+      }
+      toast.success(`Merged ${items.length} tires into "${primary.name}"`);
+      setSelected(new Set());
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Merge failed");
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  // ---------- CSV imports ----------
+  const importTires = async (file: File) => {
+    setImportBusy(true);
+    try {
+      const text = await file.text();
+      const rows = parseCsv(text);
+      if (rows.length === 0) { toast.error("CSV is empty"); return; }
+      const records = rows
+        .map((r) => ({
+          sku: pick(r, ["sku", "ge sku", "ge_sku"]),
+          name: pick(r, ["name", "item name", "product", "item_name"]),
+          category: pick(r, ["category"]) || "Uncategorized",
+          price: Number(pick(r, ["price"])) || 0,
+          stock: Number(pick(r, ["stock", "qty", "quantity"])) || 0,
+        }))
+        .filter((r) => r.sku && r.name);
+      if (records.length === 0) { toast.error("No valid rows (need SKU and Name columns)"); return; }
+      const { error } = await supabase
+        .from("products")
+        .upsert(records, { onConflict: "sku" });
+      if (error) throw error;
+      toast.success(`Imported ${records.length} tire(s)`);
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Import failed");
+    } finally {
+      setImportBusy(false);
+      if (tireFileRef.current) tireFileRef.current.value = "";
+    }
+  };
+
+  const importMarketplace = async (file: File) => {
+    setImportBusy(true);
+    try {
+      const text = await file.text();
+      const rows = parseCsv(text);
+      if (rows.length === 0) { toast.error("CSV is empty"); return; }
+      let matched = 0;
+      let skipped = 0;
+      for (const r of rows) {
+        const sku = pick(r, ["sku", "ge sku", "ge_sku"]);
+        if (!sku) { skipped++; continue; }
+        const priceStr = pick(r, ["price", "marketplace price", "market_price"]);
+        const stockStr = pick(r, ["stock", "qty", "quantity"]);
+        const payload: Record<string, number> = {};
+        if (priceStr !== "") payload.price = Number(priceStr);
+        if (stockStr !== "") payload.stock = Number(stockStr);
+        if (Object.keys(payload).length === 0) { skipped++; continue; }
+        const { error, count } = await supabase
+          .from("products")
+          .update(payload, { count: "exact" })
+          .eq("sku", sku);
+        if (error) throw error;
+        if (count && count > 0) matched++;
+        else skipped++;
+      }
+      toast.success(`Marketplace import: ${matched} updated, ${skipped} skipped`);
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Marketplace import failed");
+    } finally {
+      setImportBusy(false);
+      if (marketFileRef.current) marketFileRef.current.value = "";
+    }
   };
 
   const startEdit = (p: Product) => {
