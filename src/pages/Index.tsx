@@ -4,6 +4,9 @@ import { Navbar } from "@/components/Navbar";
 import { Dashboard } from "@/components/Dashboard";
 import { Inventory } from "@/components/Inventory";
 import { VehicleFitment } from "@/components/VehicleFitment";
+import { MarketplacePricing } from "@/components/MarketplacePricing";
+import { ShopifyProducts } from "@/components/ShopifyProducts";
+import { PriceExperiment } from "@/components/PriceExperiment";
 import { Placeholder } from "@/components/Placeholder";
 
 const descriptions: Record<string, string> = {
@@ -29,6 +32,9 @@ const Index = () => {
     if (active === "Dashboard") return <Dashboard />;
     if (active === "Manage Tires") return <Inventory />;
     if (active === "Vehicle Fitment") return <VehicleFitment />;
+    if (active === "marketplace pricing") return <marketplacepricing />;
+    if (active === "Shopify Products") return <ShopifyProducts />;
+    if (active === "Price Experiment") return <PriceExperiment />;
     return <Placeholder title={active} description={descriptions[active]} />;
   };
 
