@@ -47,7 +47,6 @@ const MARKETPLACES: { key: MarketplaceKey; label: string; color: string; multipl
 ];
 
 const fakeMarketPrice = (base: number, multiplier: number, sku: string) => {
-  // Deterministic variation based on SKU chars
   const seed = sku.split("").reduce((a, c) => a + c.charCodeAt(0), 0) % 20;
   return parseFloat((base * multiplier + seed * 0.1 - 1).toFixed(2));
 };
@@ -77,7 +76,6 @@ export function MarketplacePricing() {
 
   useEffect(() => { load(); }, []);
 
-  // Build pricing rows with simulated marketplace prices
   const rows: PricingRow[] = useMemo(() =>
     products.map((p) => ({
       ...p,
@@ -98,7 +96,6 @@ export function MarketplacePricing() {
     });
   }, [rows, search, categoryFilter]);
 
-  // Stats
   const avgMargin = useMemo(() => {
     if (!rows.length) return 0;
     const total = rows.reduce((sum, r) => {
@@ -125,7 +122,6 @@ export function MarketplacePricing() {
   const saveEdit = async () => {
     if (!editRow) return;
     setSaving(true);
-    // Save the base price as the average of marketplace prices
     const avg = (
       Number(editPrices.amazon) +
       Number(editPrices.walmart) +
@@ -157,8 +153,7 @@ export function MarketplacePricing() {
   };
 
   const priceDiff = (market: number, base: number) => {
-    const pct = ((market - base) / base) * 100;
-    return pct;
+    return ((market - base) / base) * 100;
   };
 
   const visibleMarkets = marketFilter === "all"
@@ -167,7 +162,6 @@ export function MarketplacePricing() {
 
   return (
     <div className="flex-1 space-y-6 p-6">
-      {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 className="text-3xl font-bold tracking-tight text-foreground">Marketplace Pricing</h2>
@@ -185,13 +179,12 @@ export function MarketplacePricing() {
         </div>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "Total SKUs",        value: products.length.toLocaleString(), icon: Store,         sub: "Across all marketplaces" },
-          { label: "Avg Margin",        value: `${avgMargin}%`,                  icon: TrendingUp,    sub: "vs. base price" },
-          { label: "Underpriced SKUs",  value: underpriced.toString(),           icon: TrendingDown,  sub: "Below base price" },
-          { label: "Marketplaces",      value: "4",                              icon: AlertCircle,   sub: "Amazon, Walmart, eBay, Shopify" },
+          { label: "Total SKUs",       value: products.length.toLocaleString(), icon: Store,        sub: "Across all marketplaces" },
+          { label: "Avg Margin",       value: `${avgMargin}%`,                  icon: TrendingUp,   sub: "vs. base price" },
+          { label: "Underpriced SKUs", value: underpriced.toString(),           icon: TrendingDown, sub: "Below base price" },
+          { label: "Marketplaces",     value: "4",                              icon: AlertCircle,  sub: "Amazon, Walmart, eBay, Shopify" },
         ].map((s) => (
           <Card key={s.label} className="p-5">
             <div className="flex items-start justify-between">
@@ -204,7 +197,6 @@ export function MarketplacePricing() {
         ))}
       </div>
 
-      {/* Filters */}
       <Card className="p-5 space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div className="relative">
@@ -233,7 +225,6 @@ export function MarketplacePricing() {
         </div>
       </Card>
 
-      {/* Marketplace legend */}
       <div className="flex flex-wrap gap-2">
         {MARKETPLACES.map((m) => (
           <span key={m.key} className={`px-3 py-1 rounded-full text-xs font-medium ${m.color}`}>
@@ -245,7 +236,6 @@ export function MarketplacePricing() {
         </span>
       </div>
 
-      {/* Table */}
       <Card>
         <div className="p-4 border-b border-border flex items-center justify-between">
           <h3 className="font-semibold">
@@ -314,7 +304,6 @@ export function MarketplacePricing() {
         </div>
       </Card>
 
-      {/* Edit Dialog */}
       <Dialog open={!!editRow} onOpenChange={(o) => !o && setEditRow(null)}>
         <DialogContent>
           <DialogHeader>
