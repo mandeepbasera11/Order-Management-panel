@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -70,6 +70,47 @@ const statusFor = (stock: number) => {
 };
 
 const emptyForm = { sku: "", name: "", category: "", price: "", stock: "" };
+
+// ---------- CSV utilities ----------
+const parseCsv = (text: string): Record<string, string>[] => {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let cur = "";
+  let inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (text[i + 1] === '"') { cur += '"'; i++; }
+        else inQuotes = false;
+      } else cur += ch;
+    } else {
+      if (ch === '"') inQuotes = true;
+      else if (ch === ",") { row.push(cur); cur = ""; }
+      else if (ch === "\n" || ch === "\r") {
+        if (ch === "\r" && text[i + 1] === "\n") i++;
+        row.push(cur); cur = "";
+        if (row.some((c) => c.length)) rows.push(row);
+        row = [];
+      } else cur += ch;
+    }
+  }
+  if (cur.length || row.length) { row.push(cur); if (row.some((c) => c.length)) rows.push(row); }
+  if (rows.length === 0) return [];
+  const headers = rows[0].map((h) => h.trim().toLowerCase());
+  return rows.slice(1).map((r) => {
+    const obj: Record<string, string> = {};
+    headers.forEach((h, idx) => { obj[h] = (r[idx] ?? "").trim(); });
+    return obj;
+  });
+};
+
+const pick = (row: Record<string, string>, keys: string[]) => {
+  for (const k of keys) {
+    if (row[k] !== undefined && row[k] !== "") return row[k];
+  }
+  return "";
+};
 
 type ColumnKey = "sku" | "name" | "category" | "price" | "stock" | "status";
 type ExtraKey =
