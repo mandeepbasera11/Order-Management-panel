@@ -836,7 +836,7 @@ export function VehicleFitment() {
         if (error) throw error;
       }
       toast({ title: `✅ Database seeded with ${SEED_VEHICLES.length} vehicles!` });
-      load();
+      load(); loadGrandTotal();
     } catch (e) {
       toast({ title: "Seed failed", description: (e as Error).message, variant: "destructive" });
     } finally {
@@ -969,6 +969,7 @@ export function VehicleFitment() {
     }
     toast({ title: editing ? "Vehicle updated" : "Vehicle added" });
     setAddOpen(false); setEditing(null); load();
+    loadGrandTotal();
   };
 
   // ── Delete ───────────────────────────────────────────────────────────────
@@ -977,7 +978,7 @@ export function VehicleFitment() {
     if (error) return toast({ title: "Delete failed", description: error.message, variant: "destructive" });
     setSelected((s) => { const n = new Set(s); n.delete(id); return n; });
     toast({ title: "Vehicle deleted" });
-    load();
+    load(); loadGrandTotal();
   };
 
   const bulkDelete = async () => {
@@ -987,6 +988,7 @@ export function VehicleFitment() {
     if (error) return toast({ title: "Bulk delete failed", description: error.message, variant: "destructive" });
     toast({ title: `Deleted ${ids.length} vehicles` });
     setSelected(new Set()); load();
+    loadGrandTotal();
   };
 
   // ── Selection ─────────────────────────────────────────────────────────────
