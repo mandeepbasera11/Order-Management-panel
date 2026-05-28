@@ -844,48 +844,72 @@ export function VehicleFitment() {
     }
   };
 
-  // ── Data load ────────────────────────────────────────────────────────────
+  // ── Build a Supabase query with the current filters applied server-side ──
+  const buildFilteredQuery = (selectExpr: string, opts?: { count?: "exact" | "planned" | "estimated"; head?: boolean }) => {
+    let q = supabase.from("vehicle_fitments").select(selectExpr, opts as never);
+    if (year !== "all") q = q.eq("year", Number(year));
+    if (make !== "all") q = q.eq("make", make);
+    if (model !== "all") q = q.eq("model", model);
+    if (submodel !== "all") q = q.eq("submodel", submodel);
+    const term = debouncedSearch;
+    if (term) {
+      const safe = term.replace(/[%,]/g, " ");
+      const like = `%${safe}%`;
+      const ors = [
+        `make.ilike.${like}`,
+        `model.ilike.${like}`,
+        `submodel.ilike.${like}`,
+        `fg_fmk.ilike.${like}`,
+        `region.ilike.${like}`,
+        `drive_type.ilike.${like}`,
+        `body_type.ilike.${like}`,
+      ];
+      const asNum = Number(term);
+      if (!Number.isNaN(asNum) && term !== "") ors.push(`year.eq.${asNum}`);
+      q = q.or(ors.join(","));
+    }
+    return q;
+  };
+
+  // ── Data load: only the current filtered page + filtered count ───────────
   const load = async () => {
     setLoading(true);
-    const { data, error, count } = await supabase
-      .from("vehicle_fitments")
-      .select("*", { count: "exact" })
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+    const { data, error, count } = await buildFilteredQuery("*", { count: "exact" })
       .order("year", { ascending: false })
-      .limit(5000);
+      .order("make", { ascending: true })
+      .range(from, to);
     if (error) toast({ title: "Failed to load", description: error.message, variant: "destructive" });
-    setDbRows(data ?? []);
-    setTotalCount(count ?? 0);
+    setPageRows((data ?? []) as Vehicle[]);
+    setFilteredCount(count ?? 0);
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  // Unfiltered grand-total row count (head request, no rows returned)
+  const loadGrandTotal = async () => {
+    const { count } = await supabase
+      .from("vehicle_fitments")
+      .select("id", { count: "exact", head: true });
+    setGrandTotal(count ?? 0);
+  };
 
-  // ── Derived filter options from DB rows ──────────────────────────────────
-  const dbYears = useMemo(() =>
-    Array.from(new Set(dbRows.map((r) => r.year))).sort((a, b) => b - a),
-    [dbRows]);
+  // Reset to page 1 whenever any filter changes
+  useEffect(() => { setPage(1); }, [debouncedSearch, year, make, model, submodel, pageSize]);
+
+  // Re-fetch the page whenever filters, page, or pageSize change
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch, year, make, model, submodel, page, pageSize]);
+
+  useEffect(() => { loadGrandTotal(); }, []);
 
   // When filter make/model changes, get submodel options from static data
   const filterModels = useMemo(() => getModels(make), [make]);
   const filterSubmodels = useMemo(() => getSubmodels(make, model), [make, model]);
 
-  // ── Filtered rows ────────────────────────────────────────────────────────
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return dbRows.filter((r) => {
-      if (year !== "all" && r.year !== Number(year)) return false;
-      if (make !== "all" && r.make !== make) return false;
-      if (model !== "all" && r.model !== model) return false;
-      if (submodel !== "all" && r.submodel !== submodel) return false;
-      if (!q) return true;
-      return [r.year, r.make, r.model, r.submodel, r.fg_fmk, r.region, r.drive_type, r.body_type]
-        .filter(Boolean).join(" ").toLowerCase().includes(q);
-    });
-  }, [dbRows, search, year, make, model, submodel]);
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const pageRows = filtered.slice((page - 1) * pageSize, page * pageSize);
-  useEffect(() => { setPage(1); }, [search, year, make, model, submodel, pageSize]);
+  const totalPages = Math.max(1, Math.ceil(filteredCount / pageSize));
 
   const visibleCols = ALL_COLUMNS.filter((c) => visible[c.key]);
 
