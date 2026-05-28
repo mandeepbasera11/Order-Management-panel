@@ -563,9 +563,11 @@ const pick = (row: Record<string, string>, ...keys: string[]) => {
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 export function VehicleFitment() {
-  const [dbRows, setDbRows] = useState<Vehicle[]>([]);
+  const [pageRows, setPageRows] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
-  const [totalCount, setTotalCount] = useState(0);
+  // grandTotal = unfiltered row count in DB. filteredCount = rows matching current filters.
+  const [grandTotal, setGrandTotal] = useState(0);
+  const [filteredCount, setFilteredCount] = useState(0);
 
   // Filters
   const [search, setSearch] = useState("");
@@ -595,6 +597,14 @@ export function VehicleFitment() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [importBusy, setImportBusy] = useState(false);
   const [seedBusy, setSeedBusy] = useState(false);
+  const [exportBusy, setExportBusy] = useState(false);
+
+  // Debounce search input so we don't refetch on every keystroke.
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(t);
+  }, [search]);
 
   // ── Seed Database with sample vehicles ──────────────────────────────────
   const seedDatabase = async () => {
@@ -826,7 +836,7 @@ export function VehicleFitment() {
         if (error) throw error;
       }
       toast({ title: `✅ Database seeded with ${SEED_VEHICLES.length} vehicles!` });
-      load();
+      load(); loadGrandTotal();
     } catch (e) {
       toast({ title: "Seed failed", description: (e as Error).message, variant: "destructive" });
     } finally {
@@ -834,48 +844,72 @@ export function VehicleFitment() {
     }
   };
 
-  // ── Data load ────────────────────────────────────────────────────────────
+  // ── Build a Supabase query with the current filters applied server-side ──
+  const buildFilteredQuery = (selectExpr: string, opts?: { count?: "exact" | "planned" | "estimated"; head?: boolean }) => {
+    let q = supabase.from("vehicle_fitments").select(selectExpr, opts as never);
+    if (year !== "all") q = q.eq("year", Number(year));
+    if (make !== "all") q = q.eq("make", make);
+    if (model !== "all") q = q.eq("model", model);
+    if (submodel !== "all") q = q.eq("submodel", submodel);
+    const term = debouncedSearch;
+    if (term) {
+      const safe = term.replace(/[%,]/g, " ");
+      const like = `%${safe}%`;
+      const ors = [
+        `make.ilike.${like}`,
+        `model.ilike.${like}`,
+        `submodel.ilike.${like}`,
+        `fg_fmk.ilike.${like}`,
+        `region.ilike.${like}`,
+        `drive_type.ilike.${like}`,
+        `body_type.ilike.${like}`,
+      ];
+      const asNum = Number(term);
+      if (!Number.isNaN(asNum) && term !== "") ors.push(`year.eq.${asNum}`);
+      q = q.or(ors.join(","));
+    }
+    return q;
+  };
+
+  // ── Data load: only the current filtered page + filtered count ───────────
   const load = async () => {
     setLoading(true);
-    const { data, error, count } = await supabase
-      .from("vehicle_fitments")
-      .select("*", { count: "exact" })
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+    const { data, error, count } = await buildFilteredQuery("*", { count: "exact" })
       .order("year", { ascending: false })
-      .limit(5000);
+      .order("make", { ascending: true })
+      .range(from, to);
     if (error) toast({ title: "Failed to load", description: error.message, variant: "destructive" });
-    setDbRows(data ?? []);
-    setTotalCount(count ?? 0);
+    setPageRows(((data ?? []) as unknown) as Vehicle[]);
+    setFilteredCount(count ?? 0);
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  // Unfiltered grand-total row count (head request, no rows returned)
+  const loadGrandTotal = async () => {
+    const { count } = await supabase
+      .from("vehicle_fitments")
+      .select("id", { count: "exact", head: true });
+    setGrandTotal(count ?? 0);
+  };
 
-  // ── Derived filter options from DB rows ──────────────────────────────────
-  const dbYears = useMemo(() =>
-    Array.from(new Set(dbRows.map((r) => r.year))).sort((a, b) => b - a),
-    [dbRows]);
+  // Reset to page 1 whenever any filter changes
+  useEffect(() => { setPage(1); }, [debouncedSearch, year, make, model, submodel, pageSize]);
+
+  // Re-fetch the page whenever filters, page, or pageSize change
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch, year, make, model, submodel, page, pageSize]);
+
+  useEffect(() => { loadGrandTotal(); }, []);
 
   // When filter make/model changes, get submodel options from static data
   const filterModels = useMemo(() => getModels(make), [make]);
   const filterSubmodels = useMemo(() => getSubmodels(make, model), [make, model]);
 
-  // ── Filtered rows ────────────────────────────────────────────────────────
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return dbRows.filter((r) => {
-      if (year !== "all" && r.year !== Number(year)) return false;
-      if (make !== "all" && r.make !== make) return false;
-      if (model !== "all" && r.model !== model) return false;
-      if (submodel !== "all" && r.submodel !== submodel) return false;
-      if (!q) return true;
-      return [r.year, r.make, r.model, r.submodel, r.fg_fmk, r.region, r.drive_type, r.body_type]
-        .filter(Boolean).join(" ").toLowerCase().includes(q);
-    });
-  }, [dbRows, search, year, make, model, submodel]);
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const pageRows = filtered.slice((page - 1) * pageSize, page * pageSize);
-  useEffect(() => { setPage(1); }, [search, year, make, model, submodel, pageSize]);
+  const totalPages = Math.max(1, Math.ceil(filteredCount / pageSize));
 
   const visibleCols = ALL_COLUMNS.filter((c) => visible[c.key]);
 
@@ -935,6 +969,7 @@ export function VehicleFitment() {
     }
     toast({ title: editing ? "Vehicle updated" : "Vehicle added" });
     setAddOpen(false); setEditing(null); load();
+    loadGrandTotal();
   };
 
   // ── Delete ───────────────────────────────────────────────────────────────
@@ -943,7 +978,7 @@ export function VehicleFitment() {
     if (error) return toast({ title: "Delete failed", description: error.message, variant: "destructive" });
     setSelected((s) => { const n = new Set(s); n.delete(id); return n; });
     toast({ title: "Vehicle deleted" });
-    load();
+    load(); loadGrandTotal();
   };
 
   const bulkDelete = async () => {
@@ -953,6 +988,7 @@ export function VehicleFitment() {
     if (error) return toast({ title: "Bulk delete failed", description: error.message, variant: "destructive" });
     toast({ title: `Deleted ${ids.length} vehicles` });
     setSelected(new Set()); load();
+    loadGrandTotal();
   };
 
   // ── Selection ─────────────────────────────────────────────────────────────
@@ -969,21 +1005,46 @@ export function VehicleFitment() {
   };
 
   // ── Export CSV ───────────────────────────────────────────────────────────
-  const exportCsv = () => {
-    const cols = visibleCols.map((c) => c.key);
-    const header = visibleCols.map((c) => c.label).join(",");
-    const body = filtered.map((r) =>
-      cols.map((k) => {
-        const v = (r as Record<string, unknown>)[k];
-        const s = v == null ? "" : String(v);
-        return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-      }).join(",")
-    ).join("\n");
-    const blob = new Blob([header + "\n" + body], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = `vehicle-fitments-${Date.now()}.csv`; a.click();
-    URL.revokeObjectURL(url);
+  // Fetches ALL filtered rows from the server in chunks so the in-memory page
+  // size stays small but exports still cover the full filtered result set.
+  const exportCsv = async () => {
+    setExportBusy(true);
+    try {
+      const cols = visibleCols.map((c) => c.key);
+      const header = visibleCols.map((c) => c.label).join(",");
+      const chunk = 1000;
+      const all: Vehicle[] = [];
+      // Cap at filteredCount to avoid an extra empty round-trip.
+      const limit = filteredCount || 0;
+      for (let from = 0; from < Math.max(limit, 1); from += chunk) {
+        const to = from + chunk - 1;
+        const { data, error } = await buildFilteredQuery("*")
+          .order("year", { ascending: false })
+          .order("make", { ascending: true })
+          .range(from, to);
+        if (error) throw error;
+        const batch = ((data ?? []) as unknown) as Vehicle[];
+        all.push(...batch);
+        if (batch.length < chunk) break;
+      }
+      const body = all.map((r) =>
+        cols.map((k) => {
+          const v = (r as Record<string, unknown>)[k];
+          const s = v == null ? "" : String(v);
+          return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+        }).join(",")
+      ).join("\n");
+      const blob = new Blob([header + "\n" + body], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = `vehicle-fitments-${Date.now()}.csv`; a.click();
+      URL.revokeObjectURL(url);
+      toast({ title: `Exported ${all.length} vehicles` });
+    } catch (e) {
+      toast({ title: "Export failed", description: (e as Error).message, variant: "destructive" });
+    } finally {
+      setExportBusy(false);
+    }
   };
 
   // ── Import CSV ───────────────────────────────────────────────────────────
@@ -1018,6 +1079,7 @@ export function VehicleFitment() {
       }
       toast({ title: `Imported ${payload.length} vehicles` });
       load();
+      loadGrandTotal();
     } catch (e) {
       toast({ title: "Import failed", description: (e as Error).message, variant: "destructive" });
     } finally {
@@ -1027,38 +1089,33 @@ export function VehicleFitment() {
   };
 
   // ── Stats ─────────────────────────────────────────────────────────────────
-  // Count unique makes/models from DB rows; if DB is empty fall back to static data counts
-  const dbUniqueMakes  = new Set(dbRows.map((r) => r.make)).size;
-  const dbUniqueModels = new Set(dbRows.map((r) => r.model)).size;
   const staticMakesCount  = ALL_MAKES.length;
   const staticModelsCount = Object.values(VEHICLE_DATA).reduce((sum, m) => sum + Object.keys(m).length, 0);
-  const displayMakes  = dbUniqueMakes  > 0 ? dbUniqueMakes  : staticMakesCount;
-  const displayModels = dbUniqueModels > 0 ? dbUniqueModels : staticModelsCount;
-  const displayTotal  = totalCount     > 0 ? totalCount     : "—";
+  const displayTotal  = grandTotal > 0 ? grandTotal.toLocaleString() : "—";
+  const activeFilters = [year, make, model, submodel].filter((v) => v !== "all").length + (debouncedSearch ? 1 : 0);
+  const noFilters = activeFilters === 0;
   const stats = [
     {
       label: "Total Vehicles",
       value: displayTotal,
-      sub: totalCount > 0 ? "Total in database" : "No vehicles yet — click Seed DB",
+      sub: grandTotal > 0 ? "Total in database" : "No vehicles yet — click Seed DB",
     },
     {
       label: "Makes",
-      value: displayMakes,
-      sub: dbUniqueMakes > 0 ? "Unique makes in DB" : `${staticMakesCount} makes supported`,
+      value: staticMakesCount,
+      sub: `${staticMakesCount} makes supported`,
     },
     {
       label: "Models",
-      value: displayModels,
-      sub: dbUniqueModels > 0 ? "Unique models in DB" : `${staticModelsCount} models supported`,
+      value: staticModelsCount,
+      sub: `${staticModelsCount} models supported`,
     },
     {
       label: "Filtered Results",
-      value: filtered.length === dbRows.length ? "All" : filtered.length.toLocaleString(),
-      sub: filtered.length === dbRows.length ? "No filters applied" : "Matching current filters",
+      value: noFilters ? "All" : filteredCount.toLocaleString(),
+      sub: noFilters ? "No filters applied" : "Matching current filters",
     },
   ];
-
-  const activeFilters = [year, make, model, submodel].filter((v) => v !== "all").length + (search ? 1 : 0);
 
   // ─── RENDER ────────────────────────────────────────────────────────────────
   return (
@@ -1072,7 +1129,7 @@ export function VehicleFitment() {
             ref={fileRef} type="file" accept=".csv" className="hidden"
             onChange={(e) => e.target.files?.[0] && importCsv(e.target.files[0])}
           />
-          {totalCount === 0 && (
+          {grandTotal === 0 && (
             <Button variant="outline" onClick={seedDatabase} disabled={seedBusy}
               className="border-green-500 text-green-700 hover:bg-green-50">
               <Database className="w-4 h-4 mr-2" />
@@ -1083,8 +1140,9 @@ export function VehicleFitment() {
             <Upload className="w-4 h-4 mr-2" />
             {importBusy ? "Importing..." : "Import Vehicles"}
           </Button>
-          <Button variant="outline" onClick={exportCsv}>
-            <Download className="w-4 h-4 mr-2" /> Export CSV
+          <Button variant="outline" onClick={exportCsv} disabled={exportBusy || filteredCount === 0}>
+            <Download className="w-4 h-4 mr-2" />
+            {exportBusy ? "Exporting..." : "Export CSV"}
           </Button>
           <Button onClick={openAdd}>
             <Plus className="w-4 h-4 mr-2" /> Add Vehicle
@@ -1129,13 +1187,7 @@ export function VehicleFitment() {
             <SelectContent className="max-h-72">
               <SelectItem value="all">All Years</SelectItem>
               {/* First show years that exist in DB (highlighted) */}
-              {dbYears.map((y) => (
-                <SelectItem key={`db-${y}`} value={String(y)}>
-                  {y} ✓
-                </SelectItem>
-              ))}
-              {/* Then show all years 1900–now not already listed */}
-              {ALL_YEARS.filter((y) => !dbYears.includes(y)).map((y) => (
+              {ALL_YEARS.map((y) => (
                 <SelectItem key={y} value={String(y)}>{y}</SelectItem>
               ))}
             </SelectContent>
@@ -1207,10 +1259,10 @@ export function VehicleFitment() {
       <Card className="p-5">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div>
-            <h2 className="text-lg font-semibold">Vehicles ({filtered.length.toLocaleString()})</h2>
+            <h2 className="text-lg font-semibold">Vehicles ({filteredCount.toLocaleString()})</h2>
             <p className="text-xs text-muted-foreground">
-              Showing {filtered.length === 0 ? 0 : (page - 1) * pageSize + 1}–
-              {Math.min(page * pageSize, filtered.length)} of {filtered.length.toLocaleString()} vehicles
+              Showing {filteredCount === 0 ? 0 : (page - 1) * pageSize + 1}–
+              {Math.min(page * pageSize, filteredCount)} of {filteredCount.toLocaleString()} vehicles
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3 text-sm">
@@ -1270,7 +1322,7 @@ export function VehicleFitment() {
               ) : pageRows.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={visibleCols.length + 2} className="text-center py-16">
-                    {dbRows.length === 0 ? (
+                    {grandTotal === 0 ? (
                       <div className="flex flex-col items-center gap-3">
                         <Database className="w-10 h-10 text-muted-foreground" />
                         <p className="font-medium text-foreground">No vehicles in database yet</p>
