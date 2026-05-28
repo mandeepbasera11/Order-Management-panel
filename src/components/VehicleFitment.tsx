@@ -881,7 +881,7 @@ export function VehicleFitment() {
       .order("make", { ascending: true })
       .range(from, to);
     if (error) toast({ title: "Failed to load", description: error.message, variant: "destructive" });
-    setPageRows((data ?? []) as Vehicle[]);
+    setPageRows(((data ?? []) as unknown) as Vehicle[]);
     setFilteredCount(count ?? 0);
     setLoading(false);
   };
@@ -1003,21 +1003,46 @@ export function VehicleFitment() {
   };
 
   // ── Export CSV ───────────────────────────────────────────────────────────
-  const exportCsv = () => {
-    const cols = visibleCols.map((c) => c.key);
-    const header = visibleCols.map((c) => c.label).join(",");
-    const body = filtered.map((r) =>
-      cols.map((k) => {
-        const v = (r as Record<string, unknown>)[k];
-        const s = v == null ? "" : String(v);
-        return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-      }).join(",")
-    ).join("\n");
-    const blob = new Blob([header + "\n" + body], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = `vehicle-fitments-${Date.now()}.csv`; a.click();
-    URL.revokeObjectURL(url);
+  // Fetches ALL filtered rows from the server in chunks so the in-memory page
+  // size stays small but exports still cover the full filtered result set.
+  const exportCsv = async () => {
+    setExportBusy(true);
+    try {
+      const cols = visibleCols.map((c) => c.key);
+      const header = visibleCols.map((c) => c.label).join(",");
+      const chunk = 1000;
+      const all: Vehicle[] = [];
+      // Cap at filteredCount to avoid an extra empty round-trip.
+      const limit = filteredCount || 0;
+      for (let from = 0; from < Math.max(limit, 1); from += chunk) {
+        const to = from + chunk - 1;
+        const { data, error } = await buildFilteredQuery("*")
+          .order("year", { ascending: false })
+          .order("make", { ascending: true })
+          .range(from, to);
+        if (error) throw error;
+        const batch = ((data ?? []) as unknown) as Vehicle[];
+        all.push(...batch);
+        if (batch.length < chunk) break;
+      }
+      const body = all.map((r) =>
+        cols.map((k) => {
+          const v = (r as Record<string, unknown>)[k];
+          const s = v == null ? "" : String(v);
+          return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+        }).join(",")
+      ).join("\n");
+      const blob = new Blob([header + "\n" + body], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = `vehicle-fitments-${Date.now()}.csv`; a.click();
+      URL.revokeObjectURL(url);
+      toast({ title: `Exported ${all.length} vehicles` });
+    } catch (e) {
+      toast({ title: "Export failed", description: (e as Error).message, variant: "destructive" });
+    } finally {
+      setExportBusy(false);
+    }
   };
 
   // ── Import CSV ───────────────────────────────────────────────────────────
@@ -1052,6 +1077,7 @@ export function VehicleFitment() {
       }
       toast({ title: `Imported ${payload.length} vehicles` });
       load();
+      loadGrandTotal();
     } catch (e) {
       toast({ title: "Import failed", description: (e as Error).message, variant: "destructive" });
     } finally {
@@ -1061,34 +1087,30 @@ export function VehicleFitment() {
   };
 
   // ── Stats ─────────────────────────────────────────────────────────────────
-  // Count unique makes/models from DB rows; if DB is empty fall back to static data counts
-  const dbUniqueMakes  = new Set(dbRows.map((r) => r.make)).size;
-  const dbUniqueModels = new Set(dbRows.map((r) => r.model)).size;
   const staticMakesCount  = ALL_MAKES.length;
   const staticModelsCount = Object.values(VEHICLE_DATA).reduce((sum, m) => sum + Object.keys(m).length, 0);
-  const displayMakes  = dbUniqueMakes  > 0 ? dbUniqueMakes  : staticMakesCount;
-  const displayModels = dbUniqueModels > 0 ? dbUniqueModels : staticModelsCount;
-  const displayTotal  = totalCount     > 0 ? totalCount     : "—";
+  const displayTotal  = grandTotal > 0 ? grandTotal.toLocaleString() : "—";
+  const noFilters = activeFiltersCount() === 0;
   const stats = [
     {
       label: "Total Vehicles",
       value: displayTotal,
-      sub: totalCount > 0 ? "Total in database" : "No vehicles yet — click Seed DB",
+      sub: grandTotal > 0 ? "Total in database" : "No vehicles yet — click Seed DB",
     },
     {
       label: "Makes",
-      value: displayMakes,
-      sub: dbUniqueMakes > 0 ? "Unique makes in DB" : `${staticMakesCount} makes supported`,
+      value: staticMakesCount,
+      sub: `${staticMakesCount} makes supported`,
     },
     {
       label: "Models",
-      value: displayModels,
-      sub: dbUniqueModels > 0 ? "Unique models in DB" : `${staticModelsCount} models supported`,
+      value: staticModelsCount,
+      sub: `${staticModelsCount} models supported`,
     },
     {
       label: "Filtered Results",
-      value: filtered.length === dbRows.length ? "All" : filtered.length.toLocaleString(),
-      sub: filtered.length === dbRows.length ? "No filters applied" : "Matching current filters",
+      value: noFilters ? "All" : filteredCount.toLocaleString(),
+      sub: noFilters ? "No filters applied" : "Matching current filters",
     },
   ];
 
