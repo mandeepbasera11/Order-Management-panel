@@ -1090,7 +1090,8 @@ export function VehicleFitment() {
   const staticMakesCount  = ALL_MAKES.length;
   const staticModelsCount = Object.values(VEHICLE_DATA).reduce((sum, m) => sum + Object.keys(m).length, 0);
   const displayTotal  = grandTotal > 0 ? grandTotal.toLocaleString() : "—";
-  const noFilters = activeFiltersCount() === 0;
+  const activeFilters = [year, make, model, submodel].filter((v) => v !== "all").length + (debouncedSearch ? 1 : 0);
+  const noFilters = activeFilters === 0;
   const stats = [
     {
       label: "Total Vehicles",
@@ -1114,8 +1115,6 @@ export function VehicleFitment() {
     },
   ];
 
-  const activeFilters = [year, make, model, submodel].filter((v) => v !== "all").length + (search ? 1 : 0);
-
   // ─── RENDER ────────────────────────────────────────────────────────────────
   return (
     <div className="flex-1 overflow-auto p-6 space-y-6">
@@ -1128,7 +1127,7 @@ export function VehicleFitment() {
             ref={fileRef} type="file" accept=".csv" className="hidden"
             onChange={(e) => e.target.files?.[0] && importCsv(e.target.files[0])}
           />
-          {totalCount === 0 && (
+          {grandTotal === 0 && (
             <Button variant="outline" onClick={seedDatabase} disabled={seedBusy}
               className="border-green-500 text-green-700 hover:bg-green-50">
               <Database className="w-4 h-4 mr-2" />
@@ -1139,8 +1138,9 @@ export function VehicleFitment() {
             <Upload className="w-4 h-4 mr-2" />
             {importBusy ? "Importing..." : "Import Vehicles"}
           </Button>
-          <Button variant="outline" onClick={exportCsv}>
-            <Download className="w-4 h-4 mr-2" /> Export CSV
+          <Button variant="outline" onClick={exportCsv} disabled={exportBusy || filteredCount === 0}>
+            <Download className="w-4 h-4 mr-2" />
+            {exportBusy ? "Exporting..." : "Export CSV"}
           </Button>
           <Button onClick={openAdd}>
             <Plus className="w-4 h-4 mr-2" /> Add Vehicle
@@ -1185,13 +1185,7 @@ export function VehicleFitment() {
             <SelectContent className="max-h-72">
               <SelectItem value="all">All Years</SelectItem>
               {/* First show years that exist in DB (highlighted) */}
-              {dbYears.map((y) => (
-                <SelectItem key={`db-${y}`} value={String(y)}>
-                  {y} ✓
-                </SelectItem>
-              ))}
-              {/* Then show all years 1900–now not already listed */}
-              {ALL_YEARS.filter((y) => !dbYears.includes(y)).map((y) => (
+              {ALL_YEARS.map((y) => (
                 <SelectItem key={y} value={String(y)}>{y}</SelectItem>
               ))}
             </SelectContent>
@@ -1263,10 +1257,10 @@ export function VehicleFitment() {
       <Card className="p-5">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div>
-            <h2 className="text-lg font-semibold">Vehicles ({filtered.length.toLocaleString()})</h2>
+            <h2 className="text-lg font-semibold">Vehicles ({filteredCount.toLocaleString()})</h2>
             <p className="text-xs text-muted-foreground">
-              Showing {filtered.length === 0 ? 0 : (page - 1) * pageSize + 1}–
-              {Math.min(page * pageSize, filtered.length)} of {filtered.length.toLocaleString()} vehicles
+              Showing {filteredCount === 0 ? 0 : (page - 1) * pageSize + 1}–
+              {Math.min(page * pageSize, filteredCount)} of {filteredCount.toLocaleString()} vehicles
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3 text-sm">
@@ -1326,7 +1320,7 @@ export function VehicleFitment() {
               ) : pageRows.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={visibleCols.length + 2} className="text-center py-16">
-                    {dbRows.length === 0 ? (
+                    {grandTotal === 0 ? (
                       <div className="flex flex-col items-center gap-3">
                         <Database className="w-10 h-10 text-muted-foreground" />
                         <p className="font-medium text-foreground">No vehicles in database yet</p>
