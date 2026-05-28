@@ -563,9 +563,11 @@ const pick = (row: Record<string, string>, ...keys: string[]) => {
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 export function VehicleFitment() {
-  const [dbRows, setDbRows] = useState<Vehicle[]>([]);
+  const [pageRows, setPageRows] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
-  const [totalCount, setTotalCount] = useState(0);
+  // grandTotal = unfiltered row count in DB. filteredCount = rows matching current filters.
+  const [grandTotal, setGrandTotal] = useState(0);
+  const [filteredCount, setFilteredCount] = useState(0);
 
   // Filters
   const [search, setSearch] = useState("");
@@ -595,6 +597,14 @@ export function VehicleFitment() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [importBusy, setImportBusy] = useState(false);
   const [seedBusy, setSeedBusy] = useState(false);
+  const [exportBusy, setExportBusy] = useState(false);
+
+  // Debounce search input so we don't refetch on every keystroke.
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(t);
+  }, [search]);
 
   // ── Seed Database with sample vehicles ──────────────────────────────────
   const seedDatabase = async () => {
