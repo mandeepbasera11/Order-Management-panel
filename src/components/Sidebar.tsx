@@ -15,6 +15,7 @@ import {
   Archive,
   RefreshCw,
   Server,
+  History,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -32,6 +33,7 @@ const navigation = [
   { name: "Marketplace Pricing", icon: DollarSign },
   { name: "Shopify Products", icon: Store },
   { name: "Price Experiment", icon: FlaskConical },
+  { name: "Import Status", icon: History },
   { name: "Tires Reverse Lookup", icon: Search },
   { name: "Reports", icon: BarChart3 },
   { name: "User Permissions", icon: ShieldCheck },
