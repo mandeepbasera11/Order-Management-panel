@@ -499,9 +499,17 @@ export function Inventory() {
 
   const importTires = async (file: File) => {
     setImportBusy(true);
+    const { data: imp } = await supabase.from("csv_imports").insert({
+      filename: file.name, import_type: "tires", status: "running", progress: 0,
+    }).select("id").single();
+    const impId = imp?.id;
     try {
       const rows = parseCsv(await file.text());
-      if (!rows.length) { toast.error("CSV is empty"); return; }
+      if (impId) await supabase.from("csv_imports").update({ total_rows: rows.length, progress: 10 }).eq("id", impId);
+      if (!rows.length) {
+        if (impId) await supabase.from("csv_imports").update({ status: "failed", error_message: "CSV is empty", completed_at: new Date().toISOString() }).eq("id", impId);
+        toast.error("CSV is empty"); return;
+      }
       const records = rows.map(r=>({
         sku:      pick(r,["sku","ge sku","ge_sku"]),
         name:     pick(r,["name","item name","item_name"]),
@@ -509,21 +517,43 @@ export function Inventory() {
         price:    Number(pick(r,["price"]))||0,
         stock:    Number(pick(r,["stock","qty","quantity"]))||0,
       })).filter(r=>r.sku&&r.name);
-      if (!records.length) { toast.error("No valid rows"); return; }
+      const invalid = rows.length - records.length;
+      if (impId) await supabase.from("csv_imports").update({ failed_count: invalid, progress: 40 }).eq("id", impId);
+      if (!records.length) {
+        if (impId) await supabase.from("csv_imports").update({ status: "failed", error_message: "No valid rows", completed_at: new Date().toISOString() }).eq("id", impId);
+        toast.error("No valid rows"); return;
+      }
       const { error } = await supabase.from("products").upsert(records,{onConflict:"sku"});
       if (error) throw error;
+      if (impId) await supabase.from("csv_imports").update({
+        status: "completed", success_count: records.length, failed_count: invalid,
+        progress: 100, completed_at: new Date().toISOString(),
+      }).eq("id", impId);
       toast.success(`Imported ${records.length} tire(s)`); await load();
-    } catch (err) { toast.error(err instanceof Error ? err.message : "Import failed"); }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Import failed";
+      if (impId) await supabase.from("csv_imports").update({ status: "failed", error_message: msg, completed_at: new Date().toISOString() }).eq("id", impId);
+      toast.error(msg);
+    }
     finally { setImportBusy(false); if (tireFileRef.current) tireFileRef.current.value=""; }
   };
 
   const importMarketplace = async (file: File) => {
     setImportBusy(true);
+    const { data: imp } = await supabase.from("csv_imports").insert({
+      filename: file.name, import_type: "marketplace", status: "running", progress: 0,
+    }).select("id").single();
+    const impId = imp?.id;
     try {
       const rows = parseCsv(await file.text());
-      if (!rows.length) { toast.error("CSV is empty"); return; }
+      if (impId) await supabase.from("csv_imports").update({ total_rows: rows.length }).eq("id", impId);
+      if (!rows.length) {
+        if (impId) await supabase.from("csv_imports").update({ status: "failed", error_message: "CSV is empty", completed_at: new Date().toISOString() }).eq("id", impId);
+        toast.error("CSV is empty"); return;
+      }
       let matched=0, skipped=0;
-      for (const r of rows) {
+      for (let i=0;i<rows.length;i++) {
+        const r = rows[i];
         const sku = pick(r,["sku","ge sku","ge_sku"]);
         if (!sku) { skipped++; continue; }
         const payload: TablesUpdate<"products"> = {};
@@ -535,9 +565,23 @@ export function Inventory() {
         const { error, count } = await supabase.from("products").update(payload,{count:"exact"}).eq("sku",sku);
         if (error) throw error;
         if (count&&count>0) matched++; else skipped++;
+        if (impId && (i % 25 === 0 || i === rows.length - 1)) {
+          await supabase.from("csv_imports").update({
+            success_count: matched, failed_count: skipped,
+            progress: Math.round(((i + 1) / rows.length) * 100),
+          }).eq("id", impId);
+        }
       }
+      if (impId) await supabase.from("csv_imports").update({
+        status: "completed", success_count: matched, failed_count: skipped,
+        progress: 100, completed_at: new Date().toISOString(),
+      }).eq("id", impId);
       toast.success(`Import: ${matched} updated, ${skipped} skipped`); await load();
-    } catch (err) { toast.error(err instanceof Error ? err.message : "Marketplace import failed"); }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Marketplace import failed";
+      if (impId) await supabase.from("csv_imports").update({ status: "failed", error_message: msg, completed_at: new Date().toISOString() }).eq("id", impId);
+      toast.error(msg);
+    }
     finally { setImportBusy(false); if (marketFileRef.current) marketFileRef.current.value=""; }
   };
 

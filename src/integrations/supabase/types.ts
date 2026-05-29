@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      csv_imports: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          failed_count: number
+          filename: string
+          id: string
+          import_type: string
+          progress: number
+          started_at: string
+          status: string
+          success_count: number
+          total_rows: number
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          failed_count?: number
+          filename: string
+          id?: string
+          import_type: string
+          progress?: number
+          started_at?: string
+          status?: string
+          success_count?: number
+          total_rows?: number
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          failed_count?: number
+          filename?: string
+          id?: string
+          import_type?: string
+          progress?: number
+          started_at?: string
+          status?: string
+          success_count?: number
+          total_rows?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           category: string
