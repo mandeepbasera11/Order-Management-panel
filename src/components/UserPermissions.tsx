@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { ShieldAlert } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 type Role = "admin" | "manager" | "viewer";
 const ROLES: Role[] = ["admin", "manager", "viewer"];
@@ -22,6 +23,20 @@ export function UserPermissions() {
   const { isAdmin, user, refreshRoles } = useAuth();
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [claiming, setClaiming] = useState(false);
+
+  const claimAdmin = async () => {
+    setClaiming(true);
+    const { data, error } = await supabase.rpc("claim_first_admin");
+    setClaiming(false);
+    if (error) return toast.error(error.message);
+    if (data) {
+      toast.success("You are now the admin");
+      await refreshRoles();
+    } else {
+      toast.error("An admin already exists");
+    }
+  };
 
   const load = async () => {
     setLoading(true);
@@ -68,9 +83,17 @@ export function UserPermissions() {
     return (
       <div className="p-6">
         <Card>
-          <CardContent className="pt-6 flex items-center gap-3 text-muted-foreground">
-            <ShieldAlert className="w-5 h-5" />
-            You need admin access to manage user permissions.
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><ShieldAlert className="w-5 h-5" /> Admin access required</CardTitle>
+            <CardDescription>You need the admin role to manage user permissions.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-3">
+              If no one has set up admins yet, you can claim the first admin role. This only works while the workspace has no admins.
+            </p>
+            <Button onClick={claimAdmin} disabled={claiming}>
+              {claiming ? "Claiming..." : "Claim admin role"}
+            </Button>
           </CardContent>
         </Card>
       </div>
