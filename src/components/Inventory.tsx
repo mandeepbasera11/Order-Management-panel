@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -10,92 +10,182 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuTrigger,
-  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuCheckboxItem,
-} from "@/components/ui/dropdown-menu";
-import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import {
-  Search, Plus, Trash2, Loader2, Pencil, Columns3, Upload,
-  Download, Package, Filter, Boxes, Tags, Layers, SlidersHorizontal,
-  Eye, ShoppingCart, Globe, Building2, Flag,
+  Search, Plus, Trash2, Loader2, Pencil, Upload, Download,
+  Package, Filter, Boxes, Tags, SlidersHorizontal,
+  Eye, ShoppingCart, Globe, Building2, Flag, RefreshCw,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import type { TablesUpdate } from "@/integrations/supabase/types";
 import { toast } from "sonner";
 
+// ─── Type ─────────────────────────────────────────────────────────────────────
 type Product = {
   id: string;
+  created_at: string;
+  updated_at: string;
   sku: string;
   name: string;
   category: string;
   price: number;
   stock: number;
+  // CSV fields
+  aspect: string | null;
+  base_ge_sku: string | null;
+  brand: string | null;
+  brand_logo: string | null;
+  description: string | null;
+  features_and_benefits: string | null;
+  images: string | null;
+  item_name: string | null;
+  manufacturer_product_code: string | null;
+  master_brand_id: string | null;
+  master_model_id: string | null;
+  max_inflation_press: string | null;
+  max_load: string | null;
+  meas_rim_width: string | null;
+  model: string | null;
+  mtlid: string | null;
+  overall_diam: string | null;
+  p_metric: string | null;
+  ply: string | null;
+  ply_rating: string | null;
+  raw_size: string | null;
+  revs_per_mile: string | null;
+  rim: string | null;
+  rim_width_max: string | null;
+  rim_width_min: string | null;
+  rim_width_range: string | null;
+  run_flat: string | null;
+  section: string | null;
+  sidewall_abr: string | null;
+  size: string | null;
+  tire_load: string | null;
+  tire_speed: string | null;
+  tire_weight: string | null;
+  tread_depth: string | null;
+  tread_type: string | null;
+  upc: string | null;
+  utqg: string | null;
+  warranty: string | null;
+  wholesale_price: number | null;
+  total_vendor_inventory: number | null;
+  vendor1_name: string | null; vendor1_quantity: number | null; vendor1_price: number | null;
+  vendor2_name: string | null; vendor2_quantity: number | null; vendor2_price: number | null;
+  vendor3_name: string | null; vendor3_quantity: number | null; vendor3_price: number | null;
+  vendor4_name: string | null; vendor4_quantity: number | null; vendor4_price: number | null;
+  vendor5_name: string | null; vendor5_quantity: number | null; vendor5_price: number | null;
+  vendor6_name: string | null; vendor6_quantity: number | null; vendor6_price: number | null;
+  vendor7_name: string | null; vendor7_quantity: number | null; vendor7_price: number | null;
+  vendor8_name: string | null; vendor8_quantity: number | null; vendor8_price: number | null;
+  vendor9_name: string | null; vendor9_quantity: number | null; vendor9_price: number | null;
+  vendor10_name: string | null; vendor10_quantity: number | null; vendor10_price: number | null;
+  vendor11_name: string | null; vendor11_quantity: number | null; vendor11_price: number | null;
+  vendor12_name: string | null; vendor12_quantity: number | null; vendor12_price: number | null;
+  vendor13_name: string | null; vendor13_quantity: number | null; vendor13_price: number | null;
+  vendor14_name: string | null; vendor14_quantity: number | null; vendor14_price: number | null;
+  vendor15_name: string | null; vendor15_quantity: number | null; vendor15_price: number | null;
+  vendor16_name: string | null; vendor16_quantity: number | null; vendor16_price: number | null;
+  vendor17_name: string | null; vendor17_quantity: number | null; vendor17_price: number | null;
+  vendor18_name: string | null; vendor18_quantity: number | null; vendor18_price: number | null;
+  vendor19_name: string | null; vendor19_quantity: number | null; vendor19_price: number | null;
+  vendor20_name: string | null; vendor20_quantity: number | null; vendor20_price: number | null;
+  vendor21_name: string | null; vendor21_quantity: number | null; vendor21_price: number | null;
 };
 
-// ─── Derive rich tire specs from SKU / name ───────────────────────────────────
-const deriveSpec = (p: Product) => {
-  const parts    = p.sku.split("-");
-  const brand    = parts[1] || p.name.split(" ")[0] || "—";
-  const mfrCode  = parts[2] || parts[parts.length - 1] || "—";
-  const sizeM    = p.name.match(/\d{3}\/\d{2}R\d{2}/);
-  const size     = sizeM ? sizeM[0] : "—";
-  // section / aspect / rim from size string
-  const sizeP    = size !== "—" ? size.match(/(\d{3})\/(\d{2})R(\d{2})/) : null;
-  const section  = sizeP ? sizeP[1] : "N/A";
-  const aspect   = sizeP ? sizeP[2] : "N/A";
-  const rim      = sizeP ? sizeP[3] : "N/A";
-  const overallD = sizeP ? String(Math.round(Number(sizeP[3]) + 2 * Number(sizeP[1]) * Number(sizeP[2]) / 2540)) : "N/A";
-  const loadM    = p.name.match(/\b(\d{2,3})\b(?!\/)/);
-  const tireLoad = loadM ? loadM[1] : "N/A";
-  const speedM   = p.name.match(/\b([HVWYTSQR])\b/);
-  const tireSpeed= speedM ? speedM[1] : "T";
-  const rawSize  = size !== "—" ? size.replace(/[^0-9]/g, "") : "N/A";
-  const season   = /winter/i.test(p.category) ? "Winter" : /perform/i.test(p.category) ? "Summer" : "All-Season";
-  const category = p.category || "MM";
-  // fake image URLs based on brand
-  const brandSlug = brand.toLowerCase().replace(/\s+/g, "_");
-  const imgBase   = "https://tireandwheelatlasblob.core.windows.net/atlasimages/images/tires/hi-res";
-  const images    = [
-    `${imgBase}/${brandSlug}_righthalf.jpg`,
-    `${imgBase}/${brandSlug}_rightwhole.jpg`,
-    `${imgBase}/${brandSlug}_lefthalf.jpg`,
-    `${imgBase}/${brandSlug}_leftwhole.jpg`,
-  ];
-  const rimWidthMin  = 5;
-  const rimWidthMax  = Number(rim) > 0 ? Math.ceil(Number(rim) * 0.85) : 6;
-  const mtlid        = Math.floor(100000 + Math.abs(p.sku.split("").reduce((a,c)=>a+c.charCodeAt(0),0)) * 997) % 900000 + 100000;
-  const masterBrandId= Math.floor(10 + Math.abs(brand.charCodeAt(0) * 3) % 200);
-  const masterModelId= Math.floor(1000 + Math.abs(mfrCode.charCodeAt(0) * 7) % 9000);
-  const lengthIn     = Number(overallD) > 0 ? Number(overallD) : 24;
-  const widthIn      = Number(overallD) > 0 ? Number(overallD) : 24;
-  const heightIn     = Math.round(Number(rim) * 0.5) || 7;
-  const warranty     = ["45,000 Mile","50,000 Mile","60,000 Mile","65,000 Mile","70,000 Mile","80,000 Mile"][mtlid % 6];
-  const treadType    = "P";
-  const sidewallABR  = "BW";
-  const pMetric      = "P";
-  const brandLogo    = `${brand}.png`;
-  const description  = `${brand} ultra high performance tire is designed to be the most elegant and the safest tire ever. The superior tread design combined with silica compound technology enabling ${brand} to be able to overcome the aqua planning forces on the wet road. It has also a very low rolling resistance to save energy. This is a beautiful tire yet a safe tyre even on high speed.`;
-  const features     = `Give you high performance in hot summer conditions Offer excellent grip and superior handling on dry or wet roads Improved braking and cornering Enhanced stability and even wear Long-lasting service`;
-  return {
-    brand, mfrCode, size, section, aspect, rim, overallD, rimWidthMin, rimWidthMax,
-    tireLoad, tireSpeed, rawSize, season, category, images, mtlid, masterBrandId,
-    masterModelId, lengthIn, widthIn, heightIn, warranty, treadType, sidewallABR,
-    pMetric, brandLogo, description, features,
-  };
-};
+// ─── Column definitions — every CSV column ───────────────────────────────────
+type ColKey = keyof Product;
 
-const statusFor = (stock: number) => {
-  if (stock === 0) return { label: "Out of Stock", variant: "destructive" as const };
-  if (stock < 20)  return { label: "Low Stock",    variant: "secondary"  as const };
-  return                  { label: "In Stock",     variant: "default"    as const };
-};
+const COLUMN_GROUPS: { group: string; cols: { key: ColKey; label: string; defaultOn: boolean }[] }[] = [
+  {
+    group: "Basic Information",
+    cols: [
+      { key: "sku",                       label: "GE SKU",            defaultOn: true  },
+      { key: "base_ge_sku",               label: "Aliases",           defaultOn: false },
+      { key: "item_name",                 label: "Item Name",         defaultOn: true  },
+      { key: "category",                  label: "Category",          defaultOn: true  },
+      { key: "manufacturer_product_code", label: "Manufacturer Code", defaultOn: true  },
+      { key: "brand",                     label: "Brand",             defaultOn: true  },
+      { key: "model",                     label: "Model",             defaultOn: false },
+      { key: "size",                      label: "Size",              defaultOn: false },
+      { key: "upc",                       label: "UPC",               defaultOn: false },
+      { key: "raw_size",                  label: "Raw Size",          defaultOn: false },
+      { key: "description",               label: "Description",       defaultOn: false },
+    ],
+  },
+  {
+    group: "Specifications Information",
+    cols: [
+      { key: "section",        label: "Section",         defaultOn: false },
+      { key: "aspect",         label: "Aspect",          defaultOn: false },
+      { key: "rim",            label: "Rim",             defaultOn: false },
+      { key: "rim_width_range",label: "Rim Width Range", defaultOn: false },
+      { key: "rim_width_min",  label: "Rim Width Min",   defaultOn: false },
+      { key: "rim_width_max",  label: "Rim Width Max",   defaultOn: false },
+      { key: "meas_rim_width", label: "Meas Rim Width",  defaultOn: false },
+      { key: "overall_diam",   label: "Overall Diameter",defaultOn: false },
+    ],
+  },
+  {
+    group: "Performance Information",
+    cols: [
+      { key: "tire_load",          label: "Tire Load",        defaultOn: true  },
+      { key: "tire_speed",         label: "Tire Speed",       defaultOn: true  },
+      { key: "ply",                label: "Ply",              defaultOn: false },
+      { key: "ply_rating",         label: "Ply Rating",       defaultOn: true  },
+      { key: "utqg",               label: "UTQG",             defaultOn: false },
+      { key: "max_inflation_press",label: "Max Inflation Press",defaultOn: false },
+      { key: "max_load",           label: "Max Load",         defaultOn: false },
+      { key: "tread_depth",        label: "Tread Depth",      defaultOn: false },
+    ],
+  },
+  {
+    group: "Technical Information",
+    cols: [
+      { key: "tire_weight",  label: "Tire Weight",  defaultOn: false },
+      { key: "revs_per_mile",label: "Revs Per Mile",defaultOn: false },
+      { key: "tread_type",   label: "Tread Type",   defaultOn: false },
+      { key: "run_flat",     label: "Run Flat",     defaultOn: false },
+      { key: "sidewall_abr", label: "Sidewall ABR", defaultOn: false },
+      { key: "p_metric",     label: "P Metric",     defaultOn: false },
+    ],
+  },
+  {
+    group: "Metadata Information",
+    cols: [
+      { key: "mtlid",                label: "MTLID",              defaultOn: false },
+      { key: "master_brand_id",      label: "Master Brand ID",    defaultOn: false },
+      { key: "master_model_id",      label: "Master Model ID",    defaultOn: false },
+      { key: "images",               label: "Images",             defaultOn: false },
+      { key: "brand_logo",           label: "Brand Logo",         defaultOn: false },
+      { key: "features_and_benefits",label: "Features & Benefits",defaultOn: false },
+      { key: "warranty",             label: "Warranty",           defaultOn: false },
+    ],
+  },
+  {
+    group: "Inventory & Pricing",
+    cols: [
+      { key: "wholesale_price",        label: "Wholesale Price",   defaultOn: false },
+      { key: "price",                  label: "Our Price",         defaultOn: false },
+      { key: "stock",                  label: "Stock",             defaultOn: false },
+      { key: "total_vendor_inventory", label: "Total Vendor Inv.", defaultOn: false },
+    ],
+  },
+  {
+    group: "Vendors",
+    cols: Array.from({ length: 21 }, (_, i) => i + 1).flatMap((n) => [
+      { key: `vendor${n}_name`     as ColKey, label: `V${n} Name`,  defaultOn: false },
+      { key: `vendor${n}_quantity` as ColKey, label: `V${n} Qty`,   defaultOn: false },
+      { key: `vendor${n}_price`    as ColKey, label: `V${n} Price`, defaultOn: false },
+    ]),
+  },
+];
 
-const emptyForm = { sku: "", name: "", category: "", price: "", stock: "" };
+const ALL_COLS = COLUMN_GROUPS.flatMap((g) => g.cols);
 
 // ─── CSV helpers ──────────────────────────────────────────────────────────────
 const parseCsv = (text: string): Record<string, string>[] => {
@@ -126,187 +216,150 @@ const parseCsv = (text: string): Record<string, string>[] => {
     return obj;
   });
 };
-const pick = (row: Record<string,string>, keys: string[]) => {
-  for (const k of keys) if (row[k]!=null&&row[k]!=="") return row[k];
+const pickVal = (row: Record<string,string>, ...keys: string[]) => {
+  for (const k of keys) { const v = row[k]; if (v!=null&&v!=="") return v; }
   return "";
 };
+const num = (v: string) => { const n = parseFloat(v); return isNaN(n) ? null : n; };
+const int = (v: string) => { const n = parseInt(v); return isNaN(n) ? null : n; };
 
-// ─── Column types ─────────────────────────────────────────────────────────────
-type ColumnKey = "sku"|"name"|"category"|"price"|"stock"|"status";
-type ExtraKey  = "manufacturerCode"|"tireLoad"|"tireSpeed"|"plyRating"|"brand"|"size"|"season"|"warehouse";
-type AllColumnKey = ColumnKey | ExtraKey;
-
-const ALL_COLUMNS: { key: AllColumnKey; label: string; group: string }[] = [
-  { key: "sku",              label: "GE SKU",            group: "Core" },
-  { key: "name",             label: "Item Name",         group: "Core" },
-  { key: "category",         label: "Category",          group: "Core" },
-  { key: "manufacturerCode", label: "Manufacturer Code", group: "Specs" },
-  { key: "tireLoad",         label: "Tire Load",         group: "Specs" },
-  { key: "tireSpeed",        label: "Tire Speed",        group: "Specs" },
-  { key: "plyRating",        label: "Ply Rating",        group: "Specs" },
-  { key: "brand",            label: "Brand",             group: "Specs" },
-  { key: "size",             label: "Size",              group: "Specs" },
-  { key: "season",           label: "Season",            group: "Specs" },
-  { key: "price",            label: "Price",             group: "Inventory" },
-  { key: "stock",            label: "Stock",             group: "Inventory" },
-  { key: "warehouse",        label: "Warehouse",         group: "Inventory" },
-  { key: "status",           label: "Status",            group: "Inventory" },
-];
+const statusFor = (stock: number) => {
+  if (stock === 0) return { label: "Out of Stock", variant: "destructive" as const };
+  if (stock < 20)  return { label: "Low Stock",    variant: "secondary"  as const };
+  return                  { label: "In Stock",     variant: "default"    as const };
+};
 
 // ─── Fitment Details Dialog ───────────────────────────────────────────────────
 function FitmentDetailsDialog({ product, open, onClose }: { product: Product | null; open: boolean; onClose: () => void }) {
-  const [editOpen, setEditOpen] = useState(false);
   if (!product) return null;
-  const spec = deriveSpec(product);
-  const geSku = `GE-${spec.brand}-${product.sku.split("-").slice(-1)[0]}`;
 
-  const Row = ({ label, value, red }: { label: string; value: React.ReactNode; red?: boolean }) => (
-    <div className="flex items-center justify-between py-2 border-b border-border last:border-0">
-      <span className={`text-sm font-medium ${red ? "text-red-500" : "text-muted-foreground"}`}>{label}:</span>
-      <span className={`text-sm font-medium text-right max-w-[60%] break-all ${red ? "text-red-500" : "text-foreground"}`}>{value ?? "N/A"}</span>
+  const Field = ({ label, value, red }: { label: string; value?: string | number | null; red?: boolean }) => (
+    <div className="flex items-start justify-between py-2 border-b border-border last:border-0 gap-4">
+      <span className={`text-sm font-medium shrink-0 ${red ? "text-red-500" : "text-muted-foreground"}`}>{label}:</span>
+      <span className={`text-sm text-right break-all ${red ? "text-red-500" : "text-foreground"}`}>{value || "N/A"}</span>
+    </div>
+  );
+  const SectionTitle = ({ children, red }: { children: React.ReactNode; red?: boolean }) => (
+    <div className="mb-3 mt-2">
+      <h3 className={`text-base font-bold ${red ? "text-red-500" : "text-foreground"}`}>{children}</h3>
+      <Separator className="mt-1" />
     </div>
   );
 
-  const SectionTitle = ({ children }: { children: React.ReactNode }) => (
-    <div className="mb-3">
-      <h3 className="text-base font-bold text-foreground">{children}</h3>
-      <Separator className="mt-2" />
-    </div>
-  );
+  // Parse image URLs
+  const imageUrls = (product.images || "").split(";").map(s=>s.trim()).filter(Boolean);
 
-  const platformStatus = (name: string) => (
-    <div className="rounded-lg border border-border p-4 flex flex-col gap-2">
-      <div className="flex items-center gap-2 font-semibold text-sm">
-        {name === "Amazon"  && <ShoppingCart className="w-4 h-4" />}
-        {name === "Walmart" && <Building2    className="w-4 h-4" />}
-        {name === "eBay"    && <Globe        className="w-4 h-4" />}
-        {name === "Shopify" && <ShoppingCart className="w-4 h-4 text-green-600" />}
-        {name}
-      </div>
-      {name !== "Shopify" ? (
-        <Badge variant="outline" className="text-xs w-fit">Not Listed</Badge>
-      ) : (
-        <div>
-          <p className="text-sm text-muted-foreground">Not listed on Shopify</p>
-          <p className="text-xs text-muted-foreground">Run sync to add this product</p>
-        </div>
-      )}
-    </div>
-  );
+  // Parse vendors
+  const vendors = Array.from({length:21},(_,i)=>i+1).map(n=>({
+    name:     (product as Record<string,unknown>)[`vendor${n}_name`]     as string|null,
+    quantity: (product as Record<string,unknown>)[`vendor${n}_quantity`] as number|null,
+    price:    (product as Record<string,unknown>)[`vendor${n}_price`]    as number|null,
+  })).filter(v=>v.name);
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-border sticky top-0 bg-background z-10">
+    <Dialog open={open} onOpenChange={o=>!o&&onClose()}>
+      <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto p-0">
+        {/* Sticky header */}
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border sticky top-0 bg-background z-10">
           <div className="flex items-center gap-3">
             <h2 className="text-xl font-bold">Fitment Details</h2>
-            <Badge variant="outline" className="font-mono text-xs">{spec.mfrCode}</Badge>
+            <Badge variant="outline" className="font-mono text-xs">{product.manufacturer_product_code || product.sku}</Badge>
           </div>
-          <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
-            <Pencil className="w-4 h-4 mr-2" /> Edit
-          </Button>
         </div>
 
-        <div className="px-6 py-4 space-y-8">
+        <div className="px-6 py-5 space-y-8">
 
           {/* Row 1 — Basic Info + Size Specs */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Basic Information */}
             <div>
               <SectionTitle>Basic Information</SectionTitle>
-              <Row label="GE SKU"               value={geSku} />
-              <Row label="Item Name"            value={product.name} />
-              <Row label="MTLID"                value={spec.mtlid} />
-              <Row label="Master Brand ID"      value={spec.masterBrandId} />
-              <Row label="Brand"                value={spec.brand} />
-              <Row label="Master Model ID"      value={spec.masterModelId} />
-              <Row label="Model"                value={product.name.split(" ").slice(1, -1).join(" ") || spec.brand} />
-              <Row label="Wholesale Price"      value={product.price > 0 ? `$${product.price.toFixed(2)}` : "N/A"} />
-              <div className="py-2">
+              <Field label="GE SKU"                    value={product.sku} />
+              <Field label="Item Name"                 value={product.item_name || product.name} />
+              <Field label="MTLID"                     value={product.mtlid} />
+              <Field label="Master Brand ID"           value={product.master_brand_id} />
+              <Field label="Brand"                     value={product.brand} />
+              <Field label="Master Model ID"           value={product.master_model_id} />
+              <Field label="Model"                     value={product.model} />
+              <Field label="Wholesale Price"           value={product.wholesale_price != null ? `$${Number(product.wholesale_price).toFixed(2)}` : undefined} />
+              <div className="py-2 border-b border-border">
                 <p className="text-sm font-medium text-muted-foreground mb-2">Images:</p>
-                <div className="space-y-1">
-                  {spec.images.map((img, i) => (
-                    <a key={i} href={img} target="_blank" rel="noopener noreferrer"
-                      className="block text-xs text-blue-500 hover:underline truncate">{img}</a>
-                  ))}
-                </div>
+                {imageUrls.length > 0
+                  ? imageUrls.map((url,i)=>(
+                      <a key={i} href={url} target="_blank" rel="noopener noreferrer"
+                        className="block text-xs text-blue-500 hover:underline truncate mb-1">{url}</a>
+                    ))
+                  : <span className="text-sm text-muted-foreground">N/A</span>
+                }
               </div>
-              <Row label="Brand Logo"          value={spec.brandLogo} />
-              <Row label="Category"            value={<Badge variant="secondary">{spec.category}</Badge>} />
-              <Row label="Size"                value={spec.size} />
-              <Row label="Raw Size"            value={spec.rawSize} />
-              <Row label="Manufacturer Product Code" value={spec.mfrCode} />
-              <Row label="UPC"                 value="N/A" />
+              <Field label="Brand Logo"                value={product.brand_logo} />
+              <Field label="Category"                  value={product.category} />
+              <Field label="Size"                      value={product.size} />
+              <Field label="Raw Size"                  value={product.raw_size} />
+              <Field label="Manufacturer Product Code" value={product.manufacturer_product_code} />
+              <Field label="UPC"                       value={product.upc} />
             </div>
-
-            {/* Size Specifications */}
             <div>
               <SectionTitle>Size Specifications</SectionTitle>
-              <Row label="Section"             value={spec.section} />
-              <Row label="Aspect"              value={spec.aspect} />
-              <Row label="Rim"                 value={spec.rim} />
-              <Row label="Rim Width Range"     value={`${spec.rimWidthMin}.00${spec.rimWidthMax}${spec.rimWidthMin}${spec.rimWidthMax}074`} />
-              <Row label="Rim Width Min"       value={spec.rimWidthMin} />
-              <Row label="Rim Width Max"       value={spec.rimWidthMax} />
-              <Row label="Meas Rim Width"      value="N/A" />
-              <Row label="Overall Diameter"    value={spec.overallD} />
-
-              {/* Tire Shipping Data */}
-              <div className="mt-4">
-                <SectionTitle>
-                  <span className="text-red-500">Tire Shipping Data:</span>
-                </SectionTitle>
-                <Row label="Length (in.)"      value={spec.lengthIn} />
-                <Row label="Width (in.)"       value={spec.widthIn} />
-                <Row label="Height (in.)"      value={spec.heightIn} />
-                <Row label="Weight (pounds)"   value="N/A" />
-              </div>
+              <Field label="Section"          value={product.section} />
+              <Field label="Aspect"           value={product.aspect} />
+              <Field label="Rim"              value={product.rim} />
+              <Field label="Rim Width Range"  value={product.rim_width_range} />
+              <Field label="Rim Width Min"    value={product.rim_width_min} />
+              <Field label="Rim Width Max"    value={product.rim_width_max} />
+              <Field label="Meas Rim Width"   value={product.meas_rim_width} />
+              <Field label="Overall Diameter" value={product.overall_diam} />
+              <SectionTitle red>Tire Shipping Data:</SectionTitle>
+              <Field label="Tire Weight"      value={product.tire_weight} />
             </div>
           </div>
 
-          {/* Row 2 — Performance Ratings + Technical Specifications */}
+          {/* Row 2 — Performance + Technical */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Performance Ratings */}
             <div>
               <SectionTitle>Performance Ratings</SectionTitle>
-              <Row label="Tire Load"            value={spec.tireLoad} />
-              <Row label="Tire Speed"           value={spec.tireSpeed} />
-              <Row label="Ply"                  value="N/A" />
-              <Row label="Ply Rating"           value="N/A" />
-              <Row label="UTQG"                 value="N/A" />
-              <Row label="Max Inflation Press"  value="N/A" />
-              <Row label="Max Load"             value="N/A" />
+              <Field label="Tire Load"           value={product.tire_load} />
+              <Field label="Tire Speed"          value={product.tire_speed} />
+              <Field label="Ply"                 value={product.ply} />
+              <Field label="Ply Rating"          value={product.ply_rating} />
+              <Field label="UTQG"                value={product.utqg} />
+              <Field label="Max Inflation Press" value={product.max_inflation_press} />
+              <Field label="Max Load"            value={product.max_load} />
             </div>
-
-            {/* Technical Specifications */}
             <div>
               <SectionTitle>Technical Specifications</SectionTitle>
-              <Row label="Tire Weight"          value="N/A" />
-              <Row label="Revs Per Mile"        value="N/A" />
-              <Row label="Tread Type"           value={spec.treadType} />
-              <Row label="Run Flat"             value="Unknown" />
-              <Row label="Sidewall ABR"         value={spec.sidewallABR} />
-              <Row label="P Metric"             value={spec.pMetric} />
+              <Field label="Tread Type"    value={product.tread_type} />
+              <Field label="Tread Depth"   value={product.tread_depth} />
+              <Field label="Run Flat"      value={product.run_flat} />
+              <Field label="Sidewall ABR"  value={product.sidewall_abr} />
+              <Field label="P Metric"      value={product.p_metric} />
+              <Field label="Revs Per Mile" value={product.revs_per_mile} />
             </div>
           </div>
 
-          {/* Platform Listings */}
+          {/* Platform listings */}
           <div>
             <SectionTitle>Platform Listings</SectionTitle>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {platformStatus("Amazon")}
-              {platformStatus("Walmart")}
-              {platformStatus("eBay")}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+              {["Amazon","Walmart","eBay"].map(p=>(
+                <div key={p} className="rounded-lg border border-border p-4 space-y-2">
+                  <div className="flex items-center gap-2 font-semibold text-sm">
+                    {p==="Amazon"&&<ShoppingCart className="w-4 h-4"/>}
+                    {p==="Walmart"&&<Building2 className="w-4 h-4"/>}
+                    {p==="eBay"&&<Globe className="w-4 h-4"/>}
+                    {p}
+                  </div>
+                  <Badge variant="outline" className="text-xs">Not Listed</Badge>
+                </div>
+              ))}
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
-              <div className={`rounded-lg border-2 border-green-200 bg-green-50 p-4`}>
-                {platformStatus("Shopify")}
-              </div>
+            <div className="rounded-lg border-2 border-green-200 bg-green-50 p-4 w-fit space-y-1">
+              <div className="flex items-center gap-2 font-semibold text-sm"><ShoppingCart className="w-4 h-4 text-green-600"/>Shopify</div>
+              <p className="text-sm text-muted-foreground">Not listed on Shopify</p>
+              <p className="text-xs text-muted-foreground">Run sync to add this product</p>
             </div>
             <div className="flex justify-end mt-4">
               <Button variant="outline" className="border-orange-400 text-orange-600 hover:bg-orange-50">
-                <Flag className="w-4 h-4 mr-2" /> Flag Discrepancy
+                <Flag className="w-4 h-4 mr-2"/> Flag Discrepancy
               </Button>
             </div>
           </div>
@@ -314,34 +367,69 @@ function FitmentDetailsDialog({ product, open, onClose }: { product: Product | n
           {/* Vendor Inventory */}
           <div>
             <SectionTitle>Vendor Inventory</SectionTitle>
-            <div className="flex flex-col items-center py-10 gap-3 text-muted-foreground">
-              <Building2 className="w-12 h-12 text-muted-foreground/40" />
-              <p className="font-medium text-foreground">No vendors have this tire in inventory</p>
-              <p className="text-sm">Vendors will appear here once they add this tire to their inventory</p>
-            </div>
+            {vendors.length > 0 ? (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>#</TableHead>
+                      <TableHead>Vendor Name</TableHead>
+                      <TableHead className="text-right">Quantity</TableHead>
+                      <TableHead className="text-right">Price</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {vendors.map((v,i)=>(
+                      <TableRow key={i}>
+                        <TableCell className="text-muted-foreground">{i+1}</TableCell>
+                        <TableCell className="font-medium">{v.name}</TableCell>
+                        <TableCell className="text-right">{v.quantity ?? "—"}</TableCell>
+                        <TableCell className="text-right">{v.price != null ? `$${Number(v.price).toFixed(2)}` : "—"}</TableCell>
+                      </TableRow>
+                    ))}
+                    <TableRow className="font-semibold bg-muted/40">
+                      <TableCell colSpan={2}>Total Vendor Inventory</TableCell>
+                      <TableCell className="text-right">{product.total_vendor_inventory ?? vendors.reduce((s,v)=>s+(v.quantity||0),0)}</TableCell>
+                      <TableCell />
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center py-10 gap-3 text-muted-foreground">
+                <Building2 className="w-12 h-12 text-muted-foreground/30"/>
+                <p className="font-medium text-foreground">No vendors have this tire in inventory</p>
+                <p className="text-sm">Vendors will appear here once they add this tire to their inventory</p>
+              </div>
+            )}
           </div>
 
           {/* Descriptions */}
           <div>
             <SectionTitle>Descriptions</SectionTitle>
             <div className="space-y-4">
-              <div>
-                <p className="text-sm font-bold mb-1">Description:</p>
-                <p className="text-sm text-muted-foreground">{spec.description}</p>
-              </div>
-              <Separator />
-              <div>
-                <p className="text-sm font-bold mb-1">Features and Benefits:</p>
-                <p className="text-sm text-muted-foreground">{spec.features}</p>
-              </div>
-              <Separator />
-              <div>
-                <p className="text-sm font-bold mb-1">Warranty:</p>
-                <p className="text-sm text-muted-foreground">{spec.warranty}</p>
-              </div>
+              {product.description && (
+                <div>
+                  <p className="text-sm font-bold mb-1">Description:</p>
+                  <p className="text-sm text-muted-foreground whitespace-pre-line">{product.description}</p>
+                  <Separator className="mt-3"/>
+                </div>
+              )}
+              {product.features_and_benefits && (
+                <div>
+                  <p className="text-sm font-bold mb-1">Features and Benefits:</p>
+                  <p className="text-sm text-muted-foreground whitespace-pre-line">{product.features_and_benefits}</p>
+                  <Separator className="mt-3"/>
+                </div>
+              )}
+              {product.warranty && (
+                <div>
+                  <p className="text-sm font-bold mb-1">Warranty:</p>
+                  <p className="text-sm text-muted-foreground">{product.warranty}</p>
+                </div>
+              )}
             </div>
           </div>
-
         </div>
       </DialogContent>
     </Dialog>
@@ -349,17 +437,110 @@ function FitmentDetailsDialog({ product, open, onClose }: { product: Product | n
 }
 
 // ─── Main Inventory Component ─────────────────────────────────────────────────
+// ─── Select Columns Modal — matches screenshot exactly ───────────────────────
+function SelectColumnsModal({
+  open, onClose, visible, setVisible,
+}: {
+  open: boolean;
+  onClose: () => void;
+  visible: Record<string, boolean>;
+  setVisible: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
+}) {
+  // Show Actions Information section (always-on checkbox for the Actions column)
+  const DISPLAY_GROUPS = [
+    ...COLUMN_GROUPS.filter(g => g.group !== "Vendors"),
+    {
+      group: "Actions Information",
+      cols: [{ key: "_actions" as ColKey, label: "Actions", defaultOn: true }],
+    },
+  ];
+
+  const selectAll = () => {
+    const next: Record<string, boolean> = {};
+    ALL_COLS.forEach(c => { next[c.key as string] = true; });
+    next["_actions"] = true;
+    setVisible(next);
+  };
+
+  const defaultOnly = () => {
+    const next: Record<string, boolean> = {};
+    ALL_COLS.forEach(c => { next[c.key as string] = c.defaultOn; });
+    next["_actions"] = true;
+    setVisible(next);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={o => !o && onClose()}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-border sticky top-0 bg-background z-10">
+          <div className="flex items-center gap-3">
+            <SlidersHorizontal className="w-5 h-5 text-muted-foreground" />
+            <h2 className="text-base font-semibold">Select Table Columns</h2>
+          </div>
+        </div>
+
+        {/* Select All / Default Only buttons */}
+        <div className="flex gap-2 px-5 pt-4 pb-2">
+          <Button variant="outline" size="sm" onClick={selectAll}>Select All</Button>
+          <Button variant="outline" size="sm" onClick={defaultOnly}>Default Only</Button>
+        </div>
+
+        {/* Groups */}
+        <div className="px-5 pb-6 space-y-6">
+          {DISPLAY_GROUPS.map(g => (
+            <div key={g.group}>
+              {/* Group title */}
+              <h3 className="text-sm font-semibold text-foreground mb-3">{g.group}</h3>
+              <Separator className="mb-3" />
+              {/* 3-column grid of checkboxes */}
+              <div className="grid grid-cols-3 gap-x-6 gap-y-3">
+                {g.cols.map(col => {
+                  const key = col.key as string;
+                  const isActions = key === "_actions";
+                  const checked = isActions ? true : !!visible[key];
+                  return (
+                    <label
+                      key={key}
+                      className={`flex items-center gap-2 cursor-pointer select-none
+                        ${isActions ? "opacity-60 cursor-default" : ""}`}
+                    >
+                      <Checkbox
+                        checked={checked}
+                        disabled={isActions}
+                        onCheckedChange={v => {
+                          if (!isActions) setVisible(p => ({ ...p, [key]: !!v }));
+                        }}
+                        className="shrink-0"
+                      />
+                      <span className="text-sm">{col.label}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Footer */}
+        <div className="flex justify-end gap-2 px-5 py-4 border-t border-border sticky bottom-0 bg-background">
+          <Button variant="outline" onClick={onClose}>Close</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+const emptyForm = { sku: "", name: "", category: "", price: "", stock: "" };
+
 export function Inventory() {
-  const [products, setProducts]     = useState<Product[]>([]);
-  const [loading, setLoading]       = useState(true);
-  const [search, setSearch]         = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [brandFilter, setBrandFilter]       = useState<string>("all");
-  const [marketplaces, setMarketplaces]     = useState<Record<string,boolean>>({
-    Amazon: false, Walmart: false, eBay: false, Shopify: false,
-  });
-  const [pageSize, setPageSize] = useState<number>(100);
-  const [page, setPage]         = useState<number>(1);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading]   = useState(true);
+  const [search, setSearch]     = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [brandFilter, setBrandFilter]       = useState("all");
+  const [pageSize, setPageSize] = useState(100);
+  const [page, setPage]         = useState(1);
   const [open, setOpen]         = useState(false);
   const [saving, setSaving]     = useState(false);
   const [form, setForm]         = useState(emptyForm);
@@ -367,57 +548,168 @@ export function Inventory() {
   const [editForm, setEditForm] = useState(emptyForm);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkOpen, setBulkOpen] = useState(false);
-  const [bulkForm, setBulkForm] = useState({ price: "", stock: "", category: "", mode: "set" as "set"|"adjust" });
+  const [bulkForm, setBulkForm] = useState({ price:"", stock:"", category:"", mode:"set" as "set"|"adjust" });
   const [bulkBusy, setBulkBusy] = useState(false);
   const [importBusy, setImportBusy] = useState(false);
-
-  // Fitment Details dialog
   const [fitmentProduct, setFitmentProduct] = useState<Product | null>(null);
   const [fitmentOpen, setFitmentOpen]       = useState(false);
+  const [colModalOpen, setColModalOpen]     = useState(false);
+  const csvRef = useRef<HTMLInputElement>(null);
 
-  const tireFileRef   = useRef<HTMLInputElement>(null);
-  const marketFileRef = useRef<HTMLInputElement>(null);
-
-  const [visible, setVisible] = useState<Record<AllColumnKey, boolean>>({
-    sku: true, name: true, category: true, manufacturerCode: true,
-    tireLoad: true, tireSpeed: true, plyRating: true, brand: false,
-    size: false, season: false, price: true, stock: true, warehouse: false, status: true,
-  });
+  // Visible columns — default on for important ones
+  const [visible, setVisible] = useState<Record<string, boolean>>(
+    Object.fromEntries(ALL_COLS.map(c=>[c.key, c.defaultOn]))
+  );
 
   const load = async () => {
     setLoading(true);
     const { data, error } = await supabase.from("products").select("*").order("created_at", { ascending: false });
     if (error) toast.error(error.message);
-    else setProducts(data ?? []);
+    else setProducts((data ?? []) as unknown as Product[]);
     setLoading(false);
   };
   useEffect(() => { load(); }, []);
 
+  // ── Import CSV (full CSV format from the uploaded file) ───────────────────
+  const importCsv = async (file: File) => {
+    setImportBusy(true);
+    try {
+      const text = await file.text();
+      const rows = parseCsv(text);
+      if (!rows.length) { toast.error("CSV is empty"); return; }
+
+      const records = rows.map(r => {
+        const sku  = pickVal(r, "ge_sku", "sku");
+        const name = pickVal(r, "item_name", "name");
+        if (!sku || !name) return null;
+
+        // lowest vendor price fallback
+        let lowestVendorPrice: number | null = null;
+        for (let i = 1; i <= 21; i++) {
+          const vp = num(r[`vendor${i}_price`] || "");
+          if (vp != null && (lowestVendorPrice === null || vp < lowestVendorPrice)) lowestVendorPrice = vp;
+        }
+        const wp = num(pickVal(r, "wholesale_price"));
+
+        const rec: Record<string,unknown> = {
+          sku,
+          name,
+          category:   pickVal(r, "category") || "MM",
+          price:      wp ?? lowestVendorPrice ?? 0,
+          stock:      int(pickVal(r, "stock")) ?? int(pickVal(r, "total_vendor_inventory")) ?? 0,
+          // All CSV columns
+          aspect:                     r.aspect || null,
+          base_ge_sku:                r.base_ge_sku || null,
+          brand:                      r.brand || null,
+          brand_logo:                 r.brand_logo || null,
+          description:                r.description || null,
+          features_and_benefits:      r.features_and_benefits || null,
+          images:                     r.images || null,
+          item_name:                  r.item_name || null,
+          manufacturer_product_code:  r.manufacturer_product_code || null,
+          master_brand_id:            r.master_brand_id || null,
+          master_model_id:            r.master_model_id || null,
+          max_inflation_press:        r.max_inflation_press || null,
+          max_load:                   r.max_load || null,
+          meas_rim_width:             r.meas_rim_width || null,
+          model:                      r.model || null,
+          mtlid:                      r.mtlid || null,
+          overall_diam:               r.overall_diam || null,
+          p_metric:                   r.p_metric || null,
+          ply:                        r.ply || null,
+          ply_rating:                 r.ply_rating || null,
+          raw_size:                   r.raw_size || null,
+          revs_per_mile:              r.revs_per_mile || null,
+          rim:                        r.rim || null,
+          rim_width_max:              r.rim_width_max || null,
+          rim_width_min:              r.rim_width_min || null,
+          rim_width_range:            r.rim_width_range || null,
+          run_flat:                   r.run_flat || null,
+          section:                    r.section || null,
+          sidewall_abr:               r.sidewall_abr || null,
+          size:                       r.size || null,
+          tire_load:                  r.tire_load || null,
+          tire_speed:                 r.tire_speed || null,
+          tire_weight:                r.tire_weight || null,
+          tread_depth:                r.tread_depth || null,
+          tread_type:                 r.tread_type || null,
+          upc:                        r.upc || null,
+          utqg:                       r.utqg || null,
+          warranty:                   r.warranty || null,
+          wholesale_price:            num(r.wholesale_price) ,
+          total_vendor_inventory:     int(r.total_vendor_inventory),
+        };
+        // Vendors 1–21
+        for (let i = 1; i <= 21; i++) {
+          rec[`vendor${i}_name`]     = r[`vendor${i}_name`]     || null;
+          rec[`vendor${i}_quantity`] = int(r[`vendor${i}_quantity`] || "");
+          rec[`vendor${i}_price`]    = num(r[`vendor${i}_price`]    || "");
+        }
+        return rec;
+      }).filter(Boolean);
+
+      if (!records.length) { toast.error("No valid rows found"); return; }
+
+      // Insert in batches of 200
+      let inserted = 0;
+      for (let i = 0; i < records.length; i += 200) {
+        const batch = records.slice(i, i + 200);
+        const { error } = await supabase.from("products").upsert(batch as never[], { onConflict: "sku" });
+        if (error) throw error;
+        inserted += batch.length;
+        toast.success(`Importing... ${inserted} / ${records.length}`);
+      }
+      toast.success(`✅ Imported ${records.length} tires successfully!`);
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Import failed");
+    } finally {
+      setImportBusy(false);
+      if (csvRef.current) csvRef.current.value = "";
+    }
+  };
+
+  // ── CRUD ──────────────────────────────────────────────────────────────────
   const handleAdd = async () => {
-    if (!form.sku || !form.name) { toast.error("SKU and name are required"); return; }
+    if (!form.sku || !form.name) { toast.error("SKU and Name are required"); return; }
     setSaving(true);
     const { error } = await supabase.from("products").insert({
       sku: form.sku, name: form.name,
-      category: form.category || "Uncategorized",
-      price: Number(form.price) || 0, stock: Number(form.stock) || 0,
+      category: form.category || "MM",
+      price: Number(form.price) || 0,
+      stock: Number(form.stock) || 0,
     });
     setSaving(false);
     if (error) { toast.error(error.message); return; }
-    toast.success("Product added"); setForm(emptyForm); setOpen(false); load();
+    toast.success("Tire added"); setForm(emptyForm); setOpen(false); load();
   };
 
   const handleDelete = async (id: string) => {
     const { error } = await supabase.from("products").delete().eq("id", id);
     if (error) { toast.error(error.message); return; }
-    toast.success("Product deleted");
+    toast.success("Tire deleted");
     setProducts(p => p.filter(x => x.id !== id));
     setSelected(s => { const n = new Set(s); n.delete(id); return n; });
+  };
+
+  const handleUpdate = async () => {
+    if (!editing) return;
+    setSaving(true);
+    const { error } = await supabase.from("products").update({
+      sku: editForm.sku, name: editForm.name,
+      category: editForm.category || "MM",
+      price: Number(editForm.price) || 0,
+      stock: Number(editForm.stock) || 0,
+    }).eq("id", editing.id);
+    setSaving(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Tire updated"); setEditing(null); load();
   };
 
   const bulkDelete = async () => {
     const ids = Array.from(selected);
     if (!ids.length) return;
-    if (!confirm(`Delete ${ids.length} selected tire(s)?`)) return;
+    if (!confirm(`Delete ${ids.length} tire(s)?`)) return;
     setBulkBusy(true);
     const { error } = await supabase.from("products").delete().in("id", ids);
     setBulkBusy(false);
@@ -430,244 +722,97 @@ export function Inventory() {
   const applyBulkUpdate = async () => {
     const ids = Array.from(selected);
     if (!ids.length) return;
-    const hasPrice    = bulkForm.price !== "";
-    const hasStock    = bulkForm.stock !== "";
-    const hasCategory = bulkForm.category.trim() !== "";
-    if (!hasPrice && !hasStock && !hasCategory) return toast.error("Enter at least one field");
+    const patch: Record<string,unknown> = {};
+    if (bulkForm.price    !== "") patch.price    = Number(bulkForm.price);
+    if (bulkForm.stock    !== "") patch.stock    = Number(bulkForm.stock);
+    if (bulkForm.category !== "") patch.category = bulkForm.category;
+    if (!Object.keys(patch).length) return toast.error("Nothing to update");
     setBulkBusy(true);
-    try {
-      if (bulkForm.mode === "adjust" && (hasPrice || hasStock)) {
-        const targets = products.filter(p => selected.has(p.id));
-        for (const p of targets) {
-          const payload: TablesUpdate<"products"> = {};
-          if (hasPrice) payload.price = Math.max(0, Number(p.price) + Number(bulkForm.price));
-          if (hasStock) payload.stock = Math.max(0, p.stock + Number(bulkForm.stock));
-          if (hasCategory) payload.category = bulkForm.category.trim();
-          const { error } = await supabase.from("products").update(payload).eq("id", p.id);
-          if (error) throw error;
-        }
-      } else {
-        const payload: TablesUpdate<"products"> = {};
-        if (hasPrice) payload.price = Number(bulkForm.price);
-        if (hasStock) payload.stock = Number(bulkForm.stock);
-        if (hasCategory) payload.category = bulkForm.category.trim();
-        const { error } = await supabase.from("products").update(payload).in("id", ids);
-        if (error) throw error;
-      }
-      toast.success(`${ids.length} tire(s) updated`);
-      setBulkOpen(false);
-      setBulkForm({ price: "", stock: "", category: "", mode: "set" });
-      await load();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Bulk update failed");
-    } finally { setBulkBusy(false); }
-  };
-
-  const bulkSetOutOfStock = async () => {
-    const ids = Array.from(selected);
-    if (!ids.length) return;
-    setBulkBusy(true);
-    const { error } = await supabase.from("products").update({ stock: 0 }).in("id", ids);
+    const { error } = await supabase.from("products").update(patch as never).in("id", ids);
     setBulkBusy(false);
     if (error) return toast.error(error.message);
-    toast.success(`${ids.length} tire(s) marked Out of Stock`);
-    await load();
+    toast.success(`${ids.length} tire(s) updated`);
+    setBulkOpen(false); setBulkForm({ price:"",stock:"",category:"",mode:"set" }); load();
   };
 
-  const mergeSelected = async () => {
-    const ids = Array.from(selected);
-    if (ids.length < 2) return toast.error("Select at least 2 tires to merge");
-    const items = products.filter(p => ids.includes(p.id));
-    const primary = items[0];
-    const totalStock = items.reduce((s,p) => s + (p.stock||0), 0);
-    const avgPrice   = items.reduce((s,p) => s + Number(p.price||0), 0) / items.length;
-    if (!confirm(`Merge ${items.length} tires into "${primary.name}"?`)) return;
-    setBulkBusy(true);
-    try {
-      const { error: e1 } = await supabase.from("products").update({ stock: totalStock, price: Number(avgPrice.toFixed(2)) }).eq("id", primary.id);
-      if (e1) throw e1;
-      const toDelete = items.slice(1).map(p => p.id);
-      if (toDelete.length) {
-        const { error: e2 } = await supabase.from("products").delete().in("id", toDelete);
-        if (e2) throw e2;
-      }
-      toast.success(`Merged ${items.length} tires`);
-      setSelected(new Set()); await load();
-    } catch (err) { toast.error(err instanceof Error ? err.message : "Merge failed"); }
-    finally { setBulkBusy(false); }
-  };
-
-  const importTires = async (file: File) => {
-    setImportBusy(true);
-    const { data: imp } = await supabase.from("csv_imports").insert({
-      filename: file.name, import_type: "tires", status: "running", progress: 0,
-    }).select("id").single();
-    const impId = imp?.id;
-    try {
-      const rows = parseCsv(await file.text());
-      if (impId) await supabase.from("csv_imports").update({ total_rows: rows.length, progress: 10 }).eq("id", impId);
-      if (!rows.length) {
-        if (impId) await supabase.from("csv_imports").update({ status: "failed", error_message: "CSV is empty", completed_at: new Date().toISOString() }).eq("id", impId);
-        toast.error("CSV is empty"); return;
-      }
-      const records = rows.map(r=>({
-        sku:      pick(r,["sku","ge sku","ge_sku"]),
-        name:     pick(r,["name","item name","item_name"]),
-        category: pick(r,["category"])||"Uncategorized",
-        price:    Number(pick(r,["price"]))||0,
-        stock:    Number(pick(r,["stock","qty","quantity"]))||0,
-      })).filter(r=>r.sku&&r.name);
-      const invalid = rows.length - records.length;
-      if (impId) await supabase.from("csv_imports").update({ failed_count: invalid, progress: 40 }).eq("id", impId);
-      if (!records.length) {
-        if (impId) await supabase.from("csv_imports").update({ status: "failed", error_message: "No valid rows", completed_at: new Date().toISOString() }).eq("id", impId);
-        toast.error("No valid rows"); return;
-      }
-      const { error } = await supabase.from("products").upsert(records,{onConflict:"sku"});
-      if (error) throw error;
-      if (impId) await supabase.from("csv_imports").update({
-        status: "completed", success_count: records.length, failed_count: invalid,
-        progress: 100, completed_at: new Date().toISOString(),
-      }).eq("id", impId);
-      toast.success(`Imported ${records.length} tire(s)`); await load();
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Import failed";
-      if (impId) await supabase.from("csv_imports").update({ status: "failed", error_message: msg, completed_at: new Date().toISOString() }).eq("id", impId);
-      toast.error(msg);
-    }
-    finally { setImportBusy(false); if (tireFileRef.current) tireFileRef.current.value=""; }
-  };
-
-  const importMarketplace = async (file: File) => {
-    setImportBusy(true);
-    const { data: imp } = await supabase.from("csv_imports").insert({
-      filename: file.name, import_type: "marketplace", status: "running", progress: 0,
-    }).select("id").single();
-    const impId = imp?.id;
-    try {
-      const rows = parseCsv(await file.text());
-      if (impId) await supabase.from("csv_imports").update({ total_rows: rows.length }).eq("id", impId);
-      if (!rows.length) {
-        if (impId) await supabase.from("csv_imports").update({ status: "failed", error_message: "CSV is empty", completed_at: new Date().toISOString() }).eq("id", impId);
-        toast.error("CSV is empty"); return;
-      }
-      let matched=0, skipped=0;
-      for (let i=0;i<rows.length;i++) {
-        const r = rows[i];
-        const sku = pick(r,["sku","ge sku","ge_sku"]);
-        if (!sku) { skipped++; continue; }
-        const payload: TablesUpdate<"products"> = {};
-        const priceStr = pick(r,["price","marketplace price"]);
-        const stockStr = pick(r,["stock","qty","quantity"]);
-        if (priceStr) payload.price = Number(priceStr);
-        if (stockStr) payload.stock = Number(stockStr);
-        if (!Object.keys(payload).length) { skipped++; continue; }
-        const { error, count } = await supabase.from("products").update(payload,{count:"exact"}).eq("sku",sku);
-        if (error) throw error;
-        if (count&&count>0) matched++; else skipped++;
-        if (impId && (i % 25 === 0 || i === rows.length - 1)) {
-          await supabase.from("csv_imports").update({
-            success_count: matched, failed_count: skipped,
-            progress: Math.round(((i + 1) / rows.length) * 100),
-          }).eq("id", impId);
-        }
-      }
-      if (impId) await supabase.from("csv_imports").update({
-        status: "completed", success_count: matched, failed_count: skipped,
-        progress: 100, completed_at: new Date().toISOString(),
-      }).eq("id", impId);
-      toast.success(`Import: ${matched} updated, ${skipped} skipped`); await load();
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Marketplace import failed";
-      if (impId) await supabase.from("csv_imports").update({ status: "failed", error_message: msg, completed_at: new Date().toISOString() }).eq("id", impId);
-      toast.error(msg);
-    }
-    finally { setImportBusy(false); if (marketFileRef.current) marketFileRef.current.value=""; }
-  };
-
-  const startEdit = (p: Product) => {
-    setEditing(p);
-    setEditForm({ sku:p.sku, name:p.name, category:p.category, price:String(p.price), stock:String(p.stock) });
-  };
-
-  const handleUpdate = async () => {
-    if (!editing) return;
-    if (!editForm.sku||!editForm.name) { toast.error("SKU and name are required"); return; }
-    setSaving(true);
-    const { error } = await supabase.from("products").update({
-      sku:editForm.sku, name:editForm.name,
-      category:editForm.category||"Uncategorized",
-      price:Number(editForm.price)||0, stock:Number(editForm.stock)||0,
-    }).eq("id", editing.id);
-    setSaving(false);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Product updated"); setEditing(null); load();
-  };
-
-  const filtered = products.filter(p => {
+  // ── Filter + Paginate ─────────────────────────────────────────────────────
+  const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    const matchSearch = !q || p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q) || p.category.toLowerCase().includes(q);
-    const matchCat    = categoryFilter==="all" || p.category===categoryFilter;
-    const matchBrand  = brandFilter==="all"    || deriveSpec(p).brand===brandFilter;
-    return matchSearch && matchCat && matchBrand;
-  });
+    return products.filter(p => {
+      const matchSearch = !q
+        || (p.item_name||p.name||"").toLowerCase().includes(q)
+        || p.sku.toLowerCase().includes(q)
+        || (p.brand||"").toLowerCase().includes(q)
+        || (p.size||"").toLowerCase().includes(q)
+        || (p.model||"").toLowerCase().includes(q)
+        || p.category.toLowerCase().includes(q);
+      const matchCat   = categoryFilter==="all" || p.category===categoryFilter;
+      const matchBrand = brandFilter==="all"    || (p.brand||"")=== brandFilter;
+      return matchSearch && matchCat && matchBrand;
+    });
+  }, [products, search, categoryFilter, brandFilter]);
 
-  const uniqueCategories = Array.from(new Set(products.map(p=>p.category)));
-  const uniqueBrands     = Array.from(new Set(products.map(p=>deriveSpec(p).brand)));
-  const filtersApplied   = !!search || categoryFilter!=="all" || brandFilter!=="all";
-  const totalPages = Math.max(1, Math.ceil(filtered.length/pageSize));
+  const uniqueCategories = useMemo(() => Array.from(new Set(products.map(p=>p.category))).sort(), [products]);
+  const uniqueBrands     = useMemo(() => Array.from(new Set(products.map(p=>p.brand||"").filter(Boolean))).sort(), [products]);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const safePage   = Math.min(page, totalPages);
-  const pageStart  = (safePage-1)*pageSize;
-  const paged      = filtered.slice(pageStart, pageStart+pageSize);
-  const allSelected= paged.length>0 && paged.every(p=>selected.has(p.id));
-  const toggleAll  = () => setSelected(s=>{ const n=new Set(s); if(allSelected) paged.forEach(p=>n.delete(p.id)); else paged.forEach(p=>n.add(p.id)); return n; });
-  const toggleRow  = (id:string) => setSelected(s=>{ const n=new Set(s); n.has(id)?n.delete(id):n.add(id); return n; });
-  const colSpan    = ALL_COLUMNS.filter(c=>visible[c.key]).length + 2;
+  const paged      = filtered.slice((safePage-1)*pageSize, safePage*pageSize);
+
+  const allSelected = paged.length > 0 && paged.every(p => selected.has(p.id));
+  const toggleAll   = () => setSelected(s => { const n=new Set(s); if(allSelected) paged.forEach(p=>n.delete(p.id)); else paged.forEach(p=>n.add(p.id)); return n; });
+  const toggleRow   = (id: string) => setSelected(s => { const n=new Set(s); n.has(id)?n.delete(id):n.add(id); return n; });
 
   const exportCsv = () => {
-    const cols = ALL_COLUMNS.filter(c=>visible[c.key]);
+    const cols = ALL_COLS.filter(c => visible[c.key as string]);
     const header = cols.map(c=>c.label).join(",");
-    const rows = filtered.map(p=>{
-      const spec=deriveSpec(p);
-      return cols.map(c=>{
-        const val = c.key==="status" ? statusFor(p.stock).label
-          : c.key in spec ? (spec as Record<string,unknown>)[c.key]
-          : c.key==="warehouse" ? "Hickory, NC"
-          : (p as unknown as Record<string,unknown>)[c.key];
-        return `"${String(val??"").replace(/"/g,'""')}"`;
-      }).join(",");
-    });
-    const blob = new Blob([[header,...rows].join("\n")],{type:"text/csv;charset=utf-8;"});
+    const bodyRows = filtered.map(p =>
+      cols.map(c => {
+        const v = (p as Record<string,unknown>)[c.key as string];
+        return `"${String(v??"").replace(/"/g,'""')}"`;
+      }).join(",")
+    );
+    const blob = new Blob([[header,...bodyRows].join("\n")], {type:"text/csv"});
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a"); a.href=url; a.download="tires-export.csv"; a.click();
     URL.revokeObjectURL(url); toast.success("CSV exported");
   };
 
-  const renderCell = (p: Product, key: AllColumnKey) => {
-    const spec = deriveSpec(p);
-    switch(key){
-      case "sku":              return <span className="font-mono text-xs text-muted-foreground">{p.sku}</span>;
-      case "name":             return <span className="font-medium">{p.name}</span>;
-      case "category":         return <Badge variant="outline">{p.category}</Badge>;
-      case "manufacturerCode": return <span className="font-mono text-xs">{spec.mfrCode}</span>;
-      case "tireLoad":         return spec.tireLoad;
-      case "tireSpeed":        return spec.tireSpeed;
-      case "plyRating":        return <span className="text-muted-foreground">N/A</span>;
-      case "brand":            return spec.brand;
-      case "size":             return spec.size;
-      case "season":           return spec.season;
-      case "price":            return `$${Number(p.price).toFixed(2)}`;
-      case "stock":            return p.stock;
-      case "warehouse":        return <span className="text-muted-foreground">Hickory, NC</span>;
-      case "status":           { const s=statusFor(p.stock); return <Badge variant={s.variant}>{s.label}</Badge>; }
+  // ── Cell renderer ─────────────────────────────────────────────────────────
+  const renderCell = (p: Product, key: string) => {
+    const val = (p as Record<string,unknown>)[key];
+    if (key === "sku" || key === "base_ge_sku" || key === "manufacturer_product_code" || key === "upc" || key === "mtlid")
+      return <span className="font-mono text-xs text-muted-foreground">{String(val||"—")}</span>;
+    if (key === "item_name" || key === "name")
+      return <span className="font-medium">{String(val||"—")}</span>;
+    if (key === "brand")
+      return <span className="font-semibold">{String(val||"—")}</span>;
+    if (key === "category")
+      return <Badge variant="outline">{String(val||"—")}</Badge>;
+    if (key === "size" || key === "raw_size")
+      return <span className="font-mono text-xs">{String(val||"—")}</span>;
+    if (key === "price" || key === "wholesale_price")
+      return val != null ? <span className="font-medium">${Number(val).toFixed(2)}</span> : <span className="text-muted-foreground">—</span>;
+    if (key === "stock") {
+      const s = statusFor(Number(val)||0);
+      return (
+        <div className="flex items-center gap-2">
+          <span>{String(val||0)}</span>
+          <Badge variant={s.variant} className="text-xs">{s.label}</Badge>
+        </div>
+      );
     }
+    if (key === "total_vendor_inventory")
+      return <span className="font-medium">{String(val||0)}</span>;
+    if (String(key).endsWith("_price") && val != null)
+      return <span>${Number(val).toFixed(2)}</span>;
+    if (String(key).endsWith("_name") && val)
+      return <span className="text-sm">{String(val)}</span>;
+    if (val == null || val === "") return <span className="text-muted-foreground text-xs">—</span>;
+    return <span className="text-sm">{String(val)}</span>;
   };
 
-  const groupedColumns = ALL_COLUMNS.reduce<Record<string,typeof ALL_COLUMNS>>((acc,c)=>{
-    (acc[c.group]=acc[c.group]||[]).push(c); return acc;
-  }, {});
-
-  const openFitment = (p: Product) => { setFitmentProduct(p); setFitmentOpen(true); };
+  const visibleCols = ALL_COLS.filter(c => visible[c.key as string]);
+  const colSpan = visibleCols.length + 2;
 
   return (
     <div className="flex-1 space-y-6 p-6">
@@ -676,33 +821,38 @@ export function Inventory() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Manage Tires</h2>
-          <p className="text-muted-foreground mt-2">Search, filter, and manage your full tire catalog.</p>
+          <p className="text-muted-foreground mt-1">Full tire catalog with all CSV fields — {products.length.toLocaleString()} tires loaded.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <input ref={tireFileRef}   type="file" accept=".csv" className="hidden" onChange={e=>{const f=e.target.files?.[0];if(f)importTires(f);}} />
-          <input ref={marketFileRef} type="file" accept=".csv" className="hidden" onChange={e=>{const f=e.target.files?.[0];if(f)importMarketplace(f);}} />
-          <Button variant="outline" size="sm" disabled={importBusy} onClick={()=>tireFileRef.current?.click()}>
-            {importBusy?<Loader2 className="w-4 h-4 animate-spin"/>:<Upload className="w-4 h-4"/>} Import Tires
-          </Button>
-          <Button variant="outline" size="sm" disabled={bulkBusy||selected.size<2} onClick={mergeSelected}>
-            <Layers className="w-4 h-4"/> Merge Tires{selected.size>=2?` (${selected.size})`:""}
-          </Button>
-          <Button variant="outline" size="sm" disabled={importBusy} onClick={()=>marketFileRef.current?.click()}>
-            {importBusy?<Loader2 className="w-4 h-4 animate-spin"/>:<Upload className="w-4 h-4"/>} Import Marketplace
+          <input ref={csvRef} type="file" accept=".csv" className="hidden"
+            onChange={e=>{ const f=e.target.files?.[0]; if(f) importCsv(f); }} />
+          <Button variant="outline" size="sm" disabled={importBusy} onClick={()=>csvRef.current?.click()}>
+            {importBusy ? <Loader2 className="w-4 h-4 animate-spin mr-2"/> : <Upload className="w-4 h-4 mr-2"/>}
+            {importBusy ? "Importing..." : "Import CSV"}
           </Button>
           <Button variant="outline" size="sm" onClick={exportCsv}>
-            <Download className="w-4 h-4"/> Export CSV
+            <Download className="w-4 h-4 mr-2"/> Export CSV
+          </Button>
+          <Button variant="outline" size="sm" onClick={load}>
+            <RefreshCw className="w-4 h-4 mr-2"/> Refresh
           </Button>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button size="sm"><Plus className="w-4 h-4"/> Add Product</Button>
+              <Button size="sm"><Plus className="w-4 h-4 mr-2"/> Add Tire</Button>
             </DialogTrigger>
             <DialogContent>
-              <DialogHeader><DialogTitle>Add Product</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>Add Tire</DialogTitle></DialogHeader>
               <div className="grid gap-4 py-2">
-                <div className="grid gap-2"><Label>SKU</Label><Input value={form.sku} onChange={e=>setForm({...form,sku:e.target.value})} placeholder="GE-Michelin-22555R17"/></div>
-                <div className="grid gap-2"><Label>Name</Label><Input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Michelin Defender 225/55R17"/></div>
-                <div className="grid gap-2"><Label>Category</Label><Input value={form.category} onChange={e=>setForm({...form,category:e.target.value})} placeholder="All-Season"/></div>
+                <div className="grid gap-2"><Label>GE SKU *</Label><Input value={form.sku} onChange={e=>setForm({...form,sku:e.target.value})} placeholder="GE-Ironman-91202-1"/></div>
+                <div className="grid gap-2"><Label>Item Name *</Label><Input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Ironman All Country AT 265/70R17"/></div>
+                <div className="grid gap-2"><Label>Category</Label>
+                  <Select value={form.category} onValueChange={v=>setForm({...form,category:v})}>
+                    <SelectTrigger><SelectValue placeholder="Select category"/></SelectTrigger>
+                    <SelectContent>
+                      {["MM","LT","HP","UHP","MC","OTR","HPLT"].map(c=><SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2"><Label>Price</Label><Input type="number" step="0.01" value={form.price} onChange={e=>setForm({...form,price:e.target.value})}/></div>
                   <div className="grid gap-2"><Label>Stock</Label><Input type="number" value={form.stock} onChange={e=>setForm({...form,stock:e.target.value})}/></div>
@@ -710,7 +860,7 @@ export function Inventory() {
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={()=>setOpen(false)}>Cancel</Button>
-                <Button onClick={handleAdd} disabled={saving}>{saving&&<Loader2 className="w-4 h-4 animate-spin"/>} Save</Button>
+                <Button onClick={handleAdd} disabled={saving}>{saving&&<Loader2 className="w-4 h-4 animate-spin mr-1"/>}Save</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -718,34 +868,34 @@ export function Inventory() {
       </div>
 
       {/* ── Stats ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label:"Total Tires",      value:products.length.toLocaleString(), hint:"Total in database",    Icon:Package },
-          { label:"Brands",           value:uniqueBrands.length.toString(),   hint:"All unique brands",    Icon:Tags },
-          { label:"Categories",       value:uniqueCategories.length.toString(),hint:"All unique categories",Icon:Boxes },
-          { label:"Filtered Results", value:filtersApplied?filtered.length.toLocaleString():"All", hint:filtersApplied?"Filters applied":"No filters applied", Icon:Filter },
+          { label:"Total Tires",  value:products.length.toLocaleString(),   Icon:Package },
+          { label:"Brands",       value:uniqueBrands.length.toString(),     Icon:Tags    },
+          { label:"Categories",   value:uniqueCategories.length.toString(), Icon:Boxes   },
+          { label:"Filtered",     value:filtered.length.toLocaleString(),   Icon:Filter  },
         ].map(s=>(
           <Card key={s.label} className="p-5">
             <div className="flex items-start justify-between">
               <p className="text-sm text-muted-foreground">{s.label}</p>
               <s.Icon className="w-4 h-4 text-muted-foreground"/>
             </div>
-            <p className="mt-2 text-3xl font-bold tracking-tight">{s.value}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{s.hint}</p>
+            <p className="mt-2 text-3xl font-bold">{s.value}</p>
           </Card>
         ))}
       </div>
 
       {/* ── Filters ── */}
-      <Card className="p-5 space-y-4">
+      <Card className="p-4 space-y-3">
         <div className="flex items-center gap-2">
           <Filter className="w-4 h-4 text-muted-foreground"/>
-          <h3 className="text-lg font-semibold">Filters</h3>
+          <h3 className="font-semibold">Filters</h3>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"/>
-            <Input placeholder="Search by SKU, brand, model, size..." className="pl-9" value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}}/>
+            <Input className="pl-9" placeholder="Search SKU, brand, model, size..." value={search}
+              onChange={e=>{setSearch(e.target.value);setPage(1);}}/>
           </div>
           <Select value={categoryFilter} onValueChange={v=>{setCategoryFilter(v);setPage(1);}}>
             <SelectTrigger><SelectValue placeholder="All Categories"/></SelectTrigger>
@@ -756,123 +906,99 @@ export function Inventory() {
           </Select>
           <Select value={brandFilter} onValueChange={v=>{setBrandFilter(v);setPage(1);}}>
             <SelectTrigger><SelectValue placeholder="All Brands"/></SelectTrigger>
-            <SelectContent>
+            <SelectContent className="max-h-72">
               <SelectItem value="all">All Brands</SelectItem>
               {uniqueBrands.map(b=><SelectItem key={b} value={b}>{b}</SelectItem>)}
             </SelectContent>
           </Select>
-          <div>
-            <Label className="text-sm font-medium">Marketplace</Label>
-            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2">
-              {Object.keys(marketplaces).map(m=>(
-                <label key={m} className="flex items-center gap-2 text-sm">
-                  <Checkbox checked={marketplaces[m]} onCheckedChange={v=>setMarketplaces(p=>({...p,[m]:!!v}))}/>{m}
-                </label>
-              ))}
-            </div>
-          </div>
         </div>
-        <Button className="w-full sm:w-auto" onClick={()=>setPage(1)}>
-          <Search className="w-4 h-4"/> Search
-        </Button>
       </Card>
+
+      {/* ── Bulk action bar ── */}
+      {selected.size > 0 && (
+        <Card className="p-3 flex flex-wrap items-center gap-3 bg-muted/40">
+          <span className="text-sm font-medium">{selected.size} selected</span>
+          <Button size="sm" variant="outline" onClick={()=>setBulkOpen(true)}><Pencil className="w-4 h-4 mr-1"/>Bulk Edit</Button>
+          <Button size="sm" variant="destructive" disabled={bulkBusy} onClick={bulkDelete}>
+            {bulkBusy?<Loader2 className="w-4 h-4 animate-spin mr-1"/>:<Trash2 className="w-4 h-4 mr-1"/>}Delete
+          </Button>
+          <Button size="sm" variant="ghost" onClick={()=>setSelected(new Set())}>Clear</Button>
+        </Card>
+      )}
 
       {/* ── Table ── */}
       <div className="rounded-xl border border-border bg-card shadow-sm">
-        {selected.size>0&&(
-          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-border bg-accent/40">
-            <p className="text-sm font-medium">{selected.size} tire{selected.size===1?"":"s"} selected</p>
-            <div className="flex flex-wrap items-center gap-2">
-              <Button size="sm" variant="outline" disabled={bulkBusy} onClick={()=>setBulkOpen(true)}><Pencil className="w-4 h-4"/> Bulk Edit</Button>
-              <Button size="sm" variant="outline" disabled={bulkBusy} onClick={bulkSetOutOfStock}>Mark Out of Stock</Button>
-              <Button size="sm" variant="destructive" disabled={bulkBusy} onClick={bulkDelete}>
-                {bulkBusy?<Loader2 className="w-4 h-4 animate-spin"/>:<Trash2 className="w-4 h-4"/>} Delete
-              </Button>
-              <Button size="sm" variant="ghost" onClick={()=>setSelected(new Set())}>Clear</Button>
-            </div>
-          </div>
-        )}
-
-        <div className="flex items-center justify-between p-4 border-b border-border">
+        <div className="flex items-center justify-between p-4 border-b border-border flex-wrap gap-3">
           <div>
-            <h3 className="text-lg font-semibold">Tires Details ({filtered.length.toLocaleString()})</h3>
-            <p className="text-sm text-muted-foreground">
-              Showing {filtered.length===0?0:pageStart+1}–{Math.min(pageStart+pageSize,filtered.length)} of {filtered.length.toLocaleString()} tires
+            <h3 className="font-semibold">Tire Details ({filtered.length.toLocaleString()})</h3>
+            <p className="text-xs text-muted-foreground">
+              Showing {filtered.length===0?0:(safePage-1)*pageSize+1}–{Math.min(safePage*pageSize,filtered.length)} of {filtered.length.toLocaleString()}
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm"><SlidersHorizontal className="w-4 h-4"/> Select Columns</Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-64 max-h-[28rem] overflow-y-auto">
-                <div className="flex items-center justify-between px-2 py-1.5">
-                  <DropdownMenuLabel className="p-0">Select columns</DropdownMenuLabel>
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={()=>setVisible(Object.fromEntries(ALL_COLUMNS.map(c=>[c.key,true])) as Record<AllColumnKey,boolean>)}>All</Button>
-                    <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={()=>setVisible(Object.fromEntries(ALL_COLUMNS.map(c=>[c.key,false])) as Record<AllColumnKey,boolean>)}>None</Button>
-                  </div>
-                </div>
-                <DropdownMenuSeparator/>
-                {Object.entries(groupedColumns).map(([group,cols])=>(
-                  <div key={group}>
-                    <DropdownMenuLabel className="text-xs uppercase text-muted-foreground">{group}</DropdownMenuLabel>
-                    {cols.map(c=>(
-                      <DropdownMenuCheckboxItem key={c.key} checked={visible[c.key]} onCheckedChange={v=>setVisible(p=>({...p,[c.key]:!!v}))}>{c.label}</DropdownMenuCheckboxItem>
-                    ))}
-                    <DropdownMenuSeparator/>
-                  </div>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Column selector — opens modal */}
+            <Button variant="outline" size="sm" onClick={() => setColModalOpen(true)}>
+              <SlidersHorizontal className="w-4 h-4 mr-1"/> Columns
+            </Button>
             <Select value={String(pageSize)} onValueChange={v=>{setPageSize(Number(v));setPage(1);}}>
-              <SelectTrigger className="h-9 w-20"><SelectValue/></SelectTrigger>
+              <SelectTrigger className="h-9 w-24"><SelectValue/></SelectTrigger>
               <SelectContent>{[25,50,100,200].map(n=><SelectItem key={n} value={String(n)}>{n}</SelectItem>)}</SelectContent>
             </Select>
-            <span className="text-sm text-muted-foreground hidden md:inline">Page {safePage} of {totalPages}</span>
+            <span className="text-sm text-muted-foreground">Page {safePage}/{totalPages}</span>
           </div>
         </div>
 
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-10">
-                <Checkbox checked={allSelected} onCheckedChange={toggleAll}/>
-              </TableHead>
-              {ALL_COLUMNS.filter(c=>visible[c.key]).map(c=><TableHead key={c.key}>{c.label}</TableHead>)}
-              <TableHead className="w-28 text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading?(
-              <TableRow><TableCell colSpan={colSpan} className="text-center py-10"><Loader2 className="w-5 h-5 animate-spin inline"/></TableCell></TableRow>
-            ):paged.length===0?(
-              <TableRow><TableCell colSpan={colSpan} className="text-center py-10 text-muted-foreground">No tires found</TableCell></TableRow>
-            ):paged.map(item=>(
-              <TableRow key={item.id} className="cursor-pointer hover:bg-muted/30" onClick={()=>openFitment(item)}>
-                <TableCell onClick={e=>e.stopPropagation()}>
-                  <Checkbox checked={selected.has(item.id)} onCheckedChange={()=>toggleRow(item.id)}/>
-                </TableCell>
-                {ALL_COLUMNS.filter(c=>visible[c.key]).map(c=><TableCell key={c.key}>{renderCell(item,c.key)}</TableCell>)}
-                <TableCell className="text-right" onClick={e=>e.stopPropagation()}>
-                  <div className="flex items-center justify-end gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" title="View Details" onClick={()=>openFitment(item)}>
-                      <Eye className="w-4 h-4"/>
-                    </Button>
-                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={()=>startEdit(item)}>
-                      <Pencil className="w-4 h-4"/>
-                    </Button>
-                    <Button variant="destructive" size="icon" className="h-8 w-8" onClick={()=>handleDelete(item.id)}>
-                      <Trash2 className="w-4 h-4"/>
-                    </Button>
-                  </div>
-                </TableCell>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-10 sticky left-0 bg-background z-10">
+                  <Checkbox checked={allSelected} onCheckedChange={toggleAll}/>
+                </TableHead>
+                {visibleCols.map(c=>(
+                  <TableHead key={String(c.key)} className="whitespace-nowrap">{c.label}</TableHead>
+                ))}
+                <TableHead className="text-right sticky right-0 bg-background z-10">Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow><TableCell colSpan={colSpan} className="text-center py-12"><Loader2 className="w-6 h-6 animate-spin inline"/></TableCell></TableRow>
+              ) : paged.length === 0 ? (
+                <TableRow><TableCell colSpan={colSpan} className="text-center py-12 text-muted-foreground">No tires found</TableCell></TableRow>
+              ) : paged.map(item => (
+                <TableRow key={item.id} className="cursor-pointer hover:bg-muted/30"
+                  onClick={()=>{ setFitmentProduct(item); setFitmentOpen(true); }}>
+                  <TableCell className="sticky left-0 bg-background" onClick={e=>e.stopPropagation()}>
+                    <Checkbox checked={selected.has(item.id)} onCheckedChange={()=>toggleRow(item.id)}/>
+                  </TableCell>
+                  {visibleCols.map(c=>(
+                    <TableCell key={String(c.key)} className="whitespace-nowrap">
+                      {renderCell(item, c.key as string)}
+                    </TableCell>
+                  ))}
+                  <TableCell className="text-right sticky right-0 bg-background" onClick={e=>e.stopPropagation()}>
+                    <div className="flex items-center justify-end gap-1">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" title="View Details"
+                        onClick={()=>{ setFitmentProduct(item); setFitmentOpen(true); }}>
+                        <Eye className="w-4 h-4"/>
+                      </Button>
+                      <Button variant="outline" size="icon" className="h-8 w-8"
+                        onClick={()=>{ setEditing(item); setEditForm({sku:item.sku,name:item.item_name||item.name,category:item.category,price:String(item.price),stock:String(item.stock)}); }}>
+                        <Pencil className="w-4 h-4"/>
+                      </Button>
+                      <Button variant="destructive" size="icon" className="h-8 w-8" onClick={()=>handleDelete(item.id)}>
+                        <Trash2 className="w-4 h-4"/>
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
 
-        {filtered.length>0&&(
+        {filtered.length > 0 && (
           <div className="flex items-center justify-between p-4 border-t border-border">
             <p className="text-sm text-muted-foreground">Page {safePage} of {totalPages}</p>
             <div className="flex gap-2">
@@ -883,21 +1009,31 @@ export function Inventory() {
         )}
       </div>
 
-      {/* ── Fitment Details Dialog ── */}
-      <FitmentDetailsDialog
-        product={fitmentProduct}
-        open={fitmentOpen}
-        onClose={()=>{ setFitmentOpen(false); setFitmentProduct(null); }}
+      {/* ── Select Columns Modal ── */}
+      <SelectColumnsModal
+        open={colModalOpen}
+        onClose={() => setColModalOpen(false)}
+        visible={visible}
+        setVisible={setVisible}
       />
+
+      {/* ── Fitment Details ── */}
+      <FitmentDetailsDialog product={fitmentProduct} open={fitmentOpen}
+        onClose={()=>{ setFitmentOpen(false); setFitmentProduct(null); }}/>
 
       {/* ── Edit Dialog ── */}
       <Dialog open={!!editing} onOpenChange={o=>!o&&setEditing(null)}>
         <DialogContent>
           <DialogHeader><DialogTitle>Edit Tire</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-2">
-            <div className="grid gap-2"><Label>SKU</Label><Input value={editForm.sku} onChange={e=>setEditForm({...editForm,sku:e.target.value})}/></div>
-            <div className="grid gap-2"><Label>Name</Label><Input value={editForm.name} onChange={e=>setEditForm({...editForm,name:e.target.value})}/></div>
-            <div className="grid gap-2"><Label>Category</Label><Input value={editForm.category} onChange={e=>setEditForm({...editForm,category:e.target.value})}/></div>
+            <div className="grid gap-2"><Label>GE SKU</Label><Input value={editForm.sku} onChange={e=>setEditForm({...editForm,sku:e.target.value})}/></div>
+            <div className="grid gap-2"><Label>Item Name</Label><Input value={editForm.name} onChange={e=>setEditForm({...editForm,name:e.target.value})}/></div>
+            <div className="grid gap-2"><Label>Category</Label>
+              <Select value={editForm.category} onValueChange={v=>setEditForm({...editForm,category:v})}>
+                <SelectTrigger><SelectValue/></SelectTrigger>
+                <SelectContent>{["MM","LT","HP","UHP","MC","OTR","HPLT"].map(c=><SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2"><Label>Price</Label><Input type="number" step="0.01" value={editForm.price} onChange={e=>setEditForm({...editForm,price:e.target.value})}/></div>
               <div className="grid gap-2"><Label>Stock</Label><Input type="number" value={editForm.stock} onChange={e=>setEditForm({...editForm,stock:e.target.value})}/></div>
@@ -905,7 +1041,7 @@ export function Inventory() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={()=>setEditing(null)}>Cancel</Button>
-            <Button onClick={handleUpdate} disabled={saving}>{saving&&<Loader2 className="w-4 h-4 animate-spin"/>} Save changes</Button>
+            <Button onClick={handleUpdate} disabled={saving}>{saving&&<Loader2 className="w-4 h-4 animate-spin mr-1"/>}Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -913,18 +1049,8 @@ export function Inventory() {
       {/* ── Bulk Edit Dialog ── */}
       <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Bulk edit {selected.size} tire{selected.size===1?"":"s"}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Bulk Edit {selected.size} Tire{selected.size===1?"":"s"}</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-2">
-            <div className="grid gap-2">
-              <Label>Mode</Label>
-              <Select value={bulkForm.mode} onValueChange={v=>setBulkForm({...bulkForm,mode:v as "set"|"adjust"})}>
-                <SelectTrigger><SelectValue/></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="set">Set to value</SelectItem>
-                  <SelectItem value="adjust">Adjust by (+/-)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2"><Label>Price</Label><Input type="number" step="0.01" placeholder="Leave blank to skip" value={bulkForm.price} onChange={e=>setBulkForm({...bulkForm,price:e.target.value})}/></div>
               <div className="grid gap-2"><Label>Stock</Label><Input type="number" placeholder="Leave blank to skip" value={bulkForm.stock} onChange={e=>setBulkForm({...bulkForm,stock:e.target.value})}/></div>
@@ -933,7 +1059,7 @@ export function Inventory() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={()=>setBulkOpen(false)}>Cancel</Button>
-            <Button onClick={applyBulkUpdate} disabled={bulkBusy}>{bulkBusy&&<Loader2 className="w-4 h-4 animate-spin"/>} Apply to {selected.size}</Button>
+            <Button onClick={applyBulkUpdate} disabled={bulkBusy}>{bulkBusy&&<Loader2 className="w-4 h-4 animate-spin mr-1"/>}Apply to {selected.size}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
