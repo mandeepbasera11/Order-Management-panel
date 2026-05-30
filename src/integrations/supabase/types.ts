@@ -64,34 +64,343 @@ export type Database = {
       }
       products: {
         Row: {
+          aspect: string | null
+          base_ge_sku: string | null
+          brand: string | null
+          brand_logo: string | null
           category: string
           created_at: string
+          description: string | null
+          features_and_benefits: string | null
           id: string
+          images: string | null
+          item_name: string | null
+          manufacturer_product_code: string | null
+          master_brand_id: string | null
+          master_model_id: string | null
+          max_inflation_press: string | null
+          max_load: string | null
+          meas_rim_width: string | null
+          model: string | null
+          mtlid: string | null
           name: string
+          overall_diam: string | null
+          p_metric: string | null
+          ply: string | null
+          ply_rating: string | null
           price: number
+          raw_size: string | null
+          revs_per_mile: string | null
+          rim: string | null
+          rim_width_max: string | null
+          rim_width_min: string | null
+          rim_width_range: string | null
+          run_flat: string | null
+          section: string | null
+          sidewall_abr: string | null
+          size: string | null
           sku: string
           stock: number
+          tire_load: string | null
+          tire_speed: string | null
+          tire_weight: string | null
+          total_vendor_inventory: number | null
+          tread_depth: string | null
+          tread_type: string | null
+          upc: string | null
           updated_at: string
+          utqg: string | null
+          vendor1_name: string | null
+          vendor1_price: number | null
+          vendor1_quantity: number | null
+          vendor10_name: string | null
+          vendor10_price: number | null
+          vendor10_quantity: number | null
+          vendor11_name: string | null
+          vendor11_price: number | null
+          vendor11_quantity: number | null
+          vendor12_name: string | null
+          vendor12_price: number | null
+          vendor12_quantity: number | null
+          vendor13_name: string | null
+          vendor13_price: number | null
+          vendor13_quantity: number | null
+          vendor14_name: string | null
+          vendor14_price: number | null
+          vendor14_quantity: number | null
+          vendor15_name: string | null
+          vendor15_price: number | null
+          vendor15_quantity: number | null
+          vendor16_name: string | null
+          vendor16_price: number | null
+          vendor16_quantity: number | null
+          vendor17_name: string | null
+          vendor17_price: number | null
+          vendor17_quantity: number | null
+          vendor18_name: string | null
+          vendor18_price: number | null
+          vendor18_quantity: number | null
+          vendor19_name: string | null
+          vendor19_price: number | null
+          vendor19_quantity: number | null
+          vendor2_name: string | null
+          vendor2_price: number | null
+          vendor2_quantity: number | null
+          vendor20_name: string | null
+          vendor20_price: number | null
+          vendor20_quantity: number | null
+          vendor21_name: string | null
+          vendor21_price: number | null
+          vendor21_quantity: number | null
+          vendor3_name: string | null
+          vendor3_price: number | null
+          vendor3_quantity: number | null
+          vendor4_name: string | null
+          vendor4_price: number | null
+          vendor4_quantity: number | null
+          vendor5_name: string | null
+          vendor5_price: number | null
+          vendor5_quantity: number | null
+          vendor6_name: string | null
+          vendor6_price: number | null
+          vendor6_quantity: number | null
+          vendor7_name: string | null
+          vendor7_price: number | null
+          vendor7_quantity: number | null
+          vendor8_name: string | null
+          vendor8_price: number | null
+          vendor8_quantity: number | null
+          vendor9_name: string | null
+          vendor9_price: number | null
+          vendor9_quantity: number | null
+          warranty: string | null
+          wholesale_price: number | null
         }
         Insert: {
+          aspect?: string | null
+          base_ge_sku?: string | null
+          brand?: string | null
+          brand_logo?: string | null
           category?: string
           created_at?: string
+          description?: string | null
+          features_and_benefits?: string | null
           id?: string
+          images?: string | null
+          item_name?: string | null
+          manufacturer_product_code?: string | null
+          master_brand_id?: string | null
+          master_model_id?: string | null
+          max_inflation_press?: string | null
+          max_load?: string | null
+          meas_rim_width?: string | null
+          model?: string | null
+          mtlid?: string | null
           name: string
+          overall_diam?: string | null
+          p_metric?: string | null
+          ply?: string | null
+          ply_rating?: string | null
           price?: number
+          raw_size?: string | null
+          revs_per_mile?: string | null
+          rim?: string | null
+          rim_width_max?: string | null
+          rim_width_min?: string | null
+          rim_width_range?: string | null
+          run_flat?: string | null
+          section?: string | null
+          sidewall_abr?: string | null
+          size?: string | null
           sku: string
           stock?: number
+          tire_load?: string | null
+          tire_speed?: string | null
+          tire_weight?: string | null
+          total_vendor_inventory?: number | null
+          tread_depth?: string | null
+          tread_type?: string | null
+          upc?: string | null
           updated_at?: string
+          utqg?: string | null
+          vendor1_name?: string | null
+          vendor1_price?: number | null
+          vendor1_quantity?: number | null
+          vendor10_name?: string | null
+          vendor10_price?: number | null
+          vendor10_quantity?: number | null
+          vendor11_name?: string | null
+          vendor11_price?: number | null
+          vendor11_quantity?: number | null
+          vendor12_name?: string | null
+          vendor12_price?: number | null
+          vendor12_quantity?: number | null
+          vendor13_name?: string | null
+          vendor13_price?: number | null
+          vendor13_quantity?: number | null
+          vendor14_name?: string | null
+          vendor14_price?: number | null
+          vendor14_quantity?: number | null
+          vendor15_name?: string | null
+          vendor15_price?: number | null
+          vendor15_quantity?: number | null
+          vendor16_name?: string | null
+          vendor16_price?: number | null
+          vendor16_quantity?: number | null
+          vendor17_name?: string | null
+          vendor17_price?: number | null
+          vendor17_quantity?: number | null
+          vendor18_name?: string | null
+          vendor18_price?: number | null
+          vendor18_quantity?: number | null
+          vendor19_name?: string | null
+          vendor19_price?: number | null
+          vendor19_quantity?: number | null
+          vendor2_name?: string | null
+          vendor2_price?: number | null
+          vendor2_quantity?: number | null
+          vendor20_name?: string | null
+          vendor20_price?: number | null
+          vendor20_quantity?: number | null
+          vendor21_name?: string | null
+          vendor21_price?: number | null
+          vendor21_quantity?: number | null
+          vendor3_name?: string | null
+          vendor3_price?: number | null
+          vendor3_quantity?: number | null
+          vendor4_name?: string | null
+          vendor4_price?: number | null
+          vendor4_quantity?: number | null
+          vendor5_name?: string | null
+          vendor5_price?: number | null
+          vendor5_quantity?: number | null
+          vendor6_name?: string | null
+          vendor6_price?: number | null
+          vendor6_quantity?: number | null
+          vendor7_name?: string | null
+          vendor7_price?: number | null
+          vendor7_quantity?: number | null
+          vendor8_name?: string | null
+          vendor8_price?: number | null
+          vendor8_quantity?: number | null
+          vendor9_name?: string | null
+          vendor9_price?: number | null
+          vendor9_quantity?: number | null
+          warranty?: string | null
+          wholesale_price?: number | null
         }
         Update: {
+          aspect?: string | null
+          base_ge_sku?: string | null
+          brand?: string | null
+          brand_logo?: string | null
           category?: string
           created_at?: string
+          description?: string | null
+          features_and_benefits?: string | null
           id?: string
+          images?: string | null
+          item_name?: string | null
+          manufacturer_product_code?: string | null
+          master_brand_id?: string | null
+          master_model_id?: string | null
+          max_inflation_press?: string | null
+          max_load?: string | null
+          meas_rim_width?: string | null
+          model?: string | null
+          mtlid?: string | null
           name?: string
+          overall_diam?: string | null
+          p_metric?: string | null
+          ply?: string | null
+          ply_rating?: string | null
           price?: number
+          raw_size?: string | null
+          revs_per_mile?: string | null
+          rim?: string | null
+          rim_width_max?: string | null
+          rim_width_min?: string | null
+          rim_width_range?: string | null
+          run_flat?: string | null
+          section?: string | null
+          sidewall_abr?: string | null
+          size?: string | null
           sku?: string
           stock?: number
+          tire_load?: string | null
+          tire_speed?: string | null
+          tire_weight?: string | null
+          total_vendor_inventory?: number | null
+          tread_depth?: string | null
+          tread_type?: string | null
+          upc?: string | null
           updated_at?: string
+          utqg?: string | null
+          vendor1_name?: string | null
+          vendor1_price?: number | null
+          vendor1_quantity?: number | null
+          vendor10_name?: string | null
+          vendor10_price?: number | null
+          vendor10_quantity?: number | null
+          vendor11_name?: string | null
+          vendor11_price?: number | null
+          vendor11_quantity?: number | null
+          vendor12_name?: string | null
+          vendor12_price?: number | null
+          vendor12_quantity?: number | null
+          vendor13_name?: string | null
+          vendor13_price?: number | null
+          vendor13_quantity?: number | null
+          vendor14_name?: string | null
+          vendor14_price?: number | null
+          vendor14_quantity?: number | null
+          vendor15_name?: string | null
+          vendor15_price?: number | null
+          vendor15_quantity?: number | null
+          vendor16_name?: string | null
+          vendor16_price?: number | null
+          vendor16_quantity?: number | null
+          vendor17_name?: string | null
+          vendor17_price?: number | null
+          vendor17_quantity?: number | null
+          vendor18_name?: string | null
+          vendor18_price?: number | null
+          vendor18_quantity?: number | null
+          vendor19_name?: string | null
+          vendor19_price?: number | null
+          vendor19_quantity?: number | null
+          vendor2_name?: string | null
+          vendor2_price?: number | null
+          vendor2_quantity?: number | null
+          vendor20_name?: string | null
+          vendor20_price?: number | null
+          vendor20_quantity?: number | null
+          vendor21_name?: string | null
+          vendor21_price?: number | null
+          vendor21_quantity?: number | null
+          vendor3_name?: string | null
+          vendor3_price?: number | null
+          vendor3_quantity?: number | null
+          vendor4_name?: string | null
+          vendor4_price?: number | null
+          vendor4_quantity?: number | null
+          vendor5_name?: string | null
+          vendor5_price?: number | null
+          vendor5_quantity?: number | null
+          vendor6_name?: string | null
+          vendor6_price?: number | null
+          vendor6_quantity?: number | null
+          vendor7_name?: string | null
+          vendor7_price?: number | null
+          vendor7_quantity?: number | null
+          vendor8_name?: string | null
+          vendor8_price?: number | null
+          vendor8_quantity?: number | null
+          vendor9_name?: string | null
+          vendor9_price?: number | null
+          vendor9_quantity?: number | null
+          warranty?: string | null
+          wholesale_price?: number | null
         }
         Relationships: []
       }
