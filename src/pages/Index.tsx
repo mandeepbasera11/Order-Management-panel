@@ -9,6 +9,7 @@ import { ShopifyProducts } from "@/components/ShopifyProducts";
 import { PriceExperiment } from "@/components/PriceExperiment";
 import { ImportStatus } from "@/components/ImportStatus";
 import { Placeholder } from "@/components/Placeholder";
+import { UserPermissions } from "@/components/UserPermissions";
 
 const descriptions: Record<string, string> = {
   Orders: "Track and fulfill tire orders across all sales channels.",
@@ -37,6 +38,7 @@ const Index = () => {
     if (active === "Shopify Products") return <ShopifyProducts />;
     if (active === "Price Experiment") return <PriceExperiment />;
     if (active === "Import Status") return <ImportStatus />;
+    if (active === "User Permissions") return <UserPermissions />;
     return <Placeholder title={active} description={descriptions[active]} />;
   };
 
