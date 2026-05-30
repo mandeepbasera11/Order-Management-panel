@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 
 const navigation = [
   { name: "Dashboard", icon: LayoutDashboard },
@@ -49,6 +50,8 @@ interface SidebarProps {
 
 export function Sidebar({ active, onNavigate }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const { isAdmin } = useAuth();
+  const items = navigation.filter((n) => n.name !== "User Permissions" || isAdmin);
 
   return (
     <div
@@ -82,7 +85,7 @@ export function Sidebar({ active, onNavigate }: SidebarProps) {
       {/* Navigation */}
       <nav className="flex-1 p-4 overflow-y-auto">
         <ul className="space-y-2">
-          {navigation.map((item) => (
+          {items.map((item) => (
             <li key={item.name}>
               <button
                 onClick={() => onNavigate(item.name)}
