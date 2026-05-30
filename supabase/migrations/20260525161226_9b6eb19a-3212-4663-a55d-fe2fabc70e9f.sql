@@ -44,7 +44,7 @@ CREATE TRIGGER products_set_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION public.set_updated_at();
 
-INSERT INTO public.products (sku, name, category, price, stock) VALUES
+INSERT INTO public.products (sku, name, Brand, Model, size, Raw Size,   Manufacturer Code, Tire Load, Tire Speed, Ply Rating,  category, price, stock) VALUES
   ('SKU-1001', 'Wireless Headphones', 'Electronics', 129.00, 42),
   ('SKU-1002', 'Smart Watch Series 6', 'Electronics', 249.00, 12),
   ('SKU-1003', 'Cotton T-Shirt', 'Apparel', 19.99, 230),
