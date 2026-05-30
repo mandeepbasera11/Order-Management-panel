@@ -1,9 +1,14 @@
-import { Bell, Search, User } from "lucide-react";
+import { Bell, Search, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/hooks/useAuth";
 
 export function Navbar() {
+  const { user, roles, signOut } = useAuth();
+  const name = (user?.user_metadata?.display_name as string) || user?.email?.split("@")[0] || "User";
+  const initials = name.slice(0, 2).toUpperCase();
+  const primaryRole = roles.includes("admin") ? "Admin" : roles.includes("manager") ? "Manager" : "Viewer";
   return (
     <header className="h-16 bg-card border-b border-border px-6 flex items-center justify-between">
       {/* Search */}
@@ -26,13 +31,16 @@ export function Navbar() {
         
         <div className="flex items-center space-x-3">
           <div className="text-right">
-            <p className="text-sm font-medium text-foreground">Sarah Chen</p>
-            <p className="text-xs text-muted-foreground">Admin</p>
+            <p className="text-sm font-medium text-foreground">{name}</p>
+            <p className="text-xs text-muted-foreground">{primaryRole}</p>
           </div>
           <Avatar className="w-8 h-8">
-            <AvatarImage src="/placeholder-avatar.jpg" alt="Sarah Chen" />
-            <AvatarFallback className="bg-primary text-primary-foreground text-sm">SC</AvatarFallback>
+            <AvatarImage src="/placeholder-avatar.jpg" alt={name} />
+            <AvatarFallback className="bg-primary text-primary-foreground text-sm">{initials}</AvatarFallback>
           </Avatar>
+          <Button variant="ghost" size="icon" onClick={signOut} title="Sign out">
+            <LogOut className="w-5 h-5" />
+          </Button>
         </div>
       </div>
     </header>
