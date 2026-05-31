@@ -229,27 +229,91 @@ const statusFor = (stock: number) => {
   return                  { label: "In Stock",     variant: "default"    as const };
 };
 
-// ─── Fitment Details Dialog ───────────────────────────────────────────────────
-function FitmentDetailsDialog({ product, open, onClose }: { product: Product | null; open: boolean; onClose: () => void }) {
-  if (!product) return null;
+// ─── Fitment Details Dialog (with full inline edit) ───────────────────────────
+function FitmentDetailsDialog({
+  product, open, onClose, onSaved,
+}: {
+  product: Product | null;
+  open: boolean;
+  onClose: () => void;
+  onSaved: (updated: Product) => void;
+}) {
+  const [editMode, setEditMode] = useState(false);
+  const [draft, setDraft]       = useState<Product | null>(null);
+  const [saving, setSaving]     = useState(false);
 
+  // Reset edit state when dialog opens with a new product
+  useEffect(() => {
+    if (product) { setDraft({...product}); setEditMode(false); }
+  }, [product]);
+
+  if (!product || !draft) return null;
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
+  const set = (key: keyof Product, val: string) =>
+    setDraft(d => d ? { ...d, [key]: val === "" ? null : val } : d);
+
+  // View row
   const Field = ({ label, value, red }: { label: string; value?: string | number | null; red?: boolean }) => (
     <div className="flex items-start justify-between py-2 border-b border-border last:border-0 gap-4">
-      <span className={`text-sm font-medium shrink-0 ${red ? "text-red-500" : "text-muted-foreground"}`}>{label}:</span>
-      <span className={`text-sm text-right break-all ${red ? "text-red-500" : "text-foreground"}`}>{value || "N/A"}</span>
+      <span className={`text-sm font-medium shrink-0 ${red?"text-red-500":"text-muted-foreground"}`}>{label}:</span>
+      <span className={`text-sm text-right break-all ${red?"text-red-500":"text-foreground"}`}>{value || "N/A"}</span>
     </div>
   );
+
+  // Edit row — label + input side-by-side
+  const EditField = ({
+    label, fieldKey, type = "text", red,
+  }: {
+    label: string; fieldKey: keyof Product; type?: string; red?: boolean;
+  }) => (
+    <div className="flex items-center justify-between py-1.5 border-b border-border last:border-0 gap-3">
+      <span className={`text-sm font-medium shrink-0 w-40 ${red?"text-red-500":"text-muted-foreground"}`}>{label}:</span>
+      <Input
+        type={type}
+        className="h-7 text-sm text-right"
+        value={(draft[fieldKey] as string | number | null) ?? ""}
+        onChange={e => set(fieldKey, e.target.value)}
+      />
+    </div>
+  );
+
+  // Textarea edit row (for description, features)
+  const EditTextarea = ({ label, fieldKey }: { label: string; fieldKey: keyof Product }) => (
+    <div className="space-y-1 py-1.5 border-b border-border last:border-0">
+      <span className="text-sm font-medium text-muted-foreground">{label}:</span>
+      <textarea
+        rows={3}
+        className="w-full text-sm rounded-md border border-input bg-background px-3 py-1.5 resize-y focus:outline-none focus:ring-2 focus:ring-ring"
+        value={(draft[fieldKey] as string | null) ?? ""}
+        onChange={e => set(fieldKey, e.target.value)}
+      />
+    </div>
+  );
+
   const SectionTitle = ({ children, red }: { children: React.ReactNode; red?: boolean }) => (
     <div className="mb-3 mt-2">
-      <h3 className={`text-base font-bold ${red ? "text-red-500" : "text-foreground"}`}>{children}</h3>
+      <h3 className={`text-base font-bold ${red?"text-red-500":"text-foreground"}`}>{children}</h3>
       <Separator className="mt-1" />
     </div>
   );
 
-  // Parse image URLs
-  const imageUrls = (product.images || "").split(";").map(s=>s.trim()).filter(Boolean);
+  // ── Save to Supabase ──────────────────────────────────────────────────────
+  const handleSave = async () => {
+    if (!draft) return;
+    setSaving(true);
+    const { error } = await supabase.from("products").update(draft as never).eq("id", draft.id);
+    setSaving(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Tire updated successfully");
+    onSaved(draft);
+    setEditMode(false);
+  };
 
-  // Parse vendors
+  const handleCancel = () => { setDraft({...product}); setEditMode(false); };
+
+  // Parse vendors for view mode
+  const imageUrls = (product.images || "").split(";").map(s=>s.trim()).filter(Boolean);
   const vendors = Array.from({length:21},(_,i)=>i+1).map(n=>({
     name:     (product as Record<string,unknown>)[`vendor${n}_name`]     as string|null,
     quantity: (product as Record<string,unknown>)[`vendor${n}_quantity`] as number|null,
@@ -257,86 +321,183 @@ function FitmentDetailsDialog({ product, open, onClose }: { product: Product | n
   })).filter(v=>v.name);
 
   return (
-    <Dialog open={open} onOpenChange={o=>!o&&onClose()}>
+    <Dialog open={open} onOpenChange={o=>{ if(!o){ handleCancel(); onClose(); } }}>
       <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto p-0">
-        {/* Sticky header */}
+
+        {/* ── Sticky header ── */}
         <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border sticky top-0 bg-background z-10">
           <div className="flex items-center gap-3">
             <h2 className="text-xl font-bold">Fitment Details</h2>
-            <Badge variant="outline" className="font-mono text-xs">{product.manufacturer_product_code || product.sku}</Badge>
+            <Badge variant="outline" className="font-mono text-xs">
+              {product.manufacturer_product_code || product.sku}
+            </Badge>
+            {editMode && (
+              <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-xs">Editing</Badge>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {!editMode ? (
+              <Button size="sm" variant="outline" onClick={() => setEditMode(true)}>
+                <Pencil className="w-4 h-4 mr-2" /> Edit
+              </Button>
+            ) : (
+              <>
+                <Button size="sm" variant="ghost" onClick={handleCancel}>Cancel</Button>
+                <Button size="sm" onClick={handleSave} disabled={saving}>
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2"/> : null}
+                  Save Changes
+                </Button>
+              </>
+            )}
           </div>
         </div>
 
         <div className="px-6 py-5 space-y-8">
 
-          {/* Row 1 — Basic Info + Size Specs */}
+          {/* ── Row 1: Basic Info + Size Specs ── */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+            {/* Basic Information */}
             <div>
               <SectionTitle>Basic Information</SectionTitle>
-              <Field label="GE SKU"                    value={product.sku} />
-              <Field label="Item Name"                 value={product.item_name || product.name} />
-              <Field label="MTLID"                     value={product.mtlid} />
-              <Field label="Master Brand ID"           value={product.master_brand_id} />
-              <Field label="Brand"                     value={product.brand} />
-              <Field label="Master Model ID"           value={product.master_model_id} />
-              <Field label="Model"                     value={product.model} />
-              <Field label="Wholesale Price"           value={product.wholesale_price != null ? `$${Number(product.wholesale_price).toFixed(2)}` : undefined} />
-              <div className="py-2 border-b border-border">
-                <p className="text-sm font-medium text-muted-foreground mb-2">Images:</p>
-                {imageUrls.length > 0
-                  ? imageUrls.map((url,i)=>(
-                      <a key={i} href={url} target="_blank" rel="noopener noreferrer"
-                        className="block text-xs text-blue-500 hover:underline truncate mb-1">{url}</a>
-                    ))
-                  : <span className="text-sm text-muted-foreground">N/A</span>
-                }
-              </div>
-              <Field label="Brand Logo"                value={product.brand_logo} />
-              <Field label="Category"                  value={product.category} />
-              <Field label="Size"                      value={product.size} />
-              <Field label="Raw Size"                  value={product.raw_size} />
-              <Field label="Manufacturer Product Code" value={product.manufacturer_product_code} />
-              <Field label="UPC"                       value={product.upc} />
+              {editMode ? (
+                <>
+                  <EditField label="GE SKU"                    fieldKey="sku" />
+                  <EditField label="Item Name"                 fieldKey="item_name" />
+                  <EditField label="MTLID"                     fieldKey="mtlid" />
+                  <EditField label="Master Brand ID"           fieldKey="master_brand_id" />
+                  <EditField label="Brand"                     fieldKey="brand" />
+                  <EditField label="Master Model ID"           fieldKey="master_model_id" />
+                  <EditField label="Model"                     fieldKey="model" />
+                  <EditField label="Wholesale Price"           fieldKey="wholesale_price" type="number" />
+                  <EditField label="Images"                    fieldKey="images" />
+                  <EditField label="Brand Logo"                fieldKey="brand_logo" />
+                  <EditField label="Category"                  fieldKey="category" />
+                  <EditField label="Size"                      fieldKey="size" />
+                  <EditField label="Raw Size"                  fieldKey="raw_size" />
+                  <EditField label="Manufacturer Code"         fieldKey="manufacturer_product_code" />
+                  <EditField label="UPC"                       fieldKey="upc" />
+                </>
+              ) : (
+                <>
+                  <Field label="GE SKU"                    value={product.sku} />
+                  <Field label="Item Name"                 value={product.item_name || product.name} />
+                  <Field label="MTLID"                     value={product.mtlid} />
+                  <Field label="Master Brand ID"           value={product.master_brand_id} />
+                  <Field label="Brand"                     value={product.brand} />
+                  <Field label="Master Model ID"           value={product.master_model_id} />
+                  <Field label="Model"                     value={product.model} />
+                  <Field label="Wholesale Price"           value={product.wholesale_price != null ? `$${Number(product.wholesale_price).toFixed(2)}` : undefined} />
+                  <div className="py-2 border-b border-border">
+                    <p className="text-sm font-medium text-muted-foreground mb-2">Images:</p>
+                    {imageUrls.length > 0
+                      ? imageUrls.map((url,i)=>(
+                          <a key={i} href={url} target="_blank" rel="noopener noreferrer"
+                            className="block text-xs text-blue-500 hover:underline truncate mb-1">{url}</a>
+                        ))
+                      : <span className="text-sm text-muted-foreground">N/A</span>
+                    }
+                  </div>
+                  <Field label="Brand Logo"                value={product.brand_logo} />
+                  <Field label="Category"                  value={product.category} />
+                  <Field label="Size"                      value={product.size} />
+                  <Field label="Raw Size"                  value={product.raw_size} />
+                  <Field label="Manufacturer Product Code" value={product.manufacturer_product_code} />
+                  <Field label="UPC"                       value={product.upc} />
+                </>
+              )}
             </div>
+
+            {/* Size Specifications */}
             <div>
               <SectionTitle>Size Specifications</SectionTitle>
-              <Field label="Section"          value={product.section} />
-              <Field label="Aspect"           value={product.aspect} />
-              <Field label="Rim"              value={product.rim} />
-              <Field label="Rim Width Range"  value={product.rim_width_range} />
-              <Field label="Rim Width Min"    value={product.rim_width_min} />
-              <Field label="Rim Width Max"    value={product.rim_width_max} />
-              <Field label="Meas Rim Width"   value={product.meas_rim_width} />
-              <Field label="Overall Diameter" value={product.overall_diam} />
+              {editMode ? (
+                <>
+                  <EditField label="Section"          fieldKey="section" />
+                  <EditField label="Aspect"           fieldKey="aspect" />
+                  <EditField label="Rim"              fieldKey="rim" />
+                  <EditField label="Rim Width Range"  fieldKey="rim_width_range" />
+                  <EditField label="Rim Width Min"    fieldKey="rim_width_min" />
+                  <EditField label="Rim Width Max"    fieldKey="rim_width_max" />
+                  <EditField label="Meas Rim Width"   fieldKey="meas_rim_width" />
+                  <EditField label="Overall Diameter" fieldKey="overall_diam" />
+                </>
+              ) : (
+                <>
+                  <Field label="Section"          value={product.section} />
+                  <Field label="Aspect"           value={product.aspect} />
+                  <Field label="Rim"              value={product.rim} />
+                  <Field label="Rim Width Range"  value={product.rim_width_range} />
+                  <Field label="Rim Width Min"    value={product.rim_width_min} />
+                  <Field label="Rim Width Max"    value={product.rim_width_max} />
+                  <Field label="Meas Rim Width"   value={product.meas_rim_width} />
+                  <Field label="Overall Diameter" value={product.overall_diam} />
+                </>
+              )}
+
               <SectionTitle red>Tire Shipping Data:</SectionTitle>
-              <Field label="Tire Weight"      value={product.tire_weight} />
+              {editMode
+                ? <EditField label="Tire Weight" fieldKey="tire_weight" red />
+                : <Field     label="Tire Weight" value={product.tire_weight} red />
+              }
             </div>
           </div>
 
-          {/* Row 2 — Performance + Technical */}
+          {/* ── Row 2: Performance + Technical ── */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+            {/* Performance Ratings */}
             <div>
               <SectionTitle>Performance Ratings</SectionTitle>
-              <Field label="Tire Load"           value={product.tire_load} />
-              <Field label="Tire Speed"          value={product.tire_speed} />
-              <Field label="Ply"                 value={product.ply} />
-              <Field label="Ply Rating"          value={product.ply_rating} />
-              <Field label="UTQG"                value={product.utqg} />
-              <Field label="Max Inflation Press" value={product.max_inflation_press} />
-              <Field label="Max Load"            value={product.max_load} />
+              {editMode ? (
+                <>
+                  <EditField label="Tire Load"           fieldKey="tire_load" />
+                  <EditField label="Tire Speed"          fieldKey="tire_speed" />
+                  <EditField label="Ply"                 fieldKey="ply" />
+                  <EditField label="Ply Rating"          fieldKey="ply_rating" />
+                  <EditField label="UTQG"                fieldKey="utqg" />
+                  <EditField label="Max Inflation Press" fieldKey="max_inflation_press" />
+                  <EditField label="Max Load"            fieldKey="max_load" />
+                </>
+              ) : (
+                <>
+                  <Field label="Tire Load"           value={product.tire_load} />
+                  <Field label="Tire Speed"          value={product.tire_speed} />
+                  <Field label="Ply"                 value={product.ply} />
+                  <Field label="Ply Rating"          value={product.ply_rating} />
+                  <Field label="UTQG"                value={product.utqg} />
+                  <Field label="Max Inflation Press" value={product.max_inflation_press} />
+                  <Field label="Max Load"            value={product.max_load} />
+                </>
+              )}
             </div>
+
+            {/* Technical Specifications */}
             <div>
               <SectionTitle>Technical Specifications</SectionTitle>
-              <Field label="Tread Type"    value={product.tread_type} />
-              <Field label="Tread Depth"   value={product.tread_depth} />
-              <Field label="Run Flat"      value={product.run_flat} />
-              <Field label="Sidewall ABR"  value={product.sidewall_abr} />
-              <Field label="P Metric"      value={product.p_metric} />
-              <Field label="Revs Per Mile" value={product.revs_per_mile} />
+              {editMode ? (
+                <>
+                  <EditField label="Tread Type"    fieldKey="tread_type" />
+                  <EditField label="Tread Depth"   fieldKey="tread_depth" />
+                  <EditField label="Run Flat"      fieldKey="run_flat" />
+                  <EditField label="Sidewall ABR"  fieldKey="sidewall_abr" />
+                  <EditField label="P Metric"      fieldKey="p_metric" />
+                  <EditField label="Revs Per Mile" fieldKey="revs_per_mile" />
+                </>
+              ) : (
+                <>
+                  <Field label="Tread Type"    value={product.tread_type} />
+                  <Field label="Tread Depth"   value={product.tread_depth} />
+                  <Field label="Run Flat"      value={product.run_flat} />
+                  <Field label="Sidewall ABR"  value={product.sidewall_abr} />
+                  <Field label="P Metric"      value={product.p_metric} />
+                  <Field label="Revs Per Mile" value={product.revs_per_mile} />
+                </>
+              )}
             </div>
           </div>
 
-          {/* Platform listings */}
+          {/* ── Platform Listings ── */}
           <div>
             <SectionTitle>Platform Listings</SectionTitle>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
@@ -353,7 +514,9 @@ function FitmentDetailsDialog({ product, open, onClose }: { product: Product | n
               ))}
             </div>
             <div className="rounded-lg border-2 border-green-200 bg-green-50 p-4 w-fit space-y-1">
-              <div className="flex items-center gap-2 font-semibold text-sm"><ShoppingCart className="w-4 h-4 text-green-600"/>Shopify</div>
+              <div className="flex items-center gap-2 font-semibold text-sm">
+                <ShoppingCart className="w-4 h-4 text-green-600"/>Shopify
+              </div>
               <p className="text-sm text-muted-foreground">Not listed on Shopify</p>
               <p className="text-xs text-muted-foreground">Run sync to add this product</p>
             </div>
@@ -364,7 +527,7 @@ function FitmentDetailsDialog({ product, open, onClose }: { product: Product | n
             </div>
           </div>
 
-          {/* Vendor Inventory */}
+          {/* ── Vendor Inventory ── */}
           <div>
             <SectionTitle>Vendor Inventory</SectionTitle>
             {vendors.length > 0 ? (
@@ -384,12 +547,16 @@ function FitmentDetailsDialog({ product, open, onClose }: { product: Product | n
                         <TableCell className="text-muted-foreground">{i+1}</TableCell>
                         <TableCell className="font-medium">{v.name}</TableCell>
                         <TableCell className="text-right">{v.quantity ?? "—"}</TableCell>
-                        <TableCell className="text-right">{v.price != null ? `$${Number(v.price).toFixed(2)}` : "—"}</TableCell>
+                        <TableCell className="text-right">
+                          {v.price != null ? `$${Number(v.price).toFixed(2)}` : "—"}
+                        </TableCell>
                       </TableRow>
                     ))}
                     <TableRow className="font-semibold bg-muted/40">
                       <TableCell colSpan={2}>Total Vendor Inventory</TableCell>
-                      <TableCell className="text-right">{product.total_vendor_inventory ?? vendors.reduce((s,v)=>s+(v.quantity||0),0)}</TableCell>
+                      <TableCell className="text-right">
+                        {product.total_vendor_inventory ?? vendors.reduce((s,v)=>s+(v.quantity||0),0)}
+                      </TableCell>
                       <TableCell />
                     </TableRow>
                   </TableBody>
@@ -404,32 +571,52 @@ function FitmentDetailsDialog({ product, open, onClose }: { product: Product | n
             )}
           </div>
 
-          {/* Descriptions */}
+          {/* ── Descriptions ── */}
           <div>
             <SectionTitle>Descriptions</SectionTitle>
-            <div className="space-y-4">
-              {product.description && (
-                <div>
-                  <p className="text-sm font-bold mb-1">Description:</p>
-                  <p className="text-sm text-muted-foreground whitespace-pre-line">{product.description}</p>
-                  <Separator className="mt-3"/>
-                </div>
-              )}
-              {product.features_and_benefits && (
-                <div>
-                  <p className="text-sm font-bold mb-1">Features and Benefits:</p>
-                  <p className="text-sm text-muted-foreground whitespace-pre-line">{product.features_and_benefits}</p>
-                  <Separator className="mt-3"/>
-                </div>
-              )}
-              {product.warranty && (
-                <div>
-                  <p className="text-sm font-bold mb-1">Warranty:</p>
-                  <p className="text-sm text-muted-foreground">{product.warranty}</p>
-                </div>
-              )}
-            </div>
+            {editMode ? (
+              <div className="space-y-3">
+                <EditTextarea label="Description"         fieldKey="description" />
+                <EditTextarea label="Features & Benefits" fieldKey="features_and_benefits" />
+                <EditTextarea label="Warranty"            fieldKey="warranty" />
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {product.description && (
+                  <div>
+                    <p className="text-sm font-bold mb-1">Description:</p>
+                    <p className="text-sm text-muted-foreground whitespace-pre-line">{product.description}</p>
+                    <Separator className="mt-3"/>
+                  </div>
+                )}
+                {product.features_and_benefits && (
+                  <div>
+                    <p className="text-sm font-bold mb-1">Features and Benefits:</p>
+                    <p className="text-sm text-muted-foreground whitespace-pre-line">{product.features_and_benefits}</p>
+                    <Separator className="mt-3"/>
+                  </div>
+                )}
+                {product.warranty && (
+                  <div>
+                    <p className="text-sm font-bold mb-1">Warranty:</p>
+                    <p className="text-sm text-muted-foreground">{product.warranty}</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
+
+          {/* ── Save footer (visible when editing) ── */}
+          {editMode && (
+            <div className="sticky bottom-0 bg-background border-t border-border pt-4 pb-2 flex justify-end gap-2">
+              <Button variant="ghost" onClick={handleCancel}>Cancel</Button>
+              <Button onClick={handleSave} disabled={saving}>
+                {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2"/> : null}
+                Save Changes
+              </Button>
+            </div>
+          )}
+
         </div>
       </DialogContent>
     </Dialog>
@@ -1018,8 +1205,15 @@ export function Inventory() {
       />
 
       {/* ── Fitment Details ── */}
-      <FitmentDetailsDialog product={fitmentProduct} open={fitmentOpen}
-        onClose={()=>{ setFitmentOpen(false); setFitmentProduct(null); }}/>
+      <FitmentDetailsDialog
+        product={fitmentProduct}
+        open={fitmentOpen}
+        onClose={()=>{ setFitmentOpen(false); setFitmentProduct(null); }}
+        onSaved={(updated) => {
+          setProducts(p => p.map(x => x.id === updated.id ? updated : x));
+          setFitmentProduct(updated);
+        }}
+      />/>
 
       {/* ── Edit Dialog ── */}
       <Dialog open={!!editing} onOpenChange={o=>!o&&setEditing(null)}>
