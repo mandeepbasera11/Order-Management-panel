@@ -104,75 +104,75 @@ const COLUMN_GROUPS: { group: string; cols: { key: ColKey; label: string; defaul
   {
     group: "Basic Information",
     cols: [
-      { key: "sku",                       label: "GE SKU",            defaultOn: true  },
-      { key: "base_ge_sku",               label: "Aliases",           defaultOn: false },
-      { key: "item_name",                 label: "Item Name",         defaultOn: true  },
-      { key: "category",                  label: "Category",          defaultOn: true  },
-      { key: "manufacturer_product_code", label: "Manufacturer Code", defaultOn: true  },
-      { key: "brand",                     label: "Brand",             defaultOn: true  },
-      { key: "model",                     label: "Model",             defaultOn: false },
-      { key: "size",                      label: "Size",              defaultOn: false },
-      { key: "upc",                       label: "UPC",               defaultOn: false },
-      { key: "raw_size",                  label: "Raw Size",          defaultOn: false },
-      { key: "description",               label: "Description",       defaultOn: false },
+      { key: "sku",                       label: "GE SKU",                    defaultOn: true  },
+      { key: "base_ge_sku",               label: "Base GE SKU",               defaultOn: false },
+      { key: "item_name",                 label: "Item Name",                 defaultOn: true  },
+      { key: "brand",                     label: "Brand",                     defaultOn: true  },
+      { key: "category",                  label: "Category",                  defaultOn: true  },
+      { key: "model",                     label: "Model",                     defaultOn: true  },
+      { key: "size",                      label: "Size",                      defaultOn: true  },
+      { key: "manufacturer_product_code", label: "Manufacturer Code",         defaultOn: true  },
+      { key: "upc",                       label: "UPC",                       defaultOn: false },
+      { key: "raw_size",                  label: "Raw Size",                  defaultOn: false },
+      { key: "brand_logo",                label: "Brand Logo",                defaultOn: false },
+      { key: "images",                    label: "Images",                    defaultOn: false },
+      { key: "description",               label: "Description",               defaultOn: false },
+      { key: "features_and_benefits",     label: "Features & Benefits",       defaultOn: false },
+      { key: "warranty",                  label: "Warranty",                  defaultOn: false },
     ],
   },
   {
-    group: "Specifications Information",
+    group: "Identifiers",
     cols: [
-      { key: "section",        label: "Section",         defaultOn: false },
-      { key: "aspect",         label: "Aspect",          defaultOn: false },
-      { key: "rim",            label: "Rim",             defaultOn: false },
-      { key: "rim_width_range",label: "Rim Width Range", defaultOn: false },
-      { key: "rim_width_min",  label: "Rim Width Min",   defaultOn: false },
-      { key: "rim_width_max",  label: "Rim Width Max",   defaultOn: false },
-      { key: "meas_rim_width", label: "Meas Rim Width",  defaultOn: false },
-      { key: "overall_diam",   label: "Overall Diameter",defaultOn: false },
+      { key: "mtlid",           label: "MTLID",            defaultOn: false },
+      { key: "master_brand_id", label: "Master Brand ID",  defaultOn: false },
+      { key: "master_model_id", label: "Master Model ID",  defaultOn: false },
+    ],
+  },
+  {
+    group: "Size Specifications",
+    cols: [
+      { key: "section",         label: "Section",          defaultOn: false },
+      { key: "aspect",          label: "Aspect",           defaultOn: false },
+      { key: "rim",             label: "Rim",              defaultOn: false },
+      { key: "overall_diam",    label: "Overall Diameter", defaultOn: false },
+      { key: "rim_width_range", label: "Rim Width Range",  defaultOn: false },
+      { key: "rim_width_min",   label: "Rim Width Min",    defaultOn: false },
+      { key: "rim_width_max",   label: "Rim Width Max",    defaultOn: false },
+      { key: "meas_rim_width",  label: "Meas Rim Width",   defaultOn: false },
     ],
   },
   {
     group: "Performance Information",
     cols: [
-      { key: "tire_load",          label: "Tire Load",        defaultOn: true  },
-      { key: "tire_speed",         label: "Tire Speed",       defaultOn: true  },
-      { key: "ply",                label: "Ply",              defaultOn: false },
-      { key: "ply_rating",         label: "Ply Rating",       defaultOn: true  },
-      { key: "utqg",               label: "UTQG",             defaultOn: false },
-      { key: "max_inflation_press",label: "Max Inflation Press",defaultOn: false },
-      { key: "max_load",           label: "Max Load",         defaultOn: false },
-      { key: "tread_depth",        label: "Tread Depth",      defaultOn: false },
+      { key: "tire_load",           label: "Tire Load",          defaultOn: true  },
+      { key: "tire_speed",          label: "Tire Speed",         defaultOn: true  },
+      { key: "ply",                 label: "Ply",                defaultOn: false },
+      { key: "ply_rating",          label: "Ply Rating",         defaultOn: true  },
+      { key: "utqg",                label: "UTQG",               defaultOn: false },
+      { key: "max_inflation_press", label: "Max Inflation Press",defaultOn: false },
+      { key: "max_load",            label: "Max Load",           defaultOn: false },
+      { key: "tread_depth",         label: "Tread Depth",        defaultOn: false },
     ],
   },
   {
     group: "Technical Information",
     cols: [
+      { key: "tread_type",   label: "Tread Type",   defaultOn: true  },
       { key: "tire_weight",  label: "Tire Weight",  defaultOn: false },
       { key: "revs_per_mile",label: "Revs Per Mile",defaultOn: false },
-      { key: "tread_type",   label: "Tread Type",   defaultOn: false },
       { key: "run_flat",     label: "Run Flat",     defaultOn: false },
       { key: "sidewall_abr", label: "Sidewall ABR", defaultOn: false },
       { key: "p_metric",     label: "P Metric",     defaultOn: false },
     ],
   },
   {
-    group: "Metadata Information",
-    cols: [
-      { key: "mtlid",                label: "MTLID",              defaultOn: false },
-      { key: "master_brand_id",      label: "Master Brand ID",    defaultOn: false },
-      { key: "master_model_id",      label: "Master Model ID",    defaultOn: false },
-      { key: "images",               label: "Images",             defaultOn: false },
-      { key: "brand_logo",           label: "Brand Logo",         defaultOn: false },
-      { key: "features_and_benefits",label: "Features & Benefits",defaultOn: false },
-      { key: "warranty",             label: "Warranty",           defaultOn: false },
-    ],
-  },
-  {
     group: "Inventory & Pricing",
     cols: [
-      { key: "wholesale_price",        label: "Wholesale Price",   defaultOn: false },
-      { key: "price",                  label: "Our Price",         defaultOn: false },
-      { key: "stock",                  label: "Stock",             defaultOn: false },
-      { key: "total_vendor_inventory", label: "Total Vendor Inv.", defaultOn: false },
+      { key: "wholesale_price",        label: "Wholesale Price",      defaultOn: true  },
+      { key: "price",                  label: "Our Price",            defaultOn: true  },
+      { key: "stock",                  label: "Stock",                defaultOn: true  },
+      { key: "total_vendor_inventory", label: "Total Vendor Inv.",    defaultOn: true  },
     ],
   },
   {
@@ -633,7 +633,6 @@ function SelectColumnsModal({
   visible: Record<string, boolean>;
   setVisible: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
 }) {
-  // Show Actions Information section (always-on checkbox for the Actions column)
   const DISPLAY_GROUPS = [
     ...COLUMN_GROUPS.filter(g => g.group !== "Vendors"),
     {
@@ -824,13 +823,13 @@ export function Inventory() {
           utqg:                       r.utqg || null,
           warranty:                   r.warranty || null,
           wholesale_price:            num(r.wholesale_price) ,
-          total_vendor_inventory:     int(r.total_vendor_inventory),
+          total_vendor_inventory:     int(r.total_vendor_inventory || r.Total_Vendor_Inventory),
         };
-        // Vendors 1–21
+        // Vendors 1–21 — handle both Vendor1_Name and vendor1_name
         for (let i = 1; i <= 21; i++) {
-          rec[`vendor${i}_name`]     = r[`vendor${i}_name`]     || null;
-          rec[`vendor${i}_quantity`] = int(r[`vendor${i}_quantity`] || "");
-          rec[`vendor${i}_price`]    = num(r[`vendor${i}_price`]    || "");
+          rec[`vendor${i}_name`]     = r[`vendor${i}_name`]     || r[`Vendor${i}_Name`]     || null;
+          rec[`vendor${i}_quantity`] = int(r[`vendor${i}_quantity`] || r[`Vendor${i}_Quantity`] || "");
+          rec[`vendor${i}_price`]    = num(r[`vendor${i}_price`]    || r[`Vendor${i}_Price`]    || "");
         }
         return rec;
       }).filter(Boolean);
@@ -1213,7 +1212,7 @@ export function Inventory() {
           setProducts(p => p.map(x => x.id === updated.id ? updated : x));
           setFitmentProduct(updated);
         }}
-      />/>
+      />
 
       {/* ── Edit Dialog ── */}
       <Dialog open={!!editing} onOpenChange={o=>!o&&setEditing(null)}>
