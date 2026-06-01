@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Sidebar } from "@/components/Sidebar";
-import { Navbar } from "@/components/Navbar";
 import { Dashboard } from "@/components/Dashboard";
 import { Inventory } from "@/components/Inventory";
 import { VehicleFitment } from "@/components/VehicleFitment";
@@ -8,47 +7,69 @@ import { MarketplacePricing } from "@/components/MarketplacePricing";
 import { ShopifyProducts } from "@/components/ShopifyProducts";
 import { PriceExperiment } from "@/components/PriceExperiment";
 import { UserPermissions } from "@/components/UserPermissions";
-import { Placeholder } from "@/components/Placeholder";
+import { Orders } from "@/components/Orders";
+import { Reports } from "@/components/Reports";
+import { AlertCenter } from "@/components/AlertCenter";
+import { AuditLogs } from "@/components/AuditLogs";
+import { TireSearchWizard } from "@/components/TireSearchWizard";
+import { ShippingDashboard } from "@/components/ShippingDashboard";
+import { CustomerCRM } from "@/components/CustomerCRM";
+import { AIFeatures } from "@/components/AIFeatures";
+
+function Placeholder({ title, description }: { title: string; description?: string }) {
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+      <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+        <span className="text-2xl">🚧</span>
+      </div>
+      <h2 className="text-xl font-semibold mb-2">{title}</h2>
+      <p className="text-muted-foreground max-w-sm">
+        {description || "This feature is coming soon."}
+      </p>
+    </div>
+  );
+}
 
 const descriptions: Record<string, string> = {
-  Orders: "Track and fulfill tire orders across all sales channels.",
-  POS: "In-store point-of-sale for walk-in tire customers.",
-  Vendors: "Manage tire manufacturers and distributor relationships.",
-  "GE Tire Hickory Inventory": "Warehouse-level stock for the Hickory facility.",
-  "Marketplace Pricing": "Compare and adjust pricing across marketplaces.",
-  "Shopify Products": "Sync and manage your Shopify tire catalog.",
-  "Price Experiment": "Run pricing A/B tests on selected tire SKUs.",
-  "Tires Reverse Lookup": "Find vehicles compatible with a given tire size.",
-  Reports: "Sales, inventory, and margin reports.",
-  "User Permissions": "Manage staff roles and access levels.",
-  "Order Archive": "Browse historical and completed orders.",
-  "Listing Mirror Sync": "Sync listings with Listing Mirror.",
-  "FTP Settings": "Configure FTP feeds for vendor inventory imports.",
+  "POS":                      "Point of Sale system for in-store tire purchases.",
+  "Vendors":                  "Vendor management and purchase order tracking.",
+  "GE Tire Hickory Inventory":"Live GE Tire Hickory warehouse inventory feed.",
+  "Tires Reverse Lookup":     "Look up which vehicles are compatible with a tire.",
+  "Order Archive":            "Archived and completed orders history.",
+  "Listing Mirror Sync":      "Mirror listings across all marketplace platforms.",
+  "FTP Settings":             "Configure FTP data feed connections.",
 };
 
-const Index = () => {
+export default function Index() {
   const [active, setActive] = useState("Dashboard");
 
-  const render = () => {
-    if (active === "Dashboard") return <Dashboard />;
-    if (active === "Manage Tires") return <Inventory />;
-    if (active === "Vehicle Fitment") return <VehicleFitment />;
-    if (active === "Marketplace Pricing") return <MarketplacePricing />;
-    if (active === "Shopify Products") return <ShopifyProducts />;
-    if (active === "Price Experiment") return <PriceExperiment />;
-    if (active === "User Permissions") return <UserPermissions />;
-    return <Placeholder title={active} description={descriptions[active]} />;
+  const renderPage = () => {
+    switch (active) {
+      case "Dashboard":            return <Dashboard />;
+      case "Orders":               return <Orders />;
+      case "Manage Tires":         return <Inventory />;
+      case "Vehicle Fitment":      return <VehicleFitment />;
+      case "Marketplace Pricing":  return <MarketplacePricing />;
+      case "Shopify Products":     return <ShopifyProducts />;
+      case "Price Experiment":     return <PriceExperiment />;
+      case "User Permissions":     return <UserPermissions />;
+      case "Reports":              return <Reports />;
+      case "Alert Center":         return <AlertCenter />;
+      case "Audit Logs":           return <AuditLogs />;
+      case "Tire Search Wizard":   return <TireSearchWizard />;
+      case "Shipping Dashboard":   return <ShippingDashboard />;
+      case "Customer CRM":         return <CustomerCRM />;
+      case "AI Features":          return <AIFeatures />;
+      default:                     return <Placeholder title={active} description={descriptions[active]} />;
+    }
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="flex h-screen overflow-hidden bg-background">
       <Sidebar active={active} onNavigate={setActive} />
-      <div className="flex-1 flex flex-col">
-        <Navbar />
-        {render()}
-      </div>
+      <main className="flex-1 overflow-auto flex flex-col">
+        {renderPage()}
+      </main>
     </div>
   );
-};
-
-export default Index;
+}
