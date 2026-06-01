@@ -18,6 +18,8 @@ import { PriceExperiment } from "@/components/PriceExperiment";
 
 import { UserPermissions } from "@/components/UserPermissions";
 
+import { ImportStatus } from "@/components/ImportStatus";
+
 import { Placeholder } from "@/components/Placeholder";
 
 
@@ -76,6 +78,8 @@ const Index = () => {
 
     if (active === "User Permissions") return <UserPermissions />;
 
+    if (active === "Import Status") return <ImportStatus />;
+
     return <Placeholder title={active} description={descriptions[active]} />;
 
   };
@@ -101,4 +105,6 @@ const Index = () => {
   );
 
 };
+
+export default Index;
 
