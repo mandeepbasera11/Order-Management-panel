@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, ShoppingBag, CreditCard, Building2, Warehouse, Package, Car,
-  DollarSign, Store, FlaskConical, Search, BarChart3, ShieldCheck, Archive,
+  DollarSign, Store, FlaskConical, Search, Upload, Bug, BarChart3, ShieldCheck, Archive,
   RefreshCw, Server, ChevronLeft, ChevronRight, Bell, Shield, Truck,
   Users, Sparkles, Wrench, ChevronDown, ChevronUp,
 } from "lucide-react";
