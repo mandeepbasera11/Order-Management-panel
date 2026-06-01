@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,21 +44,32 @@ const STATUS_ICONS: Record<OrderStatus, React.ReactNode> = {
   "Returned":   <RotateCcw className="w-3.5 h-3.5"/>,
 };
 
-const SAMPLE_ORDERS: Order[] = [
-  { id:"1", orderNo:"ORD-2026-0001", customer:"Mike Johnson",   email:"mike@example.com",  phone:"(555)111-2222", items:[{sku:"GE-Michelin-123",name:"Michelin Defender 225/65R17",qty:4,price:145}], status:"New Order",  created:"2026-05-30",updated:"2026-05-30",warehouse:"Hickory, NC",carrier:"FedEx",trackingNo:"",notes:"",channel:"Amazon",total:580,backorder:false},
-  { id:"2", orderNo:"ORD-2026-0002", customer:"Sarah Williams", email:"sarah@example.com", phone:"(555)222-3333", items:[{sku:"GE-Goodyear-456",name:"Goodyear Assurance 205/55R16",qty:4,price:120}], status:"Processing",created:"2026-05-29",updated:"2026-05-30",warehouse:"Hickory, NC",carrier:"UPS",trackingNo:"",notes:"Rush order",channel:"Shopify",total:480,backorder:false},
-  { id:"3", orderNo:"ORD-2026-0003", customer:"Tom Brown",      email:"tom@example.com",   phone:"(555)333-4444", items:[{sku:"GE-BFG-789",name:"BFGoodrich KO2 265/70R17",qty:4,price:210}], status:"Picking",    created:"2026-05-28",updated:"2026-05-30",warehouse:"Hickory, NC",carrier:"FedEx",trackingNo:"",notes:"",channel:"eBay",total:840,backorder:false},
-  { id:"4", orderNo:"ORD-2026-0004", customer:"Lisa Davis",     email:"lisa@example.com",  phone:"(555)444-5555", items:[{sku:"GE-Pirelli-321",name:"Pirelli P Zero 255/40R19",qty:4,price:280}], status:"Packed",     created:"2026-05-27",updated:"2026-05-30",warehouse:"Hickory, NC",carrier:"DHL",trackingNo:"",notes:"",channel:"Walmart",total:1120,backorder:false},
-  { id:"5", orderNo:"ORD-2026-0005", customer:"James Wilson",   email:"james@example.com", phone:"(555)555-6666", items:[{sku:"GE-Continental-654",name:"Continental CrossContact 235/55R18",qty:4,price:165}], status:"Shipped",    created:"2026-05-26",updated:"2026-05-30",warehouse:"Hickory, NC",carrier:"UPS",trackingNo:"1Z999AA10123456784",notes:"",channel:"Amazon",total:660,backorder:false},
-  { id:"6", orderNo:"ORD-2026-0006", customer:"Amy Chen",       email:"amy@example.com",   phone:"(555)666-7777", items:[{sku:"GE-Ironman-111",name:"Ironman All Country AT 265/70R17",qty:4,price:97}], status:"Delivered",  created:"2026-05-25",updated:"2026-05-29",warehouse:"Hickory, NC",carrier:"FedEx",trackingNo:"7489234790234",notes:"",channel:"Shopify",total:388,backorder:false},
-  { id:"7", orderNo:"ORD-2026-0007", customer:"Bob Martinez",   email:"bob@example.com",   phone:"(555)777-8888", items:[{sku:"GE-Hankook-222",name:"Hankook Kinergy 215/60R16",qty:4,price:88}], status:"Cancelled",  created:"2026-05-24",updated:"2026-05-25",warehouse:"Hickory, NC",carrier:"",trackingNo:"",notes:"Customer cancelled",channel:"Walmart",total:352,backorder:false},
-  { id:"8", orderNo:"ORD-2026-0008", customer:"Carol White",    email:"carol@example.com", phone:"(555)888-9999", items:[{sku:"GE-Nexen-333",name:"Nexen N5000 Plus 225/50R17",qty:4,price:75}], status:"New Order",  created:"2026-05-30",updated:"2026-05-30",warehouse:"Hickory, NC",carrier:"USPS",trackingNo:"",notes:"",channel:"eBay",total:300,backorder:true},
-];
-
 const genRMA = () => `RMA-${Date.now().toString().slice(-6)}`;
 
+type DbOrderRow = {
+  id: string; order_no: string; customer: string; email: string | null; phone: string | null;
+  status: string; channel: string | null; warehouse: string | null; carrier: string | null;
+  tracking_no: string | null; total: number; notes: string | null; backorder: boolean;
+  rma: string | null; created_at: string; updated_at: string;
+  order_items: { sku: string; name: string; qty: number; price: number }[];
+};
+
+const mapRow = (r: DbOrderRow): Order => ({
+  id: r.id, orderNo: r.order_no, customer: r.customer,
+  email: r.email ?? "", phone: r.phone ?? "",
+  items: r.order_items ?? [],
+  status: r.status as OrderStatus,
+  created: r.created_at?.slice(0, 10) ?? "",
+  updated: r.updated_at?.slice(0, 10) ?? "",
+  warehouse: r.warehouse ?? "", carrier: r.carrier ?? "",
+  trackingNo: r.tracking_no ?? "", rma: r.rma ?? undefined,
+  notes: r.notes ?? "", channel: r.channel ?? "",
+  total: Number(r.total) || 0, backorder: !!r.backorder,
+});
+
 export function Orders() {
-  const [orders, setOrders]       = useState<Order[]>(SAMPLE_ORDERS);
+  const [orders, setOrders]       = useState<Order[]>([]);
+  const [loading, setLoading]     = useState(true);
   const [search, setSearch]       = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [channelFilter, setChannelFilter] = useState("all");
@@ -69,6 +81,29 @@ export function Orders() {
   const [returnOrder, setReturnOrder] = useState<Order | null>(null);
   const [returnReason, setReturnReason] = useState("");
   const [returns, setReturns] = useState<{id:string;orderNo:string;customer:string;rma:string;reason:string;status:string;date:string}[]>([]);
+
+  const loadOrders = async () => {
+    const { data, error } = await supabase
+      .from("orders")
+      .select("*, order_items(sku,name,qty,price)")
+      .order("created_at", { ascending: false });
+    if (error) { toast.error(error.message); return; }
+    setOrders((data as DbOrderRow[]).map(mapRow));
+  };
+
+  const loadReturns = async () => {
+    const { data, error } = await supabase
+      .from("returns").select("*").order("created_at", { ascending: false });
+    if (error) { toast.error(error.message); return; }
+    setReturns((data ?? []).map((r: any) => ({
+      id: r.id, orderNo: r.order_no, customer: r.customer, rma: r.rma,
+      reason: r.reason, status: r.status, date: r.created_at?.slice(0,10) ?? "",
+    })));
+  };
+
+  useEffect(() => {
+    Promise.all([loadOrders(), loadReturns()]).finally(() => setLoading(false));
+  }, []);
 
   // Backorders
   const backorders = orders.filter(o => o.backorder);
@@ -90,35 +125,54 @@ export function Orders() {
     { label:"Returns",        value: returns.length,                             color:"text-gray-600"   },
   ];
 
-  const advanceStatus = (id: string) => {
-    setOrders(os => os.map(o => {
-      if (o.id !== id) return o;
-      const idx = STATUS_FLOW.indexOf(o.status as any);
-      if (idx < 0 || idx >= STATUS_FLOW.length - 1) return o;
-      const next = STATUS_FLOW[idx + 1];
-      toast.success(`Order ${o.orderNo} → ${next}`);
-      return { ...o, status: next, updated: new Date().toISOString().slice(0,10) };
-    }));
+  const advanceStatus = async (id: string) => {
+    const o = orders.find(x => x.id === id);
+    if (!o) return;
+    const idx = STATUS_FLOW.indexOf(o.status as any);
+    if (idx < 0 || idx >= STATUS_FLOW.length - 1) return;
+    const next = STATUS_FLOW[idx + 1];
+    const { error } = await supabase.from("orders").update({ status: next }).eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    setOrders(os => os.map(x => x.id === id ? { ...x, status: next, updated: new Date().toISOString().slice(0,10) } : x));
+    toast.success(`Order ${o.orderNo} → ${next}`);
   };
 
-  const bulkAdvance = () => {
-    Array.from(selected).forEach(id => advanceStatus(id));
+  const bulkAdvance = async () => {
+    for (const id of Array.from(selected)) { await advanceStatus(id); }
     setSelected(new Set());
   };
 
-  const bulkCancel = () => {
+  const bulkCancel = async () => {
+    const ids = Array.from(selected);
+    const { error } = await supabase.from("orders").update({ status: "Cancelled" }).in("id", ids);
+    if (error) { toast.error(error.message); return; }
     setOrders(os => os.map(o => selected.has(o.id) ? {...o, status:"Cancelled"} : o));
-    toast.success(`${selected.size} order(s) cancelled`);
+    toast.success(`${ids.length} order(s) cancelled`);
     setSelected(new Set());
   };
 
-  const submitReturn = () => {
+  const submitReturn = async () => {
     if (!returnOrder || !returnReason) { toast.error("Please provide a return reason"); return; }
     const rma = genRMA();
-    setReturns(r => [...r, { id:Date.now().toString(), orderNo:returnOrder.orderNo, customer:returnOrder.customer, rma, reason:returnReason, status:"Pending", date:new Date().toISOString().slice(0,10) }]);
-    setOrders(os => os.map(o => o.id===returnOrder.id ? {...o, status:"Returned", rma} : o));
+    const { error: rErr } = await supabase.from("returns").insert({
+      order_id: returnOrder.id, order_no: returnOrder.orderNo,
+      customer: returnOrder.customer, rma, reason: returnReason, status: "Pending",
+    });
+    if (rErr) { toast.error(rErr.message); return; }
+    const { error: oErr } = await supabase.from("orders")
+      .update({ status: "Returned", rma }).eq("id", returnOrder.id);
+    if (oErr) { toast.error(oErr.message); return; }
+    await Promise.all([loadOrders(), loadReturns()]);
     toast.success(`Return filed. RMA: ${rma}`);
     setReturnOrder(null); setReturnReason("");
+  };
+
+  const fulfillBackorder = async (id: string) => {
+    const { error } = await supabase.from("orders")
+      .update({ backorder: false, status: "Processing" }).eq("id", id);
+    if (error) { toast.error(error.message); return; }
+    setOrders(os => os.map(x => x.id===id ? {...x, backorder:false, status:"Processing"} : x));
+    toast.success("Backorder fulfilled — moved to Processing");
   };
 
   const toggleSelect = (id:string) => setSelected(s => { const n=new Set(s); n.has(id)?n.delete(id):n.add(id); return n; });
@@ -344,7 +398,7 @@ export function Orders() {
                       </TableCell>
                       <TableCell>
                         <Button size="sm" variant="outline" className="text-xs h-7"
-                          onClick={()=>{ setOrders(os=>os.map(x=>x.id===o.id?{...x,backorder:false,status:"Processing"}:x)); toast.success("Backorder fulfilled — moved to Processing"); }}>
+                          onClick={()=>fulfillBackorder(o.id)}>
                           Fulfill Now
                         </Button>
                       </TableCell>

@@ -62,6 +62,101 @@ export type Database = {
         }
         Relationships: []
       }
+      order_items: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          order_id: string
+          price: number
+          qty: number
+          sku: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          order_id: string
+          price?: number
+          qty?: number
+          sku: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          order_id?: string
+          price?: number
+          qty?: number
+          sku?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          backorder: boolean
+          carrier: string | null
+          channel: string | null
+          created_at: string
+          customer: string
+          email: string | null
+          id: string
+          notes: string | null
+          order_no: string
+          phone: string | null
+          rma: string | null
+          status: string
+          total: number
+          tracking_no: string | null
+          updated_at: string
+          warehouse: string | null
+        }
+        Insert: {
+          backorder?: boolean
+          carrier?: string | null
+          channel?: string | null
+          created_at?: string
+          customer: string
+          email?: string | null
+          id?: string
+          notes?: string | null
+          order_no: string
+          phone?: string | null
+          rma?: string | null
+          status?: string
+          total?: number
+          tracking_no?: string | null
+          updated_at?: string
+          warehouse?: string | null
+        }
+        Update: {
+          backorder?: boolean
+          carrier?: string | null
+          channel?: string | null
+          created_at?: string
+          customer?: string
+          email?: string | null
+          id?: string
+          notes?: string | null
+          order_no?: string
+          phone?: string | null
+          rma?: string | null
+          status?: string
+          total?: number
+          tracking_no?: string | null
+          updated_at?: string
+          warehouse?: string | null
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           aspect: string | null
@@ -430,6 +525,50 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      returns: {
+        Row: {
+          created_at: string
+          customer: string
+          id: string
+          order_id: string | null
+          order_no: string
+          reason: string
+          rma: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer: string
+          id?: string
+          order_id?: string | null
+          order_no: string
+          reason: string
+          rma: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer?: string
+          id?: string
+          order_id?: string | null
+          order_no?: string
+          reason?: string
+          rma?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "returns_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
