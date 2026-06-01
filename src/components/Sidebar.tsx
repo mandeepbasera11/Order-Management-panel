@@ -63,6 +63,8 @@ const NAV_GROUPS: NavGroup[] = [
       { name: "Alert Center",            icon: Bell },
       { name: "User Permissions",        icon: ShieldCheck },
       { name: "Audit Logs",              icon: Shield },
+      { name: "Import Status", icon: Upload },
+      { name: "Error Logs", icon: Bug },
       { name: "Order Archive",           icon: Archive },
       { name: "Listing Mirror Sync",     icon: RefreshCw },
       { name: "FTP Settings",            icon: Server },
