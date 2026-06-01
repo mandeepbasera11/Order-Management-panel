@@ -52,7 +52,7 @@ export function Dashboard() {
             Inventory, sales, and fitment performance across US warehouses.
           </p>
         </div>
-        <DateRangePicker date={date} setDate={setDate} />
+        <DateRangePicker value={date} onChange={setDate} />
       </div>
 
       {/* Stats Grid */}
