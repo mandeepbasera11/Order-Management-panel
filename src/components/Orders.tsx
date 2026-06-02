@@ -571,7 +571,7 @@ export function Orders() {
     Edit
   </Button>
 </DialogTitle>
-
+              </DialogHeader>
               {/* Workflow stepper */}
               <div className="flex items-center gap-1 py-3 overflow-x-auto">
                 {STATUS_FLOW.map((s,i)=>{
