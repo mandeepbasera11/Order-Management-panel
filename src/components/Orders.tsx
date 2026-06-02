@@ -1,4 +1,5 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -81,6 +82,77 @@ export function Orders() {
   const [returnOrder, setReturnOrder] = useState<Order | null>(null);
   const [returnReason, setReturnReason] = useState("");
   const [returns, setReturns] = useState<{id:string;orderNo:string;customer:string;rma:string;reason:string;status:string;date:string}[]>([]);
+
+  // New order dialog
+  const emptyItem = { sku: "", name: "", qty: 1, price: 0 };
+  const blankNew = {
+    order_no: "", customer: "", email: "", phone: "",
+    channel: "Shopify", warehouse: "", carrier: "", tracking_no: "",
+    notes: "", backorder: false,
+    items: [ { ...emptyItem } ],
+  };
+  const [newOpen, setNewOpen] = useState(false);
+  const [newOrder, setNewOrder] = useState<typeof blankNew>(blankNew);
+  const [saving, setSaving] = useState(false);
+  const fileRef = useRef<HTMLInputElement | null>(null);
+
+  const newTotal = newOrder.items.reduce((s,i)=> s + (Number(i.qty)||0) * (Number(i.price)||0), 0);
+
+  const createOrder = async () => {
+    if (!newOrder.order_no.trim() || !newOrder.customer.trim()) {
+      toast.error("Order # and customer are required"); return;
+    }
+    setSaving(true);
+    const { data, error } = await supabase.from("orders").insert({
+      order_no: newOrder.order_no.trim(),
+      customer: newOrder.customer.trim(),
+      email: newOrder.email || null,
+      phone: newOrder.phone || null,
+      status: "New Order",
+      channel: newOrder.channel || null,
+      warehouse: newOrder.warehouse || null,
+      carrier: newOrder.carrier || null,
+      tracking_no: newOrder.tracking_no || null,
+      notes: newOrder.notes || null,
+      backorder: newOrder.backorder,
+      total: newTotal,
+    }).select("id").single();
+    if (error || !data) { setSaving(false); toast.error(error?.message || "Failed"); return; }
+    const items = newOrder.items
+      .filter(i => i.sku.trim() || i.name.trim())
+      .map(i => ({ order_id: data.id, sku: i.sku, name: i.name, qty: Number(i.qty)||0, price: Number(i.price)||0 }));
+    if (items.length) {
+      const { error: iErr } = await supabase.from("order_items").insert(items);
+      if (iErr) { setSaving(false); toast.error(iErr.message); return; }
+    }
+    setSaving(false); setNewOpen(false); setNewOrder(blankNew);
+    toast.success(`Order ${newOrder.order_no} created`);
+    loadOrders();
+  };
+
+  const importCSV = async (file: File) => {
+    const text = await file.text();
+    const lines = text.split(/\r?\n/).filter(l => l.trim());
+    if (lines.length < 2) { toast.error("CSV is empty"); return; }
+    const header = lines[0].split(",").map(h => h.trim().toLowerCase());
+    const idx = (k:string) => header.indexOf(k);
+    const rows = lines.slice(1).map(l => {
+      const c = l.split(",");
+      return {
+        order_no: c[idx("order no")] ?? c[idx("order_no")] ?? c[0],
+        customer: c[idx("customer")] ?? c[1] ?? "",
+        email: c[idx("email")] ?? null,
+        channel: c[idx("channel")] ?? "Shopify",
+        total: Number(c[idx("total")]?.replace(/[^0-9.\-]/g,"")) || 0,
+        status: "New Order",
+      };
+    }).filter(r => r.order_no);
+    if (!rows.length) { toast.error("No valid rows found"); return; }
+    const { error } = await supabase.from("orders").insert(rows);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Imported ${rows.length} order(s)`);
+    loadOrders();
+  };
 
   const loadOrders = async () => {
     const { data, error } = await supabase
@@ -195,8 +267,14 @@ export function Orders() {
         </div>
         <div className="flex gap-2 flex-wrap">
           <Button variant="outline" size="sm" onClick={exportCSV}><Download className="w-4 h-4 mr-1"/>Export CSV</Button>
-          <Button variant="outline" size="sm"><Upload className="w-4 h-4 mr-1"/>Import Orders</Button>
-          <Button size="sm"><Plus className="w-4 h-4 mr-1"/>New Order</Button>
+          <input ref={fileRef} type="file" accept=".csv,text/csv" className="hidden"
+            onChange={e => { const f = e.target.files?.[0]; if (f) importCSV(f); e.target.value=""; }}/>
+          <Button variant="outline" size="sm" onClick={()=>fileRef.current?.click()}>
+            <Upload className="w-4 h-4 mr-1"/>Import Orders
+          </Button>
+          <Button size="sm" onClick={()=>setNewOpen(true)}>
+            <Plus className="w-4 h-4 mr-1"/>New Order
+          </Button>
         </div>
       </div>
 
