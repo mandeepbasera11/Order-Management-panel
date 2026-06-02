@@ -587,6 +587,107 @@ export function Orders() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ── New Order Dialog ── */}
+      <Dialog open={newOpen} onOpenChange={setNewOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Plus className="w-5 h-5"/>Create New Order</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Order # *</Label>
+                <Input value={newOrder.order_no} onChange={e=>setNewOrder({...newOrder, order_no:e.target.value})} placeholder="ORD-1001"/>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Channel</Label>
+                <Select value={newOrder.channel} onValueChange={v=>setNewOrder({...newOrder, channel:v})}>
+                  <SelectTrigger><SelectValue/></SelectTrigger>
+                  <SelectContent>
+                    {["Amazon","eBay","Walmart","Shopify","Manual"].map(c=><SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Customer *</Label>
+                <Input value={newOrder.customer} onChange={e=>setNewOrder({...newOrder, customer:e.target.value})}/>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Email</Label>
+                <Input type="email" value={newOrder.email} onChange={e=>setNewOrder({...newOrder, email:e.target.value})}/>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Phone</Label>
+                <Input value={newOrder.phone} onChange={e=>setNewOrder({...newOrder, phone:e.target.value})}/>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Warehouse</Label>
+                <Input value={newOrder.warehouse} onChange={e=>setNewOrder({...newOrder, warehouse:e.target.value})}/>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Carrier</Label>
+                <Input value={newOrder.carrier} onChange={e=>setNewOrder({...newOrder, carrier:e.target.value})}/>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Tracking #</Label>
+                <Input value={newOrder.tracking_no} onChange={e=>setNewOrder({...newOrder, tracking_no:e.target.value})}/>
+              </div>
+            </div>
+
+            <Separator/>
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <Label>Items</Label>
+                <Button size="sm" variant="outline" onClick={()=>setNewOrder({...newOrder, items:[...newOrder.items, {...emptyItem}]})}>
+                  <Plus className="w-3 h-3 mr-1"/>Add Item
+                </Button>
+              </div>
+              <div className="space-y-2">
+                {newOrder.items.map((it,i)=>(
+                  <div key={i} className="grid grid-cols-12 gap-2 items-center">
+                    <Input className="col-span-3" placeholder="SKU" value={it.sku} onChange={e=>{
+                      const items=[...newOrder.items]; items[i]={...it, sku:e.target.value}; setNewOrder({...newOrder, items});
+                    }}/>
+                    <Input className="col-span-5" placeholder="Name" value={it.name} onChange={e=>{
+                      const items=[...newOrder.items]; items[i]={...it, name:e.target.value}; setNewOrder({...newOrder, items});
+                    }}/>
+                    <Input className="col-span-1" type="number" min="1" value={it.qty} onChange={e=>{
+                      const items=[...newOrder.items]; items[i]={...it, qty:Number(e.target.value)}; setNewOrder({...newOrder, items});
+                    }}/>
+                    <Input className="col-span-2" type="number" step="0.01" placeholder="Price" value={it.price} onChange={e=>{
+                      const items=[...newOrder.items]; items[i]={...it, price:Number(e.target.value)}; setNewOrder({...newOrder, items});
+                    }}/>
+                    <Button size="sm" variant="ghost" className="col-span-1"
+                      onClick={()=>setNewOrder({...newOrder, items: newOrder.items.filter((_,j)=>j!==i)})}
+                      disabled={newOrder.items.length===1}>
+                      <XCircle className="w-4 h-4"/>
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-end mt-3 font-semibold text-sm">
+                Total: ${newTotal.toFixed(2)}
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Notes</Label>
+              <Textarea rows={2} value={newOrder.notes} onChange={e=>setNewOrder({...newOrder, notes:e.target.value})}/>
+            </div>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={newOrder.backorder} onChange={e=>setNewOrder({...newOrder, backorder:e.target.checked})}/>
+              Mark as backorder
+            </label>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={()=>setNewOpen(false)}>Cancel</Button>
+            <Button onClick={createOrder} disabled={saving}>
+              <Plus className="w-4 h-4 mr-1"/>{saving ? "Saving..." : "Create Order"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
