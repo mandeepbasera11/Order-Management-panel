@@ -22,6 +22,8 @@ import { ImportStatus } from "@/components/ImportStatus";
 
 import { Orders } from "@/components/Orders";
 
+import { AuditLogs } from "@/components/AuditLogs";
+
 import { Placeholder } from "@/components/Placeholder";
 
 
@@ -83,6 +85,8 @@ const Index = () => {
     if (active === "Import Status") return <ImportStatus />;
 
     if (active === "Orders") return <Orders />;
+
+    if (active === "Audit Logs") return <AuditLogs />;
 
     return <Placeholder title={active} description={descriptions[active]} />;
 

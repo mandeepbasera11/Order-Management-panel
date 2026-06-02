@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { logAudit, diffFields } from "@/lib/audit";
 
 // ─── Type ─────────────────────────────────────────────────────────────────────
 type Product = {
@@ -305,6 +306,32 @@ function FitmentDetailsDialog({
     const { error } = await supabase.from("products").update(draft as never).eq("id", draft.id);
     setSaving(false);
     if (error) { toast.error(error.message); return; }
+    // Audit: log price/stock and per-vendor price/qty changes
+    const trackedKeys = [
+      "price", "wholesale_price", "stock", "total_vendor_inventory",
+      ...Array.from({ length: 21 }, (_, i) => `vendor${i+1}_price`),
+      ...Array.from({ length: 21 }, (_, i) => `vendor${i+1}_quantity`),
+    ] as (keyof Product)[];
+    const { before, after, changed } = diffFields(
+      product as unknown as Record<string, unknown>,
+      draft as unknown as Record<string, unknown>,
+      trackedKeys as unknown as (keyof Record<string, unknown>)[],
+    );
+    if (changed.length) {
+      const hasPrice = changed.some(k => String(k).includes("price"));
+      const hasStock = changed.some(k => String(k).includes("stock") || String(k).includes("quantity") || String(k).includes("inventory"));
+      const action = hasPrice && hasStock
+        ? "inventory.bulk_updated"
+        : hasPrice ? "inventory.price_changed" : "inventory.stock_changed";
+      void logAudit({
+        action,
+        entity_type: "product",
+        entity_id: draft.id,
+        entity_label: `${draft.sku} — ${draft.item_name || draft.name}`,
+        before, after,
+        metadata: { changed_fields: changed, source: "product_detail_edit" },
+      });
+    }
     toast.success("Tire updated successfully");
     onSaved(draft);
     setEditMode(false);
@@ -881,14 +908,31 @@ export function Inventory() {
   const handleUpdate = async () => {
     if (!editing) return;
     setSaving(true);
+    const newPrice = Number(editForm.price) || 0;
+    const newStock = Number(editForm.stock) || 0;
     const { error } = await supabase.from("products").update({
       sku: editForm.sku, name: editForm.name,
       category: editForm.category || "MM",
-      price: Number(editForm.price) || 0,
-      stock: Number(editForm.stock) || 0,
+      price: newPrice, stock: newStock,
     }).eq("id", editing.id);
     setSaving(false);
     if (error) { toast.error(error.message); return; }
+    if (Number(editing.price) !== newPrice) {
+      void logAudit({
+        action: "inventory.price_changed", entity_type: "product",
+        entity_id: editing.id, entity_label: `${editForm.sku} — ${editForm.name}`,
+        before: { price: editing.price }, after: { price: newPrice },
+        metadata: { source: "quick_edit" },
+      });
+    }
+    if (Number(editing.stock) !== newStock) {
+      void logAudit({
+        action: "inventory.stock_changed", entity_type: "product",
+        entity_id: editing.id, entity_label: `${editForm.sku} — ${editForm.name}`,
+        before: { stock: editing.stock }, after: { stock: newStock },
+        metadata: { source: "quick_edit" },
+      });
+    }
     toast.success("Tire updated"); setEditing(null); load();
   };
 
@@ -917,6 +961,11 @@ export function Inventory() {
     const { error } = await supabase.from("products").update(patch as never).in("id", ids);
     setBulkBusy(false);
     if (error) return toast.error(error.message);
+    void logAudit({
+      action: "inventory.bulk_updated", entity_type: "product",
+      entity_id: null, entity_label: `${ids.length} product(s)`,
+      after: patch, metadata: { product_ids: ids, source: "bulk_edit" },
+    });
     toast.success(`${ids.length} tire(s) updated`);
     setBulkOpen(false); setBulkForm({ price:"",stock:"",category:"",mode:"set" }); load();
   };

@@ -1,172 +1,248 @@
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Download, Shield, Pencil, Trash2, DollarSign, Package, User, XCircle, RefreshCw } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Shield, Search, RefreshCw, Download, Eye } from "lucide-react";
 import { toast } from "sonner";
 
-type LogAction = "edit_price"|"edit_inventory"|"delete_product"|"cancel_order"|"login"|"permission_change"|"import"|"export";
-type Log = { id:string; user:string; avatar:string; action:LogAction; module:string; target:string; detail:string; ip:string; time:string; };
-
-const ACTION_COLORS: Record<LogAction,string> = {
-  edit_price:       "bg-yellow-100 text-yellow-700",
-  edit_inventory:   "bg-blue-100 text-blue-700",
-  delete_product:   "bg-red-100 text-red-700",
-  cancel_order:     "bg-red-100 text-red-700",
-  login:            "bg-green-100 text-green-700",
-  permission_change:"bg-purple-100 text-purple-700",
-  import:           "bg-indigo-100 text-indigo-700",
-  export:           "bg-gray-100 text-gray-700",
-};
-const ACTION_ICONS: Record<LogAction,React.ReactNode> = {
-  edit_price:       <DollarSign className="w-3 h-3"/>,
-  edit_inventory:   <Package className="w-3 h-3"/>,
-  delete_product:   <Trash2 className="w-3 h-3"/>,
-  cancel_order:     <XCircle className="w-3 h-3"/>,
-  login:            <User className="w-3 h-3"/>,
-  permission_change:<Shield className="w-3 h-3"/>,
-  import:           <RefreshCw className="w-3 h-3"/>,
-  export:           <Download className="w-3 h-3"/>,
+type Row = {
+  id: string;
+  actor_id: string | null;
+  actor_email: string | null;
+  action: string;
+  entity_type: string;
+  entity_id: string | null;
+  entity_label: string | null;
+  before_value: unknown;
+  after_value: unknown;
+  metadata: unknown;
+  created_at: string;
 };
 
-const LOGS: Log[] = [
-  {id:"1", user:"Sarah Chen",   avatar:"SC",action:"edit_price",       module:"Manage Tires",    target:"GE-Michelin-123", detail:"Price changed from $130 to $145",                    ip:"192.168.1.1",  time:"2026-05-30 09:14:22"},
-  {id:"2", user:"James Dowell", avatar:"JD",action:"edit_inventory",   module:"Manage Tires",    target:"GE-Goodyear-456", detail:"Stock updated from 48 to 52",                        ip:"192.168.1.2",  time:"2026-05-30 08:55:11"},
-  {id:"3", user:"Maria Reyes",  avatar:"MR",action:"import",           module:"Manage Tires",    target:"CSV Import",      detail:"Imported 1,204 tires from fitment CSV",              ip:"192.168.1.3",  time:"2026-05-30 08:30:05"},
-  {id:"4", user:"Sarah Chen",   avatar:"SC",action:"permission_change",module:"User Permissions",target:"Tom Keller",      detail:"Role changed from Staff to Viewer",                  ip:"192.168.1.1",  time:"2026-05-29 16:42:00"},
-  {id:"5", user:"Tom Keller",   avatar:"TK",action:"cancel_order",     module:"Orders",          target:"ORD-2026-0007",   detail:"Order cancelled — reason: Customer cancelled",       ip:"192.168.1.4",  time:"2026-05-29 15:30:44"},
-  {id:"6", user:"James Dowell", avatar:"JD",action:"delete_product",   module:"Manage Tires",    target:"GE-Old-SKU-999",  detail:"Tire deleted from catalog",                         ip:"192.168.1.2",  time:"2026-05-29 14:12:33"},
-  {id:"7", user:"Amy Lin",      avatar:"AL",action:"export",           module:"Reports",         target:"Sales Report",    detail:"Monthly sales report exported as CSV",               ip:"192.168.1.5",  time:"2026-05-29 12:00:00"},
-  {id:"8", user:"Sarah Chen",   avatar:"SC",action:"login",            module:"System",          target:"Auth",            detail:"Successful admin login",                             ip:"192.168.1.1",  time:"2026-05-29 09:00:01"},
-  {id:"9", user:"Nate Ford",    avatar:"NF",action:"edit_price",       module:"Marketplace Pricing",target:"GE-Pirelli-321",detail:"Amazon price changed from $265 to $280",           ip:"192.168.1.8",  time:"2026-05-28 17:45:22"},
-  {id:"10",user:"Rachel Wong",  avatar:"RW",action:"login",            module:"System",          target:"Auth",            detail:"First login after account creation",                 ip:"192.168.1.7",  time:"2026-05-28 10:01:00"},
-  {id:"11",user:"Maria Reyes",  avatar:"MR",action:"edit_inventory",   module:"Vehicle Fitment", target:"Fitment #4821",   detail:"Added 2021 Toyota Camry SE fitment",                ip:"192.168.1.3",  time:"2026-05-27 14:22:11"},
-  {id:"12",user:"James Dowell", avatar:"JD",action:"import",           module:"Vehicle Fitment", target:"CSV Import",      detail:"Imported 320 vehicle fitments",                     ip:"192.168.1.2",  time:"2026-05-27 11:00:00"},
-];
+const ACTION_COLORS: Record<string, string> = {
+  "inventory.stock_changed":  "bg-blue-100 text-blue-700",
+  "inventory.price_changed":  "bg-amber-100 text-amber-700",
+  "inventory.bulk_updated":   "bg-purple-100 text-purple-700",
+  "inventory.created":        "bg-green-100 text-green-700",
+  "inventory.deleted":        "bg-red-100 text-red-700",
+  "order.cancelled":          "bg-red-100 text-red-700",
+  "order.status_changed":     "bg-indigo-100 text-indigo-700",
+  "order.created":            "bg-green-100 text-green-700",
+};
+
+const fmt = (iso: string) => {
+  const d = new Date(iso);
+  return d.toLocaleString();
+};
 
 export function AuditLogs() {
-  const [search, setSearch]       = useState("");
-  const [userFilter, setUserFilter]   = useState("all");
+  const [rows, setRows] = useState<Row[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
   const [actionFilter, setActionFilter] = useState("all");
-  const [moduleFilter, setModuleFilter] = useState("all");
+  const [entityFilter, setEntityFilter] = useState("all");
+  const [detail, setDetail] = useState<Row | null>(null);
 
-  const uniqueUsers   = Array.from(new Set(LOGS.map(l=>l.user)));
-  const uniqueModules = Array.from(new Set(LOGS.map(l=>l.module)));
+  const load = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("audit_logs")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(500);
+    setLoading(false);
+    if (error) { toast.error(error.message); return; }
+    setRows((data ?? []) as Row[]);
+  };
 
-  const filtered = useMemo(()=>LOGS.filter(l=>{
+  useEffect(() => { load(); }, []);
+
+  const actions = useMemo(
+    () => Array.from(new Set(rows.map(r => r.action))).sort(),
+    [rows],
+  );
+
+  const filtered = useMemo(() => rows.filter(r => {
     const q = search.toLowerCase();
-    const ms = !q || l.user.toLowerCase().includes(q) || l.target.toLowerCase().includes(q) || l.detail.toLowerCase().includes(q);
-    const mu = userFilter==="all"   || l.user===userFilter;
-    const ma = actionFilter==="all" || l.action===actionFilter;
-    const mm = moduleFilter==="all" || l.module===moduleFilter;
-    return ms&&mu&&ma&&mm;
-  }),[search,userFilter,actionFilter,moduleFilter]);
+    const matchSearch = !q
+      || (r.actor_email || "").toLowerCase().includes(q)
+      || (r.entity_label || "").toLowerCase().includes(q)
+      || (r.entity_id || "").toLowerCase().includes(q)
+      || r.action.toLowerCase().includes(q);
+    const matchAction = actionFilter === "all" || r.action === actionFilter;
+    const matchEntity = entityFilter === "all" || r.entity_type === entityFilter;
+    return matchSearch && matchAction && matchEntity;
+  }), [rows, search, actionFilter, entityFilter]);
 
   const exportCSV = () => {
-    const header = "Time,User,Action,Module,Target,Detail,IP";
-    const rows = filtered.map(l=>`${l.time},${l.user},${l.action},${l.module},${l.target},"${l.detail}",${l.ip}`);
-    const blob = new Blob([[header,...rows].join("\n")],{type:"text/csv"});
-    const a = document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="audit-logs.csv"; a.click();
-    toast.success("Audit log exported");
+    const header = "When,Actor,Action,Entity,Label,Before,After";
+    const lines = filtered.map(r => [
+      fmt(r.created_at),
+      r.actor_email || r.actor_id || "",
+      r.action,
+      r.entity_type,
+      r.entity_label || r.entity_id || "",
+      JSON.stringify(r.before_value ?? ""),
+      JSON.stringify(r.after_value ?? ""),
+    ].map(s => `"${String(s).replace(/"/g, '""')}"`).join(","));
+    const blob = new Blob([[header, ...lines].join("\n")], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = "audit-logs.csv"; a.click();
+  };
+
+  const summarize = (r: Row): string => {
+    const b = r.before_value as Record<string, unknown> | null;
+    const a = r.after_value as Record<string, unknown> | null;
+    if (!b && !a) return "—";
+    const keys = Array.from(new Set([...(b ? Object.keys(b) : []), ...(a ? Object.keys(a) : [])]));
+    return keys.slice(0, 3).map(k => `${k}: ${b?.[k] ?? "—"} → ${a?.[k] ?? "—"}`).join(", ")
+      + (keys.length > 3 ? ` (+${keys.length - 3})` : "");
   };
 
   return (
     <div className="flex-1 overflow-auto p-6 space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2"><Shield className="w-6 h-6"/>Audit Logs</h1>
-          <p className="text-sm text-muted-foreground">Track who changed inventory, prices, orders and permissions</p>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <Shield className="w-6 h-6"/>Audit Logs
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Who changed inventory, edited prices, or cancelled orders
+          </p>
         </div>
-        <Button variant="outline" size="sm" onClick={exportCSV}><Download className="w-4 h-4 mr-1"/>Export Logs</Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={exportCSV}>
+            <Download className="w-4 h-4 mr-1"/>Export CSV
+          </Button>
+          <Button variant="outline" size="sm" onClick={load} disabled={loading}>
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`}/>Refresh
+          </Button>
+        </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {[
-          {label:"Total Events",    value:LOGS.length,                                       color:"text-blue-600"},
-          {label:"Price Changes",   value:LOGS.filter(l=>l.action==="edit_price").length,    color:"text-yellow-600"},
-          {label:"Deletions",       value:LOGS.filter(l=>l.action==="delete_product").length,color:"text-red-600"},
-          {label:"Logins Today",    value:LOGS.filter(l=>l.action==="login").length,         color:"text-green-600"},
-        ].map(s=>(
-          <Card key={s.label} className="p-4 text-center">
-            <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
-            <p className="text-xs text-muted-foreground mt-1">{s.label}</p>
-          </Card>
-        ))}
-      </div>
-
-      {/* Filters */}
       <Card className="p-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <div className="relative">
+        <div className="flex flex-wrap gap-3">
+          <div className="relative flex-1 min-w-48">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"/>
-            <Input className="pl-9" placeholder="Search logs..." value={search} onChange={e=>setSearch(e.target.value)}/>
+            <Input className="pl-9" placeholder="Search actor, entity, action..."
+              value={search} onChange={e => setSearch(e.target.value)}/>
           </div>
-          <Select value={userFilter} onValueChange={setUserFilter}>
-            <SelectTrigger><SelectValue placeholder="All Users"/></SelectTrigger>
-            <SelectContent><SelectItem value="all">All Users</SelectItem>{uniqueUsers.map(u=><SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
-          </Select>
-          <Select value={actionFilter} onValueChange={setActionFilter}>
-            <SelectTrigger><SelectValue placeholder="All Actions"/></SelectTrigger>
+          <Select value={entityFilter} onValueChange={setEntityFilter}>
+            <SelectTrigger className="w-40"><SelectValue/></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Actions</SelectItem>
-              {["edit_price","edit_inventory","delete_product","cancel_order","login","permission_change","import","export"].map(a=><SelectItem key={a} value={a}>{a.replace(/_/g," ")}</SelectItem>)}
+              <SelectItem value="all">All entities</SelectItem>
+              <SelectItem value="product">Product</SelectItem>
+              <SelectItem value="order">Order</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={moduleFilter} onValueChange={setModuleFilter}>
-            <SelectTrigger><SelectValue placeholder="All Modules"/></SelectTrigger>
-            <SelectContent><SelectItem value="all">All Modules</SelectItem>{uniqueModules.map(m=><SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+          <Select value={actionFilter} onValueChange={setActionFilter}>
+            <SelectTrigger className="w-56"><SelectValue/></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All actions</SelectItem>
+              {actions.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+            </SelectContent>
           </Select>
         </div>
       </Card>
 
       <Card>
-        <div className="p-4 border-b">
-          <p className="text-sm text-muted-foreground">Showing {filtered.length} of {LOGS.length} log entries</p>
-        </div>
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Timestamp</TableHead>
-                <TableHead>User</TableHead>
+                <TableHead className="w-44">When</TableHead>
+                <TableHead>Actor</TableHead>
                 <TableHead>Action</TableHead>
-                <TableHead>Module</TableHead>
-                <TableHead>Target</TableHead>
-                <TableHead>Detail</TableHead>
-                <TableHead>IP Address</TableHead>
+                <TableHead>Entity</TableHead>
+                <TableHead>Change</TableHead>
+                <TableHead className="w-16"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map(l=>(
-                <TableRow key={l.id}>
-                  <TableCell className="font-mono text-xs text-muted-foreground whitespace-nowrap">{l.time}</TableCell>
+              {loading && (
+                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-10">
+                  Loading audit logs...
+                </TableCell></TableRow>
+              )}
+              {!loading && filtered.length === 0 && (
+                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-10">
+                  No audit entries yet
+                </TableCell></TableRow>
+              )}
+              {filtered.map(r => (
+                <TableRow key={r.id}>
+                  <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{fmt(r.created_at)}</TableCell>
+                  <TableCell className="text-sm font-medium">{r.actor_email || r.actor_id?.slice(0,8) || "—"}</TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
-                        {l.avatar}
-                      </div>
-                      <span className="text-sm font-medium">{l.user}</span>
+                    <Badge className={`text-xs ${ACTION_COLORS[r.action] || "bg-gray-100 text-gray-700"}`}>
+                      {r.action}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-sm">
+                      <p className="font-medium">{r.entity_label || r.entity_id?.slice(0,8) || "—"}</p>
+                      <p className="text-xs text-muted-foreground capitalize">{r.entity_type}</p>
                     </div>
                   </TableCell>
+                  <TableCell className="text-xs text-muted-foreground max-w-md truncate">{summarize(r)}</TableCell>
                   <TableCell>
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${ACTION_COLORS[l.action]}`}>
-                      {ACTION_ICONS[l.action]}{l.action.replace(/_/g," ")}
-                    </span>
+                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setDetail(r)}>
+                      <Eye className="w-4 h-4"/>
+                    </Button>
                   </TableCell>
-                  <TableCell><Badge variant="outline" className="text-xs">{l.module}</Badge></TableCell>
-                  <TableCell className="font-mono text-xs">{l.target}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground max-w-xs truncate">{l.detail}</TableCell>
-                  <TableCell className="font-mono text-xs text-muted-foreground">{l.ip}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </div>
       </Card>
+
+      <Dialog open={!!detail} onOpenChange={o => !o && setDetail(null)}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          {detail && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Shield className="w-5 h-5"/>{detail.action}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div><p className="text-muted-foreground">When</p><p className="font-medium">{fmt(detail.created_at)}</p></div>
+                <div><p className="text-muted-foreground">Actor</p><p className="font-medium">{detail.actor_email || "—"}</p></div>
+                <div><p className="text-muted-foreground">Entity</p><p className="font-medium capitalize">{detail.entity_type}</p></div>
+                <div><p className="text-muted-foreground">Label</p><p className="font-medium">{detail.entity_label || detail.entity_id || "—"}</p></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 mt-2">
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground mb-1">Before</p>
+                  <pre className="bg-muted/40 rounded p-2 text-xs overflow-x-auto max-h-64">
+{JSON.stringify(detail.before_value ?? null, null, 2)}
+                  </pre>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground mb-1">After</p>
+                  <pre className="bg-muted/40 rounded p-2 text-xs overflow-x-auto max-h-64">
+{JSON.stringify(detail.after_value ?? null, null, 2)}
+                  </pre>
+                </div>
+              </div>
+              {detail.metadata != null && (
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground mb-1">Metadata</p>
+                  <pre className="bg-muted/40 rounded p-2 text-xs overflow-x-auto max-h-40">
+{JSON.stringify(detail.metadata, null, 2)}
+                  </pre>
+                </div>
+              )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
