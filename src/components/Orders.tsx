@@ -1,4 +1,5 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -81,6 +82,77 @@ export function Orders() {
   const [returnOrder, setReturnOrder] = useState<Order | null>(null);
   const [returnReason, setReturnReason] = useState("");
   const [returns, setReturns] = useState<{id:string;orderNo:string;customer:string;rma:string;reason:string;status:string;date:string}[]>([]);
+
+  // New order dialog
+  const emptyItem = { sku: "", name: "", qty: 1, price: 0 };
+  const blankNew = {
+    order_no: "", customer: "", email: "", phone: "",
+    channel: "Shopify", warehouse: "", carrier: "", tracking_no: "",
+    notes: "", backorder: false,
+    items: [ { ...emptyItem } ],
+  };
+  const [newOpen, setNewOpen] = useState(false);
+  const [newOrder, setNewOrder] = useState<typeof blankNew>(blankNew);
+  const [saving, setSaving] = useState(false);
+  const fileRef = useRef<HTMLInputElement | null>(null);
+
+  const newTotal = newOrder.items.reduce((s,i)=> s + (Number(i.qty)||0) * (Number(i.price)||0), 0);
+
+  const createOrder = async () => {
+    if (!newOrder.order_no.trim() || !newOrder.customer.trim()) {
+      toast.error("Order # and customer are required"); return;
+    }
+    setSaving(true);
+    const { data, error } = await supabase.from("orders").insert({
+      order_no: newOrder.order_no.trim(),
+      customer: newOrder.customer.trim(),
+      email: newOrder.email || null,
+      phone: newOrder.phone || null,
+      status: "New Order",
+      channel: newOrder.channel || null,
+      warehouse: newOrder.warehouse || null,
+      carrier: newOrder.carrier || null,
+      tracking_no: newOrder.tracking_no || null,
+      notes: newOrder.notes || null,
+      backorder: newOrder.backorder,
+      total: newTotal,
+    }).select("id").single();
+    if (error || !data) { setSaving(false); toast.error(error?.message || "Failed"); return; }
+    const items = newOrder.items
+      .filter(i => i.sku.trim() || i.name.trim())
+      .map(i => ({ order_id: data.id, sku: i.sku, name: i.name, qty: Number(i.qty)||0, price: Number(i.price)||0 }));
+    if (items.length) {
+      const { error: iErr } = await supabase.from("order_items").insert(items);
+      if (iErr) { setSaving(false); toast.error(iErr.message); return; }
+    }
+    setSaving(false); setNewOpen(false); setNewOrder(blankNew);
+    toast.success(`Order ${newOrder.order_no} created`);
+    loadOrders();
+  };
+
+  const importCSV = async (file: File) => {
+    const text = await file.text();
+    const lines = text.split(/\r?\n/).filter(l => l.trim());
+    if (lines.length < 2) { toast.error("CSV is empty"); return; }
+    const header = lines[0].split(",").map(h => h.trim().toLowerCase());
+    const idx = (k:string) => header.indexOf(k);
+    const rows = lines.slice(1).map(l => {
+      const c = l.split(",");
+      return {
+        order_no: c[idx("order no")] ?? c[idx("order_no")] ?? c[0],
+        customer: c[idx("customer")] ?? c[1] ?? "",
+        email: c[idx("email")] ?? null,
+        channel: c[idx("channel")] ?? "Shopify",
+        total: Number(c[idx("total")]?.replace(/[^0-9.\-]/g,"")) || 0,
+        status: "New Order",
+      };
+    }).filter(r => r.order_no);
+    if (!rows.length) { toast.error("No valid rows found"); return; }
+    const { error } = await supabase.from("orders").insert(rows);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Imported ${rows.length} order(s)`);
+    loadOrders();
+  };
 
   const loadOrders = async () => {
     const { data, error } = await supabase
@@ -195,8 +267,14 @@ export function Orders() {
         </div>
         <div className="flex gap-2 flex-wrap">
           <Button variant="outline" size="sm" onClick={exportCSV}><Download className="w-4 h-4 mr-1"/>Export CSV</Button>
-          <Button variant="outline" size="sm"><Upload className="w-4 h-4 mr-1"/>Import Orders</Button>
-          <Button size="sm"><Plus className="w-4 h-4 mr-1"/>New Order</Button>
+          <input ref={fileRef} type="file" accept=".csv,text/csv" className="hidden"
+            onChange={e => { const f = e.target.files?.[0]; if (f) importCSV(f); e.target.value=""; }}/>
+          <Button variant="outline" size="sm" onClick={()=>fileRef.current?.click()}>
+            <Upload className="w-4 h-4 mr-1"/>Import Orders
+          </Button>
+          <Button size="sm" onClick={()=>setNewOpen(true)}>
+            <Plus className="w-4 h-4 mr-1"/>New Order
+          </Button>
         </div>
       </div>
 
@@ -506,6 +584,107 @@ export function Orders() {
           <DialogFooter>
             <Button variant="outline" onClick={()=>setReturnOrder(null)}>Cancel</Button>
             <Button onClick={submitReturn}><RotateCcw className="w-4 h-4 mr-1"/>Submit Return</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── New Order Dialog ── */}
+      <Dialog open={newOpen} onOpenChange={setNewOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Plus className="w-5 h-5"/>Create New Order</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Order # *</Label>
+                <Input value={newOrder.order_no} onChange={e=>setNewOrder({...newOrder, order_no:e.target.value})} placeholder="ORD-1001"/>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Channel</Label>
+                <Select value={newOrder.channel} onValueChange={v=>setNewOrder({...newOrder, channel:v})}>
+                  <SelectTrigger><SelectValue/></SelectTrigger>
+                  <SelectContent>
+                    {["Amazon","eBay","Walmart","Shopify","Manual"].map(c=><SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Customer *</Label>
+                <Input value={newOrder.customer} onChange={e=>setNewOrder({...newOrder, customer:e.target.value})}/>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Email</Label>
+                <Input type="email" value={newOrder.email} onChange={e=>setNewOrder({...newOrder, email:e.target.value})}/>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Phone</Label>
+                <Input value={newOrder.phone} onChange={e=>setNewOrder({...newOrder, phone:e.target.value})}/>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Warehouse</Label>
+                <Input value={newOrder.warehouse} onChange={e=>setNewOrder({...newOrder, warehouse:e.target.value})}/>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Carrier</Label>
+                <Input value={newOrder.carrier} onChange={e=>setNewOrder({...newOrder, carrier:e.target.value})}/>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Tracking #</Label>
+                <Input value={newOrder.tracking_no} onChange={e=>setNewOrder({...newOrder, tracking_no:e.target.value})}/>
+              </div>
+            </div>
+
+            <Separator/>
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <Label>Items</Label>
+                <Button size="sm" variant="outline" onClick={()=>setNewOrder({...newOrder, items:[...newOrder.items, {...emptyItem}]})}>
+                  <Plus className="w-3 h-3 mr-1"/>Add Item
+                </Button>
+              </div>
+              <div className="space-y-2">
+                {newOrder.items.map((it,i)=>(
+                  <div key={i} className="grid grid-cols-12 gap-2 items-center">
+                    <Input className="col-span-3" placeholder="SKU" value={it.sku} onChange={e=>{
+                      const items=[...newOrder.items]; items[i]={...it, sku:e.target.value}; setNewOrder({...newOrder, items});
+                    }}/>
+                    <Input className="col-span-5" placeholder="Name" value={it.name} onChange={e=>{
+                      const items=[...newOrder.items]; items[i]={...it, name:e.target.value}; setNewOrder({...newOrder, items});
+                    }}/>
+                    <Input className="col-span-1" type="number" min="1" value={it.qty} onChange={e=>{
+                      const items=[...newOrder.items]; items[i]={...it, qty:Number(e.target.value)}; setNewOrder({...newOrder, items});
+                    }}/>
+                    <Input className="col-span-2" type="number" step="0.01" placeholder="Price" value={it.price} onChange={e=>{
+                      const items=[...newOrder.items]; items[i]={...it, price:Number(e.target.value)}; setNewOrder({...newOrder, items});
+                    }}/>
+                    <Button size="sm" variant="ghost" className="col-span-1"
+                      onClick={()=>setNewOrder({...newOrder, items: newOrder.items.filter((_,j)=>j!==i)})}
+                      disabled={newOrder.items.length===1}>
+                      <XCircle className="w-4 h-4"/>
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-end mt-3 font-semibold text-sm">
+                Total: ${newTotal.toFixed(2)}
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Notes</Label>
+              <Textarea rows={2} value={newOrder.notes} onChange={e=>setNewOrder({...newOrder, notes:e.target.value})}/>
+            </div>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={newOrder.backorder} onChange={e=>setNewOrder({...newOrder, backorder:e.target.checked})}/>
+              Mark as backorder
+            </label>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={()=>setNewOpen(false)}>Cancel</Button>
+            <Button onClick={createOrder} disabled={saving}>
+              <Plus className="w-4 h-4 mr-1"/>{saving ? "Saving..." : "Create Order"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
