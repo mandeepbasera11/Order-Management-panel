@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Plus, Upload, Download, Truck, Package, CheckCircle2, Clock, RefreshCw, XCircle, RotateCcw, FileText, AlertTriangle, ChevronRight, pencil } from "lucide-react";
+import { Search, Plus, Upload, Download, Truck, Package, CheckCircle2, Clock, RefreshCw, XCircle, RotateCcw, FileText, AlertTriangle, ChevronRight, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { logAudit } from "@/lib/audit";
 
@@ -222,6 +222,27 @@ export function Orders() {
     setSelected(new Set());
   };
 
+  // FIX: moved saveOrderChanges out of bulkCancel to top-level scope
+  const saveOrderChanges = async () => {
+    if (!editOrder) return;
+    const { error } = await supabase
+      .from("orders")
+      .update({
+        customer: editOrder.customer,
+        email: editOrder.email,
+        warehouse: editOrder.warehouse,
+        carrier: editOrder.carrier,
+        tracking_no: editOrder.trackingNo,
+        notes: editOrder.notes,
+      })
+      .eq("id", editOrder.id);
+    if (error) { toast.error(error.message); return; }
+    setOrders((prev) => prev.map((o) => o.id === editOrder.id ? editOrder : o));
+    if (viewOrder?.id === editOrder.id) { setViewOrder(editOrder); }
+    toast.success("Order updated successfully");
+    setEditOpen(false);
+  };
+
   const bulkCancel = async () => {
     const ids = Array.from(selected);
     const { error } = await supabase.from("orders").update({ status: "Cancelled" }).in("id", ids);
@@ -235,40 +256,6 @@ export function Orders() {
         metadata: { customer: o.customer, total: o.total, source: "bulk_cancel" },
       });
     }
-    const saveOrderChanges = async () => {
-  if (!editOrder) return;
-
-  const { error } = await supabase
-    .from("orders")
-    .update({
-      customer: editOrder.customer,
-      email: editOrder.email,
-      warehouse: editOrder.warehouse,
-      carrier: editOrder.carrier,
-      tracking_no: editOrder.trackingNo,
-      notes: editOrder.notes,
-    })
-    .eq("id", editOrder.id);
-
-  if (error) {
-    toast.error(error.message);
-    return;
-  }
-
-  setOrders((prev) =>
-    prev.map((o) =>
-      o.id === editOrder.id ? editOrder : o
-    )
-  );
-
-  if (viewOrder?.id === editOrder.id) {
-    setViewOrder(editOrder);
-  }
-
-  toast.success("Order updated successfully");
-
-  setEditOpen(false);
-};
     setOrders(os => os.map(o => selected.has(o.id) ? {...o, status:"Cancelled"} : o));
     toast.success(`${ids.length} order(s) cancelled`);
     setSelected(new Set());
@@ -546,31 +533,26 @@ export function Orders() {
           {viewOrder && (
             <>
               <DialogHeader>
-              <DialogTitle className="flex items-center justify-between">
-  <div className="flex items-center gap-2">
-    <Package className="w-5 h-5" />
-
-    {viewOrder.orderNo}
-
-    <span
-      className={`ml-2 px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[viewOrder.status]}`}
-    >
-      {viewOrder.status}
-    </span>
-  </div>
-
-  <Button
-    size="sm"
-    variant="outline"
-    onClick={() => {
-      setEditOrder({ ...viewOrder });
-      setEditOpen(true);
-    }}
-  >
-    <Pencil className="w-4 h-4 mr-1" />
-    Edit
-  </Button>
-</DialogTitle>
+                <DialogTitle className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Package className="w-5 h-5" />
+                    {viewOrder.orderNo}
+                    <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[viewOrder.status]}`}>
+                      {viewOrder.status}
+                    </span>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setEditOrder({ ...viewOrder });
+                      setEditOpen(true);
+                    }}
+                  >
+                    <Pencil className="w-4 h-4 mr-1" />
+                    Edit
+                  </Button>
+                </DialogTitle>
               </DialogHeader>
               {/* Workflow stepper */}
               <div className="flex items-center gap-1 py-3 overflow-x-auto">
@@ -628,116 +610,50 @@ export function Orders() {
           )}
         </DialogContent>
       </Dialog>
-<Dialog open={editOpen} onOpenChange={setEditOpen}>
-  <DialogContent className="max-w-xl">
-    <DialogHeader>
-      <DialogTitle>Edit Order</DialogTitle>
-    </DialogHeader>
 
-    {editOrder && (
-      <div className="space-y-4">
+      {/* ── Edit Order Dialog ── */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Edit Order</DialogTitle>
+          </DialogHeader>
+          {editOrder && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Customer</Label>
+                  <Input value={editOrder.customer} onChange={(e) => setEditOrder({ ...editOrder, customer: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Email</Label>
+                  <Input value={editOrder.email} onChange={(e) => setEditOrder({ ...editOrder, email: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Warehouse</Label>
+                  <Input value={editOrder.warehouse} onChange={(e) => setEditOrder({ ...editOrder, warehouse: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Carrier</Label>
+                  <Input value={editOrder.carrier} onChange={(e) => setEditOrder({ ...editOrder, carrier: e.target.value })} />
+                </div>
+                <div>
+                  <Label>Tracking Number</Label>
+                  <Input value={editOrder.trackingNo} onChange={(e) => setEditOrder({ ...editOrder, trackingNo: e.target.value })} />
+                </div>
+              </div>
+              <div>
+                <Label>Notes</Label>
+                <Textarea rows={4} value={editOrder.notes} onChange={(e) => setEditOrder({ ...editOrder, notes: e.target.value })} />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+            <Button onClick={saveOrderChanges}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-        <div className="grid grid-cols-2 gap-3">
-
-          <div>
-            <Label>Customer</Label>
-            <Input
-              value={editOrder.customer}
-              onChange={(e) =>
-                setEditOrder({
-                  ...editOrder,
-                  customer: e.target.value,
-                })
-              }
-            />
-          </div>
-
-          <div>
-            <Label>Email</Label>
-            <Input
-              value={editOrder.email}
-              onChange={(e) =>
-                setEditOrder({
-                  ...editOrder,
-                  email: e.target.value,
-                })
-              }
-            />
-          </div>
-
-          <div>
-            <Label>Warehouse</Label>
-            <Input
-              value={editOrder.warehouse}
-              onChange={(e) =>
-                setEditOrder({
-                  ...editOrder,
-                  warehouse: e.target.value,
-                })
-              }
-            />
-          </div>
-
-          <div>
-            <Label>Carrier</Label>
-            <Input
-              value={editOrder.carrier}
-              onChange={(e) =>
-                setEditOrder({
-                  ...editOrder,
-                  carrier: e.target.value,
-                })
-              }
-            />
-          </div>
-
-          <div>
-            <Label>Tracking Number</Label>
-            <Input
-              value={editOrder.trackingNo}
-              onChange={(e) =>
-                setEditOrder({
-                  ...editOrder,
-                  trackingNo: e.target.value,
-                })
-              }
-            />
-          </div>
-
-        </div>
-
-        <div>
-          <Label>Notes</Label>
-
-          <Textarea
-            rows={4}
-            value={editOrder.notes}
-            onChange={(e) =>
-              setEditOrder({
-                ...editOrder,
-                notes: e.target.value,
-              })
-            }
-          />
-        </div>
-
-      </div>
-    )}
-
-    <DialogFooter>
-      <Button
-        variant="outline"
-        onClick={() => setEditOpen(false)}
-      >
-        Cancel
-      </Button>
-
-      <Button onClick={saveOrderChanges}>
-        Save Changes
-      </Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
       {/* ── Return Dialog ── */}
       <Dialog open={!!returnOrder} onOpenChange={o=>!o&&setReturnOrder(null)}>
         <DialogContent className="max-w-md">
