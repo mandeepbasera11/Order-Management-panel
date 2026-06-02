@@ -20,6 +20,8 @@ import { UserPermissions } from "@/components/UserPermissions";
 
 import { ImportStatus } from "@/components/ImportStatus";
 
+import { Orders } from "@/components/Orders";
+
 import { Placeholder } from "@/components/Placeholder";
 
 
@@ -79,6 +81,8 @@ const Index = () => {
     if (active === "User Permissions") return <UserPermissions />;
 
     if (active === "Import Status") return <ImportStatus />;
+
+    if (active === "Orders") return <Orders />;
 
     return <Placeholder title={active} description={descriptions[active]} />;
 
