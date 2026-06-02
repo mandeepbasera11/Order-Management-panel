@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Plus, Upload, Download, Truck, Package, CheckCircle2, Clock, RefreshCw, XCircle, RotateCcw, FileText, AlertTriangle, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
+import { logAudit } from "@/lib/audit";
 
 type OrderStatus = "New Order" | "Processing" | "Picking" | "Packed" | "Shipped" | "Delivered" | "Cancelled" | "Returned";
 type Order = {
@@ -205,6 +206,11 @@ export function Orders() {
     const next = STATUS_FLOW[idx + 1];
     const { error } = await supabase.from("orders").update({ status: next }).eq("id", id);
     if (error) { toast.error(error.message); return; }
+    void logAudit({
+      action: "order.status_changed", entity_type: "order",
+      entity_id: id, entity_label: o.orderNo,
+      before: { status: o.status }, after: { status: next },
+    });
     setOrders(os => os.map(x => x.id === id ? { ...x, status: next, updated: new Date().toISOString().slice(0,10) } : x));
     toast.success(`Order ${o.orderNo} → ${next}`);
   };
@@ -218,6 +224,15 @@ export function Orders() {
     const ids = Array.from(selected);
     const { error } = await supabase.from("orders").update({ status: "Cancelled" }).in("id", ids);
     if (error) { toast.error(error.message); return; }
+    const cancelled = orders.filter(o => selected.has(o.id));
+    for (const o of cancelled) {
+      void logAudit({
+        action: "order.cancelled", entity_type: "order",
+        entity_id: o.id, entity_label: o.orderNo,
+        before: { status: o.status }, after: { status: "Cancelled" },
+        metadata: { customer: o.customer, total: o.total, source: "bulk_cancel" },
+      });
+    }
     setOrders(os => os.map(o => selected.has(o.id) ? {...o, status:"Cancelled"} : o));
     toast.success(`${ids.length} order(s) cancelled`);
     setSelected(new Set());
