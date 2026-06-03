@@ -21,8 +21,7 @@ const orderKPIs = [
 ];
 
 const tireStats = [
-  { title: "Tire Revenue",    value: "$284,920", change: "+18.4% from last month", changeType: "positive" as const, icon: DollarSign   },
-  { title: "Tires in Stock",  value: "12,847",   change: "+342 units this week",   changeType: "positive" as const, icon: Package      },
+    { title: "Tires in Stock",  value: "12,847",   change: "+342 units this week",   changeType: "positive" as const, icon: Package      },
   { title: "Tires Sold (MTD)",value: "3,128",    change: "+22.6% from last month", changeType: "positive" as const, icon: ShoppingCart },
   { title: "Low Stock SKUs",  value: "47",       change: "Needs reorder",          changeType: "negative" as const, icon: AlertTriangle },
 ];
