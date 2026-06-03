@@ -112,7 +112,6 @@ export function Dashboard() {
 
         {/* Tire KPI cards */}
         <div>
-          <h3 className="font-semibold text-base mb-3">Tire Sales Dashboard</h3>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {tireStats.map(stat => (
               <StatsCard key={stat.title} {...stat} />
