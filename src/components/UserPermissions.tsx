@@ -161,7 +161,7 @@ const ROLE_PRESETS: Record<Role, Record<string, boolean>> = {
 // ─── Sample users ─────────────────────────────────────────────────────────────
 const AVATARS = ["SC","JD","MR","TK","AL","PB","RW","NF"];
 const initUsers = (): StaffUser[] => [
-  { id:"1", name:"Sarah Chen",     email:"sarah@dmtire.com",   phone:"(555) 001-0001", role:"Admin",   status:"Active",   lastLogin:"2026-05-30 09:14", avatar:"SC", permissions:{...ROLE_PRESETS.Admin}   },
+  { id:"1", name:"Life Shift Vision",     email:"LifeShiftVision@dmtire.com",   phone:"(555) 001-0001", role:"Admin",   status:"Active",   lastLogin:"2026-05-30 09:14", avatar:"SC", permissions:{...ROLE_PRESETS.Admin}   },
   { id:"2", name:"James Dowell",   email:"james@dmtire.com",   phone:"(555) 001-0002", role:"Manager", status:"Active",   lastLogin:"2026-05-29 16:42", avatar:"JD", permissions:{...ROLE_PRESETS.Manager} },
   { id:"3", name:"Maria Reyes",    email:"maria@dmtire.com",   phone:"(555) 001-0003", role:"Staff",   status:"Active",   lastLogin:"2026-05-30 08:05", avatar:"MR", permissions:{...ROLE_PRESETS.Staff}   },
   { id:"4", name:"Tom Keller",     email:"tom@dmtire.com",     phone:"(555) 001-0004", role:"Staff",   status:"Inactive", lastLogin:"2026-05-10 11:30", avatar:"TK", permissions:{...ROLE_PRESETS.Staff}   },
