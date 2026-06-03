@@ -16,7 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import {
   Search, Plus, Upload, Download, Truck, Package, CheckCircle2, Clock,
   XCircle, RotateCcw, FileText, AlertTriangle, ChevronRight, Pencil,
-  RefreshCw, Calendar, ChevronLeft, Store, ShieldAlert, X,
+  RefreshCw, Calendar, ChevronLeft, Store, ShieldAlert, X, Columns,
 } from "lucide-react";
 import { toast } from "sonner";
 import { logAudit } from "@/lib/audit";
@@ -92,6 +92,93 @@ const VENDORS = [
   "Gateway - Ohio","Gateway Tire - Texas","GE Tire Hickory, NC",
   "Hesselbein","Hesselbein - Jackson, MS","Kerle Tire",
 ];
+
+// ─── Column definitions ───────────────────────────────────────────────────────
+type ColKey =
+  // Basic
+  | "orderId" | "orderNumber" | "orderDate" | "orderStatus" | "source" | "itemId"
+  | "product" | "qty" | "status"
+  // Customer
+  | "customerId" | "customerUsername" | "customerName" | "customerPhone" | "customerEmail"
+  // Shipping
+  | "shipStreet1" | "shipStreet2" | "shipStreet3" | "shipCity" | "shipState" | "shipPostalCode"
+  | "shipCountry" | "residential" | "requestedService" | "serviceType" | "carrier"
+  // Financial
+  | "retailPrice" | "taxAmount" | "amountPaid" | "vendorPrice" | "shippingCost" | "totalCost"
+  | "marginPerTire"
+  // Vendor
+  | "vendorId" | "vendorName" | "vendorShipFrom"
+  // Tracking
+  | "trackingNumber" | "deliveredAt" | "shipstationOrderId" | "labelUrl"
+  | "labelCreatedAt" | "labelStatus" | "shipmentId"
+  // Metadata
+  | "storeId" | "orderItemId" | "lineItemKey" | "createdAt" | "updatedAt"
+  // Actions
+  | "actions";
+
+type ColDef = { key: ColKey; label: string; group: string; defaultOn: boolean };
+
+const COLUMN_DEFS: ColDef[] = [
+  // Basic Information
+  { key:"orderId",          label:"Order ID",             group:"Basic Information",    defaultOn:true  },
+  { key:"orderNumber",      label:"Order Number",         group:"Basic Information",    defaultOn:false },
+  { key:"orderDate",        label:"Order Date",           group:"Basic Information",    defaultOn:false },
+  { key:"orderStatus",      label:"Order Status",         group:"Basic Information",    defaultOn:true  },
+  { key:"source",           label:"Source",               group:"Basic Information",    defaultOn:false },
+  { key:"itemId",           label:"Item ID",              group:"Basic Information",    defaultOn:false },
+  { key:"product",          label:"Product",              group:"Basic Information",    defaultOn:true  },
+  { key:"qty",              label:"Qty",                  group:"Basic Information",    defaultOn:true  },
+  { key:"status",           label:"Status",               group:"Basic Information",    defaultOn:true  },
+  // Customer Information
+  { key:"customerId",       label:"Customer ID",          group:"Customer Information", defaultOn:false },
+  { key:"customerUsername", label:"Customer Username",    group:"Customer Information", defaultOn:false },
+  { key:"customerName",     label:"Customer Name",        group:"Customer Information", defaultOn:true  },
+  { key:"customerPhone",    label:"Customer Phone",       group:"Customer Information", defaultOn:false },
+  { key:"customerEmail",    label:"Customer Email",       group:"Customer Information", defaultOn:false },
+  // Shipping Information
+  { key:"shipStreet1",      label:"Ship To Street 1",     group:"Shipping Information", defaultOn:false },
+  { key:"shipStreet2",      label:"Ship To Street 2",     group:"Shipping Information", defaultOn:false },
+  { key:"shipStreet3",      label:"Ship To Street 3",     group:"Shipping Information", defaultOn:false },
+  { key:"shipCity",         label:"Ship To City",         group:"Shipping Information", defaultOn:false },
+  { key:"shipState",        label:"Ship To State",        group:"Shipping Information", defaultOn:false },
+  { key:"shipPostalCode",   label:"Ship To Postal Code",  group:"Shipping Information", defaultOn:false },
+  { key:"shipCountry",      label:"Ship To Country",      group:"Shipping Information", defaultOn:false },
+  { key:"residential",      label:"Residential",          group:"Shipping Information", defaultOn:false },
+  { key:"requestedService", label:"Requested Service",    group:"Shipping Information", defaultOn:false },
+  { key:"serviceType",      label:"Service Type",         group:"Shipping Information", defaultOn:false },
+  { key:"carrier",          label:"Carrier",              group:"Shipping Information", defaultOn:false },
+  // Financial Information
+  { key:"retailPrice",      label:"Retail Price",         group:"Financial Information",defaultOn:false },
+  { key:"taxAmount",        label:"Tax Amount",           group:"Financial Information",defaultOn:false },
+  { key:"amountPaid",       label:"Amount Paid",          group:"Financial Information",defaultOn:false },
+  { key:"vendorPrice",      label:"Vendor Price",         group:"Financial Information",defaultOn:false },
+  { key:"shippingCost",     label:"Shipping Cost",        group:"Financial Information",defaultOn:false },
+  { key:"totalCost",        label:"Total Cost",           group:"Financial Information",defaultOn:false },
+  { key:"marginPerTire",    label:"Margin per tire",      group:"Financial Information",defaultOn:false },
+  // Vendor Information
+  { key:"vendorId",         label:"Vendor ID",            group:"Vendor Information",   defaultOn:false },
+  { key:"vendorName",       label:"Vendor Name",          group:"Vendor Information",   defaultOn:true  },
+  { key:"vendorShipFrom",   label:"Vendor Ship From",     group:"Vendor Information",   defaultOn:true  },
+  // Tracking Information
+  { key:"trackingNumber",   label:"Tracking Number",      group:"Tracking Information", defaultOn:false },
+  { key:"deliveredAt",      label:"Delivered At",         group:"Tracking Information", defaultOn:false },
+  { key:"shipstationOrderId",label:"ShipStation Order ID",group:"Tracking Information", defaultOn:false },
+  { key:"labelUrl",         label:"Label URL",            group:"Tracking Information", defaultOn:false },
+  { key:"labelCreatedAt",   label:"Label Created At",     group:"Tracking Information", defaultOn:false },
+  { key:"labelStatus",      label:"Label Status",         group:"Tracking Information", defaultOn:false },
+  { key:"shipmentId",       label:"Shipment ID",          group:"Tracking Information", defaultOn:false },
+  // Metadata Information
+  { key:"storeId",          label:"Store ID",             group:"Metadata Information", defaultOn:true  },
+  { key:"orderItemId",      label:"Order Item ID",        group:"Metadata Information", defaultOn:false },
+  { key:"lineItemKey",      label:"Line Item Key",        group:"Metadata Information", defaultOn:false },
+  { key:"createdAt",        label:"Created At",           group:"Metadata Information", defaultOn:false },
+  { key:"updatedAt",        label:"Updated At",           group:"Metadata Information", defaultOn:false },
+  // Actions
+  { key:"actions",          label:"Actions",              group:"Actions Information",  defaultOn:true  },
+];
+
+const DEFAULT_COLS = new Set<ColKey>(COLUMN_DEFS.filter(c => c.defaultOn).map(c => c.key));
+const GROUPS = Array.from(new Set(COLUMN_DEFS.map(c => c.group)));
 
 const genRMA = () => `RMA-${Date.now().toString().slice(-6)}`;
 
@@ -313,6 +400,14 @@ export function Orders() {
   const [editOpen, setEditOpen]   = useState(false);
   const [editOrder, setEditOrder] = useState<Order | null>(null);
   const [tab, setTab]             = useState("orders");
+
+  const [colOpen, setColOpen]       = useState(false);
+  const [visibleCols, setVisibleCols] = useState<Set<ColKey>>(new Set(DEFAULT_COLS));
+
+  const toggleCol = (k: ColKey) => setVisibleCols(s => { const n = new Set(s); n.has(k) ? n.delete(k) : n.add(k); return n; });
+  const selectAll = () => setVisibleCols(new Set(COLUMN_DEFS.map(c => c.key)));
+  const defaultOnly = () => setVisibleCols(new Set(DEFAULT_COLS));
+  const col = (k: ColKey) => visibleCols.has(k);
 
   // ShipStation sync state
   const [syncStart, setSyncStart]   = useState("2023-12-24");
@@ -672,6 +767,10 @@ export function Orders() {
               <input ref={fileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={e=>{ const f=e.target.files?.[0]; if(f) importCSV(f); e.target.value=""; }}/>
               <Button variant="outline" size="sm" onClick={()=>fileRef.current?.click()}><Upload className="w-4 h-4 mr-1"/>Import Orders</Button>
               <Button size="sm" onClick={()=>setNewOpen(true)}><Plus className="w-4 h-4 mr-1"/>New Order</Button>
+              <Button variant="outline" size="sm" onClick={()=>setColOpen(true)}>
+                <Columns className="w-4 h-4 mr-1"/>Columns
+                <Badge variant="secondary" className="ml-1 text-xs px-1">{visibleCols.size}</Badge>
+              </Button>
             </div>
           </div>
 
@@ -691,53 +790,120 @@ export function Orders() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-10"><input type="checkbox" checked={allSel} onChange={toggleAll}/></TableHead>
-                    <TableHead>Order #</TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Channel</TableHead>
-                    <TableHead>Items</TableHead>
-                    <TableHead>Total</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead>Actions</TableHead>
+                    {col("orderId")          && <TableHead>Order ID</TableHead>}
+                    {col("orderNumber")      && <TableHead>Order #</TableHead>}
+                    {col("orderDate")        && <TableHead>Order Date</TableHead>}
+                    {col("orderStatus")      && <TableHead>Order Status</TableHead>}
+                    {col("source")           && <TableHead>Source</TableHead>}
+                    {col("itemId")           && <TableHead>Item ID</TableHead>}
+                    {col("product")          && <TableHead>Product</TableHead>}
+                    {col("qty")              && <TableHead>Qty</TableHead>}
+                    {col("status")           && <TableHead>Status</TableHead>}
+                    {col("customerId")       && <TableHead>Customer ID</TableHead>}
+                    {col("customerUsername") && <TableHead>Username</TableHead>}
+                    {col("customerName")     && <TableHead>Customer</TableHead>}
+                    {col("customerPhone")    && <TableHead>Phone</TableHead>}
+                    {col("customerEmail")    && <TableHead>Email</TableHead>}
+                    {col("shipStreet1")      && <TableHead>Street 1</TableHead>}
+                    {col("shipStreet2")      && <TableHead>Street 2</TableHead>}
+                    {col("shipStreet3")      && <TableHead>Street 3</TableHead>}
+                    {col("shipCity")         && <TableHead>City</TableHead>}
+                    {col("shipState")        && <TableHead>State</TableHead>}
+                    {col("shipPostalCode")   && <TableHead>Postal Code</TableHead>}
+                    {col("shipCountry")      && <TableHead>Country</TableHead>}
+                    {col("residential")      && <TableHead>Residential</TableHead>}
+                    {col("requestedService") && <TableHead>Req. Service</TableHead>}
+                    {col("serviceType")      && <TableHead>Service Type</TableHead>}
+                    {col("carrier")          && <TableHead>Carrier</TableHead>}
+                    {col("retailPrice")      && <TableHead>Retail Price</TableHead>}
+                    {col("taxAmount")        && <TableHead>Tax</TableHead>}
+                    {col("amountPaid")       && <TableHead>Amt Paid</TableHead>}
+                    {col("vendorPrice")      && <TableHead>Vendor Price</TableHead>}
+                    {col("shippingCost")     && <TableHead>Ship Cost</TableHead>}
+                    {col("totalCost")        && <TableHead>Total Cost</TableHead>}
+                    {col("marginPerTire")    && <TableHead>Margin/Tire</TableHead>}
+                    {col("vendorId")         && <TableHead>Vendor ID</TableHead>}
+                    {col("vendorName")       && <TableHead>Vendor</TableHead>}
+                    {col("vendorShipFrom")   && <TableHead>Ship From</TableHead>}
+                    {col("trackingNumber")   && <TableHead>Tracking #</TableHead>}
+                    {col("deliveredAt")      && <TableHead>Delivered At</TableHead>}
+                    {col("shipstationOrderId") && <TableHead>SS Order ID</TableHead>}
+                    {col("labelUrl")         && <TableHead>Label URL</TableHead>}
+                    {col("labelCreatedAt")   && <TableHead>Label Created</TableHead>}
+                    {col("labelStatus")      && <TableHead>Label Status</TableHead>}
+                    {col("shipmentId")       && <TableHead>Shipment ID</TableHead>}
+                    {col("storeId")          && <TableHead>Store ID</TableHead>}
+                    {col("orderItemId")      && <TableHead>Item ID</TableHead>}
+                    {col("lineItemKey")      && <TableHead>Line Key</TableHead>}
+                    {col("createdAt")        && <TableHead>Created</TableHead>}
+                    {col("updatedAt")        && <TableHead>Updated</TableHead>}
+                    {col("actions")          && <TableHead>Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filtered.map(o=>(
                     <TableRow key={o.id} className={o.backorder?"bg-red-50":""}>
                       <TableCell><input type="checkbox" checked={selected.has(o.id)} onChange={()=>toggleSelect(o.id)}/></TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs font-semibold">{o.orderNo}</span>
-                          {o.backorder && <Badge variant="destructive" className="text-xs">Backorder</Badge>}
-                          {o.rma && <Badge variant="secondary" className="text-xs">{o.rma}</Badge>}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium text-sm">{o.customer}</p>
-                          <p className="text-xs text-muted-foreground">{o.email}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell><Badge variant="outline" className="text-xs">{o.channel}</Badge></TableCell>
-                      <TableCell className="text-sm">{o.items.length} item(s)</TableCell>
-                      <TableCell className="font-semibold">${o.total}</TableCell>
-                      <TableCell>
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[o.status] ?? "bg-gray-100 text-gray-700"}`}>
-                          {STATUS_ICONS[o.status]}{o.status}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{o.created}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          <Button size="sm" variant="outline" className="text-xs h-7" onClick={()=>setViewOrder(o)}>View</Button>
-                          {STATUS_FLOW.includes(o.status as any) && STATUS_FLOW.indexOf(o.status as any)<STATUS_FLOW.length-1 && (
-                            <Button size="sm" className="text-xs h-7" onClick={()=>advanceStatus(o.id)}><ChevronRight className="w-3 h-3"/>Next</Button>
-                          )}
-                          {!["Cancelled","Returned","Delivered"].includes(o.status) && (
-                            <Button size="sm" variant="ghost" className="text-xs h-7" onClick={()=>setReturnOrder(o)}><RotateCcw className="w-3 h-3"/></Button>
-                          )}
-                        </div>
-                      </TableCell>
+                      {col("orderId")          && <TableCell className="font-mono text-xs">{o.id.slice(0,8)}</TableCell>}
+                      {col("orderNumber")      && <TableCell><div className="flex items-center gap-1"><span className="font-mono text-xs font-semibold">{o.orderNo}</span>{o.backorder&&<Badge variant="destructive" className="text-xs">BO</Badge>}{o.rma&&<Badge variant="secondary" className="text-xs">{o.rma}</Badge>}</div></TableCell>}
+                      {col("orderDate")        && <TableCell className="text-xs text-muted-foreground">{o.created}</TableCell>}
+                      {col("orderStatus")      && <TableCell><span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[o.status]??"bg-gray-100 text-gray-700"}`}>{STATUS_ICONS[o.status]}{o.status}</span></TableCell>}
+                      {col("source")           && <TableCell><Badge variant="outline" className="text-xs">{o.channel}</Badge></TableCell>}
+                      {col("itemId")           && <TableCell className="text-xs text-muted-foreground">{o.items[0]?.sku??"—"}</TableCell>}
+                      {col("product")          && <TableCell className="text-sm">{o.items.map(i=>i.name).join(", ")||"—"}</TableCell>}
+                      {col("qty")              && <TableCell className="text-sm">{o.items.reduce((s,i)=>s+i.qty,0)}</TableCell>}
+                      {col("status")           && <TableCell><span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[o.status]??"bg-gray-100 text-gray-700"}`}>{o.status}</span></TableCell>}
+                      {col("customerId")       && <TableCell className="font-mono text-xs text-muted-foreground">{o.id.slice(0,6)}</TableCell>}
+                      {col("customerUsername") && <TableCell className="text-xs">{o.email?.split("@")[0]??"—"}</TableCell>}
+                      {col("customerName")     && <TableCell><p className="font-medium text-sm">{o.customer}</p></TableCell>}
+                      {col("customerPhone")    && <TableCell className="text-xs">{o.phone||"—"}</TableCell>}
+                      {col("customerEmail")    && <TableCell className="text-xs text-muted-foreground">{o.email||"—"}</TableCell>}
+                      {col("shipStreet1")      && <TableCell className="text-xs">—</TableCell>}
+                      {col("shipStreet2")      && <TableCell className="text-xs">—</TableCell>}
+                      {col("shipStreet3")      && <TableCell className="text-xs">—</TableCell>}
+                      {col("shipCity")         && <TableCell className="text-xs">—</TableCell>}
+                      {col("shipState")        && <TableCell className="text-xs">—</TableCell>}
+                      {col("shipPostalCode")   && <TableCell className="text-xs">—</TableCell>}
+                      {col("shipCountry")      && <TableCell className="text-xs">—</TableCell>}
+                      {col("residential")      && <TableCell className="text-xs">—</TableCell>}
+                      {col("requestedService") && <TableCell className="text-xs">—</TableCell>}
+                      {col("serviceType")      && <TableCell className="text-xs">—</TableCell>}
+                      {col("carrier")          && <TableCell className="text-xs">{o.carrier||"—"}</TableCell>}
+                      {col("retailPrice")      && <TableCell className="text-xs font-semibold">${o.total}</TableCell>}
+                      {col("taxAmount")        && <TableCell className="text-xs">—</TableCell>}
+                      {col("amountPaid")       && <TableCell className="text-xs font-semibold">${o.total}</TableCell>}
+                      {col("vendorPrice")      && <TableCell className="text-xs">—</TableCell>}
+                      {col("shippingCost")     && <TableCell className="text-xs">—</TableCell>}
+                      {col("totalCost")        && <TableCell className="font-semibold text-sm">${o.total}</TableCell>}
+                      {col("marginPerTire")    && <TableCell className="text-xs">—</TableCell>}
+                      {col("vendorId")         && <TableCell className="font-mono text-xs text-muted-foreground">—</TableCell>}
+                      {col("vendorName")       && <TableCell className="text-sm">{o.warehouse||"—"}</TableCell>}
+                      {col("vendorShipFrom")   && <TableCell className="text-sm">{o.warehouse||"—"}</TableCell>}
+                      {col("trackingNumber")   && <TableCell className="font-mono text-xs">{o.trackingNo||"—"}</TableCell>}
+                      {col("deliveredAt")      && <TableCell className="text-xs text-muted-foreground">{o.status==="Delivered"?o.updated:"—"}</TableCell>}
+                      {col("shipstationOrderId") && <TableCell className="font-mono text-xs">—</TableCell>}
+                      {col("labelUrl")         && <TableCell className="text-xs">—</TableCell>}
+                      {col("labelCreatedAt")   && <TableCell className="text-xs">—</TableCell>}
+                      {col("labelStatus")      && <TableCell className="text-xs">—</TableCell>}
+                      {col("shipmentId")       && <TableCell className="font-mono text-xs">—</TableCell>}
+                      {col("storeId")          && <TableCell className="font-mono text-xs">{o.channel||"—"}</TableCell>}
+                      {col("orderItemId")      && <TableCell className="font-mono text-xs">{o.items[0]?.sku??"—"}</TableCell>}
+                      {col("lineItemKey")      && <TableCell className="font-mono text-xs">—</TableCell>}
+                      {col("createdAt")        && <TableCell className="text-xs text-muted-foreground">{o.created}</TableCell>}
+                      {col("updatedAt")        && <TableCell className="text-xs text-muted-foreground">{o.updated}</TableCell>}
+                      {col("actions")          && (
+                        <TableCell>
+                          <div className="flex gap-1">
+                            <Button size="sm" variant="outline" className="text-xs h-7" onClick={()=>setViewOrder(o)}>View</Button>
+                            {STATUS_FLOW.includes(o.status as any) && STATUS_FLOW.indexOf(o.status as any)<STATUS_FLOW.length-1 && (
+                              <Button size="sm" className="text-xs h-7" onClick={()=>advanceStatus(o.id)}><ChevronRight className="w-3 h-3"/>Next</Button>
+                            )}
+                            {!["Cancelled","Returned","Delivered"].includes(o.status) && (
+                              <Button size="sm" variant="ghost" className="text-xs h-7" onClick={()=>setReturnOrder(o)}><RotateCcw className="w-3 h-3"/></Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -1068,6 +1234,79 @@ export function Orders() {
           <DialogFooter>
             <Button variant="outline" onClick={()=>setNewOpen(false)}>Cancel</Button>
             <Button onClick={createOrder} disabled={saving}><Plus className="w-4 h-4 mr-1"/>{saving?"Saving...":"Create Order"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Select Table Columns Dialog ── */}
+      <Dialog open={colOpen} onOpenChange={setColOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Columns className="w-5 h-5"/>
+              Select Table Columns
+            </DialogTitle>
+          </DialogHeader>
+
+          {/* Select All / Default Only buttons */}
+          <div className="flex gap-2 pb-2 border-b">
+            <Button size="sm" variant="outline" onClick={selectAll}>Select All</Button>
+            <Button size="sm" variant="outline" onClick={defaultOnly}>Default Only</Button>
+            <span className="ml-auto text-xs text-muted-foreground self-center">
+              {visibleCols.size} of {COLUMN_DEFS.length} selected
+            </span>
+          </div>
+
+          {/* Groups */}
+          <div className="space-y-5 py-1">
+            {GROUPS.map(group => {
+              const cols = COLUMN_DEFS.filter(c => c.group === group);
+              const allGroupOn = cols.every(c => visibleCols.has(c.key));
+              return (
+                <div key={group}>
+                  {/* Group header with toggle-all for group */}
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-semibold text-foreground">{group}</h4>
+                    <button
+                      className="text-xs text-blue-600 hover:underline"
+                      onClick={() => {
+                        setVisibleCols(s => {
+                          const n = new Set(s);
+                          if (allGroupOn) cols.forEach(c => n.delete(c.key));
+                          else cols.forEach(c => n.add(c.key));
+                          return n;
+                        });
+                      }}
+                    >
+                      {allGroupOn ? "Deselect all" : "Select all"}
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-x-4 gap-y-2">
+                    {cols.map(c => (
+                      <label
+                        key={c.key}
+                        className="flex items-center gap-2 text-sm cursor-pointer hover:text-foreground text-muted-foreground"
+                      >
+                        <Checkbox
+                          checked={visibleCols.has(c.key)}
+                          onCheckedChange={() => toggleCol(c.key)}
+                          className="shrink-0"
+                        />
+                        {c.label}
+                      </label>
+                    ))}
+                  </div>
+                  <Separator className="mt-4"/>
+                </div>
+              );
+            })}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setColOpen(false)}>Close</Button>
+            <Button onClick={() => setColOpen(false)}>
+              <CheckCircle2 className="w-4 h-4 mr-1"/>Apply
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
