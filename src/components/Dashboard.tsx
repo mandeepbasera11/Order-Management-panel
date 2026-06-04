@@ -14,7 +14,7 @@ import { Card } from "@/components/ui/card";
 
 const orderKPIs = [
   {
-    title: "Tires in Stock",
+    label: "Tires in Stock",
     value: "12,847",
     change: "+342 units this week",
     changeType: "positive" as const,
@@ -24,7 +24,7 @@ const orderKPIs = [
     iconColor: "text-blue-600",
   },
   {
-    title: "Tires Sold (MTD)",
+     label: "Tires Sold (MTD)",
     value: "3,128",
     change: "+22.6% from last month",
     changeType: "positive" as const,
@@ -34,7 +34,7 @@ const orderKPIs = [
     iconColor: "text-cyan-600",
   },
   {
-    title: "Low Stock SKUs",
+     label: "Low Stock SKUs",
     value: "47",
     change: "Needs reorder",
     changeType: "negative" as const,
