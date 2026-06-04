@@ -27,6 +27,10 @@ import { PermissionMatrix } from "@/components/PermissionMatrix";
 import { POS } from "@/components/POS";
 import { Vendors } from "@/components/Vendors";
 import { FTPSettings } from "@/components/FTPSettings";
+import { GETireHickory } from "@/components/GETireHickory";
+import { TiresReverseLookup } from "@/components/TiresReverseLookup";
+import { OrderArchive } from "@/components/OrderArchive";
+import { ListingMirrorSync } from "@/components/ListingMirrorSync";
 import { Placeholder } from "@/components/Placeholder";
 
 // ─── Route map — every sidebar nav item must have a matching case here ────────
@@ -39,13 +43,13 @@ const PAGE_MAP: Record<string, React.ReactNode> = {
   "Vehicle Fitment":       <VehicleFitment />,
   "Vendors":               <Vendors />,
   "Inventory Sync":        <InventorySync />,
-  "GE Tire Hickory Inventory": <Placeholder title="GE Tire Hickory Inventory" description="Live GE Tire Hickory warehouse inventory feed." />,
+  "GE Tire Hickory Inventory": <GETireHickory />,
   "Marketplace Pricing":   <MarketplacePricing />,
   "Shopify Products":      <ShopifyProducts />,
   "Price Experiment":      <PriceExperiment />,
   "Pricing Engine":        <PricingEngine />,
   "Tire Search Wizard":    <TireSearchWizard />,
-  "Tires Reverse Lookup":  <Placeholder title="Tires Reverse Lookup" description="Look up which vehicles are compatible with a tire." />,
+  "Tires Reverse Lookup":  <TiresReverseLookup />,
   "Shipping Dashboard":    <ShippingDashboard />,
   "Appointments":          <AppointmentScheduler />,
   "TPMS Management":       <TPMSManagement />,
@@ -60,8 +64,8 @@ const PAGE_MAP: Record<string, React.ReactNode> = {
   "Audit Logs":            <AuditLogs />,
   "Activity Monitor":      <ActivityMonitor />,
   "Error Logs":            <ErrorLogs />,
-  "Order Archive":         <Placeholder title="Order Archive" description="Archived and completed orders history." />,
-  "Listing Mirror Sync":   <Placeholder title="Listing Mirror Sync" description="Mirror listings across all marketplace platforms." />,
+  "Order Archive":         <OrderArchive />,
+  "Listing Mirror Sync":   <ListingMirrorSync />,
   "FTP Settings":          <FTPSettings />,
 };
 
