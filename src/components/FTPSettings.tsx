@@ -91,7 +91,7 @@ export function FTPSettings() {
           <Card key={feed.id} className={`p-5 ${!feed.enabled?"opacity-60":""}`}>
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="flex items-start gap-3">
-                <div className={`p-2 rounded-full ${feed.status==="Connected"?"bg-green-100":"feed.status==='Error'"?"bg-red-100":"bg-gray-100"}`}>
+                <div className={`p-2 rounded-full ${feed.status==="Connected"?"bg-green-100":feed.status==="Error"?"bg-red-100":"bg-gray-100"}`}>
                   {feed.status==="Connected" ? <CheckCircle2 className="w-4 h-4 text-green-600"/> : feed.status==="Error" ? <XCircle className="w-4 h-4 text-red-600"/> : <Clock className="w-4 h-4 text-gray-600"/>}
                 </div>
                 <div>
