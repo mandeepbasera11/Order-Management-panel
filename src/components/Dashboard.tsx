@@ -43,7 +43,16 @@ const orderKPIs = [
     iconBg: "bg-rose-100",
     iconColor: "text-rose-600",
   },
-
+{
+    label: "Avg. Sale Price",
+    value: "$142.30",
+    change: "+4.1% vs last month",
+    changeType: "positive" as const,
+    icon: DollarSign,
+    gradient: "from-emerald-400 to-teal-600",
+    iconBg: "bg-emerald-100",
+    iconColor: "text-emerald-600",
+  },
   {
     label: "Total Orders Pending",
     value: "0",
@@ -91,49 +100,6 @@ const orderKPIs = [
     iconBg: "bg-orange-100",
     iconColor: "text-orange-600",
     valueCl: "text-orange-900",
-  },
-];
-
-const tireStats = [
-  {
-    title: "Tires in Stock",
-    value: "12,847",
-    change: "+342 units this week",
-    changeType: "positive" as const,
-    icon: Package,
-    gradient: "from-blue-400 to-indigo-600",
-    iconBg: "bg-blue-100",
-    iconColor: "text-blue-600",
-  },
-  {
-    title: "Tires Sold (MTD)",
-    value: "3,128",
-    change: "+22.6% from last month",
-    changeType: "positive" as const,
-    icon: ShoppingCart,
-    gradient: "from-cyan-400 to-sky-600",
-    iconBg: "bg-cyan-100",
-    iconColor: "text-cyan-600",
-  },
-  {
-    title: "Low Stock SKUs",
-    value: "47",
-    change: "Needs reorder",
-    changeType: "negative" as const,
-    icon: AlertTriangle,
-    gradient: "from-rose-400 to-red-600",
-    iconBg: "bg-rose-100",
-    iconColor: "text-rose-600",
-  },
-  {
-    title: "Avg. Sale Price",
-    value: "$142.30",
-    change: "+4.1% vs last month",
-    changeType: "positive" as const,
-    icon: DollarSign,
-    gradient: "from-emerald-400 to-teal-600",
-    iconBg: "bg-emerald-100",
-    iconColor: "text-emerald-600",
   },
 ];
 
