@@ -75,7 +75,7 @@ export function POS() {
       {/* Left — Product Catalog */}
       <div className="flex-1 flex flex-col overflow-hidden border-r border-border">
         <div className="p-4 border-b border-border space-y-3">
-          <h2 className="text-lg font-bold flex items-center gap-2"><ShoppingCart className="w-8 h-5"/>Point of Sale</h2>
+          <h2 className="text-lg font-bold flex items-center gap-4"><ShoppingCart className="w-8 h-5"/>Point of Sale</h2>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"/>
             <Input className="pl-9" placeholder="Search tires by name, SKU or category..." value={search} onChange={e=>setSearch(e.target.value)}/>
