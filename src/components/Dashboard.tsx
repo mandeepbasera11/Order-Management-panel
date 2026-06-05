@@ -6,7 +6,7 @@ import {
 import {
   ShoppingCart, Package, TrendingUp, TrendingDown, AlertTriangle,
   Clock, CheckCircle2, Truck, RotateCcw, ShieldAlert, Activity,
-  Database, calender, Globe, Users, Zap, Bell, RefreshCw, ChevronDown,
+  Database, Calendar, Globe, Users, Zap, Bell, RefreshCw, ChevronDown,
   Flame, Archive, ArrowRight, Store, CircleDot,
 } from "lucide-react";
 

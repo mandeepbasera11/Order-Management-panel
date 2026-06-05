@@ -146,10 +146,10 @@ export function Sidebar({ active, onNavigate }: SidebarProps) {
                         onClick={() => onNavigate(item.name)}
                         title={collapsed ? item.name : undefined}
                         className={cn(
-                          "w-full flex items-center px-2 py-1.5 text-sm font-semibold rounded-md transition-all",
+                          "w-full flex items-center px-2 py-1.5 text-sm rounded-md transition-all",
                           active === item.name
-                            ? "bg-primary text-primary-foreground"
-                            : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                            ? "bg-primary text-primary-foreground font-bold"
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted font-semibold"
                         )}>
                         <item.icon className={cn("w-4 h-4 shrink-0", !collapsed && "mr-2")}/>
                         {!collapsed && <span className="truncate">{item.name}</span>}
