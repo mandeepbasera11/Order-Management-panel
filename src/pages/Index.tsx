@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Sidebar } from "@/components/Sidebar";
-import { OperationsDashboard } from "@/components/OperationsDashboard";
+import { OperationsDashboard } from "@/components/Dashboard";
 import { ExecutiveDashboard } from "@/components/ExecutiveDashboard";
 import { Inventory } from "@/components/Inventory";
 import { VehicleFitment } from "@/components/VehicleFitment";
