@@ -133,7 +133,7 @@ export function Sidebar({ active, onNavigate }: SidebarProps) {
             <div key={group.label}>
               {!collapsed && (
                 <button onClick={() => toggleGroup(group.label)}
-                  className="w-full flex items-center justify-between px-2 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors mt-2">
+                  className="w-full flex items-center justify-between px-2 py-1 text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors mt-2">
                   {group.label}
                   {isOpen ? <ChevronUp className="w-3 h-3"/> : <ChevronDown className="w-3 h-3"/>}
                 </button>
