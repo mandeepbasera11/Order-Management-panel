@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
-import { format } from "date-fns";
+import { format, isWithinInterval, startOfDay, endOfDay, subDays } from "date-fns";
+import type { DateRange } from "react-day-picker";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "@/hooks/use-toast";
@@ -23,20 +24,18 @@ type OrderFilter = "all" | "pending" | "backorders" | "errors" | "highvalue";
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 
-const last30Days = Array.from({ length: 30 }, (_, i) => {
-  const d = new Date(2026, 4, 5 + i);
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+// Anchor series to real Date objects so the picker can filter them.
+const TODAY = new Date(2026, 5, 4); // Jun 4, 2026
+const SERIES_DAYS = 60;
+const fullSeries = Array.from({ length: SERIES_DAYS }, (_, i) => {
+  const d = startOfDay(subDays(TODAY, SERIES_DAYS - 1 - i));
+  return {
+    d,
+    date: format(d, "MMM d"),
+    revenue: Math.round(10000 + Math.sin(i / 3) * 2000 + i * 180 + ((i * 53) % 800)),
+    orders:  Math.round(90    + Math.sin(i / 2) * 20   + i * 1.2 + ((i * 37) % 15)),
+  };
 });
-
-const revenueData = last30Days.map((date, i) => ({
-  date,
-  revenue: Math.round(10000 + Math.sin(i / 3) * 2000 + i * 280 + Math.random() * 800),
-}));
-
-const ordersData = last30Days.map((date, i) => ({
-  date,
-  orders: Math.round(90 + Math.sin(i / 2) * 20 + i * 1.8 + Math.random() * 15),
-}));
 
 const operationsKPIs = [
   { label: "Orders today",    value: "145",     change: "+12% vs yesterday", positive: true,  icon: ShoppingCart, color: "#378ADD", bg: "#E6F1FB" },
@@ -264,7 +263,26 @@ function ChartTooltip({ active, payload, label, prefix = "" }: any) {
 
 export function OperationsDashboard() {
   const [orderFilter, setOrderFilter] = useState<OrderFilter>("all");
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date(2026, 5, 4));
+  const [range, setRange] = useState<DateRange | undefined>({
+    from: subDays(TODAY, 29),
+    to: TODAY,
+  });
+
+  const series = useMemo(() => {
+    if (!range?.from) return fullSeries;
+    const from = startOfDay(range.from);
+    const to = endOfDay(range.to ?? range.from);
+    return fullSeries.filter(p => isWithinInterval(p.d, { start: from, end: to }));
+  }, [range]);
+
+  const revenueData = series.map(({ date, revenue }) => ({ date, revenue }));
+  const ordersData  = series.map(({ date, orders })  => ({ date, orders }));
+
+  const rangeLabel = range?.from
+    ? range.to && range.to.getTime() !== range.from.getTime()
+      ? `${format(range.from, "MMM d")} – ${format(range.to, "MMM d, yyyy")}`
+      : format(range.from, "MMM d, yyyy")
+    : "Pick a date range";
 
   const filteredOrders = useMemo(() => {
     if (orderFilter === "all")       return recentOrders;
@@ -327,15 +345,31 @@ export function OperationsDashboard() {
                   className="flex items-center gap-2 text-xs border border-slate-200 bg-white rounded-lg px-3 py-2 text-slate-600 hover:bg-slate-50 transition-colors shadow-sm"
                 >
                   <Activity className="w-3.5 h-3.5 text-emerald-500" />
-                  {format(selectedDate, "'Today —' MMM d, yyyy")}
+                  {rangeLabel}
                   <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
                 </button>
               </PopoverTrigger>
               <PopoverContent align="end" className="w-auto p-0">
+                <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-slate-100">
+                  <p className="text-xs font-semibold text-slate-700">Date range</p>
+                  <div className="flex gap-1">
+                    {[7, 30, 60].map(n => (
+                      <button
+                        key={n}
+                        onClick={() => setRange({ from: subDays(TODAY, n - 1), to: TODAY })}
+                        className="text-[10px] px-2 py-1 rounded border border-slate-200 text-slate-600 hover:bg-slate-50"
+                      >
+                        {n}d
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={(d) => d && setSelectedDate(d)}
+                  mode="range"
+                  selected={range}
+                  onSelect={setRange}
+                  numberOfMonths={2}
+                  defaultMonth={range?.from ?? TODAY}
                   initialFocus
                   className="p-3 pointer-events-auto"
                 />
@@ -432,7 +466,7 @@ export function OperationsDashboard() {
         </div>
 
         {/* ── Row 4: Charts ── */}
-        <SectionLabel>Sales analytics — last 30 days</SectionLabel>
+        <SectionLabel>Sales analytics — {rangeLabel} ({series.length} days)</SectionLabel>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <CardShell>
             <CardHeader icon={TrendingUp} title="Revenue trend" />
