@@ -70,7 +70,7 @@ const PAGE_MAP: Record<string, React.ReactNode> = {
 };
 
 export default function Index() {
-  const [active, setActive] = useState("Dashboard");
+  const [active, setActive] = useState("OperationsDashboard");
 
   // Normalise: trim whitespace, handle any casing drift
   const page = PAGE_MAP[active] ?? PAGE_MAP[active.trim()] ?? (
