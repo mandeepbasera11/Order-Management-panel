@@ -1,4 +1,8 @@
 import { useState, useMemo } from "react";
+import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { toast } from "@/hooks/use-toast";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer,
@@ -260,6 +264,7 @@ function ChartTooltip({ active, payload, label, prefix = "" }: any) {
 
 export function OperationsDashboard() {
   const [orderFilter, setOrderFilter] = useState<OrderFilter>("all");
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date(2026, 5, 4));
 
   const filteredOrders = useMemo(() => {
     if (orderFilter === "all")       return recentOrders;
@@ -281,15 +286,61 @@ export function OperationsDashboard() {
             <p className="text-sm text-slate-400 mt-0.5">Real-time operations, inventory &amp; fulfillment monitoring</p>
           </div>
           <div className="flex items-center gap-2">
-            <button className="flex items-center gap-2 text-xs border border-slate-200 bg-white rounded-lg px-3 py-2 text-slate-600 hover:bg-slate-50 transition-colors shadow-sm">
-              <Bell className="w-3.5 h-3.5" />
-              <span className="bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-semibold">6</span>
-            </button>
-            <button className="flex items-center gap-2 text-xs border border-slate-200 bg-white rounded-lg px-3 py-2 text-slate-600 hover:bg-slate-50 transition-colors shadow-sm">
-              <Activity className="w-3.5 h-3.5 text-emerald-500" />
-              Today — Jun 4, 2026
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-            </button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="flex items-center gap-2 text-xs border border-slate-200 bg-white rounded-lg px-3 py-2 text-slate-600 hover:bg-slate-50 transition-colors shadow-sm"
+                  aria-label="Notifications"
+                >
+                  <Bell className="w-3.5 h-3.5" />
+                  <span className="bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-semibold">
+                    {alerts.length}
+                  </span>
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-80 p-0">
+                <div className="px-3 py-2 border-b border-slate-100 flex items-center justify-between">
+                  <p className="text-xs font-semibold text-slate-700">Notifications</p>
+                  <span className="text-[10px] text-slate-400">{alerts.length} active</span>
+                </div>
+                <div className="max-h-80 overflow-auto divide-y divide-slate-50">
+                  {alerts.map((a, i) => (
+                    <button
+                      key={i}
+                      onClick={() =>
+                        toast({ title: alertLabelText[a.level], description: a.text })
+                      }
+                      className={`w-full text-left flex items-start gap-2 px-3 py-2 hover:bg-slate-50 ${alertBg[a.level]}`}
+                    >
+                      <span className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${alertDot[a.level]}`} />
+                      <span className="text-xs text-slate-700 leading-snug">{a.text}</span>
+                    </button>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="flex items-center gap-2 text-xs border border-slate-200 bg-white rounded-lg px-3 py-2 text-slate-600 hover:bg-slate-50 transition-colors shadow-sm"
+                >
+                  <Activity className="w-3.5 h-3.5 text-emerald-500" />
+                  {format(selectedDate, "'Today —' MMM d, yyyy")}
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(d) => d && setSelectedDate(d)}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
 
