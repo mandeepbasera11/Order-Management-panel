@@ -35,7 +35,7 @@ import { Placeholder } from "@/components/Placeholder";
 
 // ─── Route map — every sidebar nav item must have a matching case here ────────
 const PAGE_MAP: Record<string, React.ReactNode> = {
-  "Dashboard":             <Dashboard />,
+  "OperationsDashboard":             <OperationsDashboard />,
   "Executive Dashboard":   <ExecutiveDashboard />,
   "Orders":                <Orders />,
   "POS":                   <POS />,
