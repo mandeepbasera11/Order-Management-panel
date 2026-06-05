@@ -466,7 +466,7 @@ export function OperationsDashboard() {
         </div>
 
         {/* ── Row 4: Charts ── */}
-        <SectionLabel>Sales analytics — last 30 days</SectionLabel>
+        <SectionLabel>Sales analytics — {rangeLabel} ({series.length} days)</SectionLabel>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <CardShell>
             <CardHeader icon={TrendingUp} title="Revenue trend" />
