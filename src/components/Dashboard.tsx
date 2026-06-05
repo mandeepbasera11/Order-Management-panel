@@ -179,7 +179,7 @@ export function Dashboard() {
               Dashboard
             </h2>
             <p className="text-slate-500 mt-1 text-sm">
-              Inventory, sales, and fitment performance across US warehouses.
+              Inventory, sales, and fitment performance across US, Canada warehouses.
             </p>
           </div>
           <DateRangePicker value={date} onChange={setDate} />
@@ -258,38 +258,7 @@ export function Dashboard() {
         </div>
 
         {/* ── Tire Stats ── */}
-        <div>
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
-              <BarChart3 className="w-4 h-4 text-emerald-600"/>
-            </div>
-            <h3 className="font-bold text-lg text-slate-800">Tire Sales Dashboard</h3>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {tireStats.map((stat, i) => (
-              <div
-                key={stat.title}
-                className="relative overflow-hidden rounded-2xl bg-white border border-slate-100 shadow-sm p-5"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <p className="text-xs font-medium text-slate-500">{stat.title}</p>
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${stat.iconBg}`}>
-                    <stat.icon className={`w-4 h-4 ${stat.iconColor}`}/>
-                  </div>
-                </div>
-                <p className="text-2xl font-extrabold text-slate-800 mb-1">{stat.value}</p>
-                <p className={`text-xs font-medium ${stat.changeType === "positive" ? "text-emerald-600" : "text-rose-500"} flex items-center gap-1`}>
-                  {stat.changeType === "positive"
-                    ? <TrendingUp className="w-3 h-3"/>
-                    : <AlertTriangle className="w-3 h-3"/>}
-                  {stat.change}
-                </p>
-                <div className={`absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r ${stat.gradient} rounded-b-2xl`}/>
-              </div>
-            ))}
-          </div>
-        </div>
-
+       
         {/* ── Charts ── */}
         <div className="grid gap-6 md:grid-cols-2">
           <div className="rounded-2xl bg-white border border-slate-100 shadow-sm p-5">
