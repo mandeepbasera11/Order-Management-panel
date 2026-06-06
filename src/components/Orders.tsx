@@ -90,7 +90,11 @@ const CHANNELS = ["Amazon","eBay","Walmart","Shopify","Manual"];
 const VENDORS = [
   "No Vendor Selected","Atlantic Tire","Cleve","East Coast Tire (Asheboro)",
   "Gateway - Ohio","Gateway Tire - Texas","GE Tire Hickory, NC",
-  "Hesselbein","Hesselbein - Jackson, MS","Kerle Tire",
+  "Hesselbein","Hesselbein - Jackson, MS","Kerle Tire", "Tire Group - Orlando", "Tire Group - Portland", "Tire Group - Tampa",
+"Tire Group - Miami", "Atlantic Tire", "TWM Wholesale LLC", "Parrish Tire WS", "Test Ge Hickory FTP", "Universal Tire International",
+  "Maxxis California", "Maxxis Texas", "Maxxis Georgia", "MID STATE - GREENVILLE, SC", "KM LOC 35 (Walterboro, GA)", "KM LOC 18 (Greenville)",
+  "KM LOC3 (Richmond)", "Hesselbein - Jackson, MS", "Hesselbein", "KM LOC2 (Raleigh, NC)", "KM LOC1", "Gateway - Ohio", "East Coast Tire (Asheboro)",
+  "Vans Tire Pros", "National Tire", "Kerle Tire"
 ];
 
 // ─── Column definitions ───────────────────────────────────────────────────────
