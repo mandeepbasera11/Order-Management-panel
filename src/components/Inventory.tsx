@@ -1177,7 +1177,7 @@ export function Inventory() {
             </Button>
             <Select value={String(pageSize)} onValueChange={v=>{setPageSize(Number(v));setPage(1);}}>
               <SelectTrigger className="h-9 w-24"><SelectValue/></SelectTrigger>
-              <SelectContent>{[25,50,100,200].map(n=><SelectItem key={n} value={String(n)}>{n}</SelectItem>)}</SelectContent>
+              <SelectContent>{[25,50,100,200,1000,5000].map(n=><SelectItem key={n} value={String(n)}>{n}</SelectItem>)}</SelectContent>
             </Select>
             <span className="text-sm text-muted-foreground">Page {safePage}/{totalPages}</span>
           </div>
