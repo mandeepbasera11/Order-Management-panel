@@ -1,24 +1,17 @@
 import { Construction } from "lucide-react";
 
+// This component is shown ONLY for pages that are genuinely not built yet.
+// Dashboard, Executive Dashboard, and all main pages have real components.
 export function Placeholder({ title, description }: { title: string; description?: string }) {
   return (
-    <div className="flex-1 p-6">
-      <div className="mb-6">
-        <h2 className="text-3xl font-bold tracking-tight text-foreground">{title}</h2>
-        <p className="text-muted-foreground mt-2">
-          {description ?? "This module is part of DmTire Hub and is being prepared."}
-        </p>
+    <div className="flex-1 flex flex-col items-center justify-center py-20 text-center px-6">
+      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center mb-4">
+        <Construction className="w-7 h-7 text-indigo-400" />
       </div>
-      <div className="rounded-xl border border-dashed border-border bg-card p-16 flex flex-col items-center justify-center text-center shadow-sm">
-        <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mb-4">
-          <Construction className="w-7 h-7 text-muted-foreground" />
-        </div>
-        <h3 className="text-lg font-semibold text-foreground">Coming soon</h3>
-        <p className="text-sm text-muted-foreground mt-2 max-w-md">
-          The {title} workspace is wired into the navigation. Tell us what fields and
-          actions you want here and we'll build it out.
-        </p>
-      </div>
+      <h2 className="text-xl font-bold text-foreground mb-2">{title}</h2>
+      <p className="text-muted-foreground text-sm max-w-sm">
+        {description ?? "This module is coming soon and will be built out shortly."}
+      </p>
     </div>
   );
 }
