@@ -19,10 +19,11 @@ import {
   Search, Plus, Trash2, Loader2, Pencil, Upload, Download,
   Package, Filter, Boxes, Tags, SlidersHorizontal,
   Eye, ShoppingCart, Globe, Building2, Flag, RefreshCw,
+  FileText, CheckCircle2, XCircle, AlertTriangle, X, FileSpreadsheet,
+  ArrowRight, RotateCcw,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { logAudit, diffFields } from "@/lib/audit";
 
 // ─── Type ─────────────────────────────────────────────────────────────────────
 type Product = {
@@ -224,6 +225,127 @@ const pickVal = (row: Record<string,string>, ...keys: string[]) => {
 const num = (v: string) => { const n = parseFloat(v); return isNaN(n) ? null : n; };
 const int = (v: string) => { const n = parseInt(v); return isNaN(n) ? null : n; };
 
+// ─── Bulk import types & validation ──────────────────────────────────────────
+type RowStatus = "valid" | "warning" | "error";
+type ParsedRow = {
+  rowNum: number;
+  raw: Record<string, string>;
+  sku: string;
+  name: string;
+  category: string;
+  price: number;
+  stock: number;
+  status: RowStatus;
+  issues: string[];
+  isDuplicateInFile: boolean;
+  willUpdate: boolean; // true if SKU already exists in DB
+};
+
+function validateRow(
+  r: Record<string, string>,
+  rowNum: number,
+  skusSeenSoFar: Set<string>,
+  existingSkus: Set<string>
+): ParsedRow {
+  const issues: string[] = [];
+  const sku  = pickVal(r, "ge_sku", "sku");
+  const name = pickVal(r, "item_name", "name");
+
+  let lowestVendorPrice: number | null = null;
+  for (let i = 1; i <= 21; i++) {
+    const vp = num(r[`vendor${i}_price`] || "");
+    if (vp != null && (lowestVendorPrice === null || vp < lowestVendorPrice)) lowestVendorPrice = vp;
+  }
+  const wp = num(pickVal(r, "wholesale_price"));
+  const price = wp ?? lowestVendorPrice ?? 0;
+  const stock = int(pickVal(r, "stock")) ?? int(pickVal(r, "total_vendor_inventory")) ?? 0;
+  const category = pickVal(r, "category") || "MM";
+
+  if (!sku)  issues.push("Missing SKU");
+  if (!name) issues.push("Missing item name");
+
+  const isDuplicateInFile = !!sku && skusSeenSoFar.has(sku);
+  if (isDuplicateInFile) issues.push("Duplicate SKU within this file");
+
+  if (price === 0) issues.push("No price found (wholesale or vendor)");
+  if (stock < 0)    issues.push("Negative stock value");
+
+  const willUpdate = !!sku && existingSkus.has(sku);
+
+  let status: RowStatus = "valid";
+  if (!sku || !name) status = "error";
+  else if (issues.length > 0) status = "warning";
+
+  return { rowNum, raw: r, sku, name, category, price, stock, status, issues, isDuplicateInFile, willUpdate };
+}
+
+// Build the full DB record from a raw CSV row (same mapping as before)
+function buildRecord(r: Record<string, string>): Record<string, unknown> | null {
+  const sku  = pickVal(r, "ge_sku", "sku");
+  const name = pickVal(r, "item_name", "name");
+  if (!sku || !name) return null;
+
+  let lowestVendorPrice: number | null = null;
+  for (let i = 1; i <= 21; i++) {
+    const vp = num(r[`vendor${i}_price`] || "");
+    if (vp != null && (lowestVendorPrice === null || vp < lowestVendorPrice)) lowestVendorPrice = vp;
+  }
+  const wp = num(pickVal(r, "wholesale_price"));
+
+  const rec: Record<string, unknown> = {
+    sku, name,
+    category:   pickVal(r, "category") || "MM",
+    price:      wp ?? lowestVendorPrice ?? 0,
+    stock:      int(pickVal(r, "stock")) ?? int(pickVal(r, "total_vendor_inventory")) ?? 0,
+    aspect:                     r.aspect || null,
+    base_ge_sku:                r.base_ge_sku || null,
+    brand:                      r.brand || null,
+    brand_logo:                 r.brand_logo || null,
+    description:                r.description || null,
+    features_and_benefits:      r.features_and_benefits || null,
+    images:                     r.images || null,
+    item_name:                  r.item_name || null,
+    manufacturer_product_code:  r.manufacturer_product_code || null,
+    master_brand_id:            r.master_brand_id || null,
+    master_model_id:            r.master_model_id || null,
+    max_inflation_press:        r.max_inflation_press || null,
+    max_load:                   r.max_load || null,
+    meas_rim_width:             r.meas_rim_width || null,
+    model:                      r.model || null,
+    mtlid:                      r.mtlid || null,
+    overall_diam:               r.overall_diam || null,
+    p_metric:                   r.p_metric || null,
+    ply:                        r.ply || null,
+    ply_rating:                 r.ply_rating || null,
+    raw_size:                   r.raw_size || null,
+    revs_per_mile:              r.revs_per_mile || null,
+    rim:                        r.rim || null,
+    rim_width_max:              r.rim_width_max || null,
+    rim_width_min:              r.rim_width_min || null,
+    rim_width_range:            r.rim_width_range || null,
+    run_flat:                   r.run_flat || null,
+    section:                    r.section || null,
+    sidewall_abr:               r.sidewall_abr || null,
+    size:                       r.size || null,
+    tire_load:                  r.tire_load || null,
+    tire_speed:                 r.tire_speed || null,
+    tire_weight:                r.tire_weight || null,
+    tread_depth:                r.tread_depth || null,
+    tread_type:                 r.tread_type || null,
+    upc:                        r.upc || null,
+    utqg:                       r.utqg || null,
+    warranty:                   r.warranty || null,
+    wholesale_price:            num(r.wholesale_price),
+    total_vendor_inventory:     int(r.total_vendor_inventory || r.Total_Vendor_Inventory),
+  };
+  for (let i = 1; i <= 21; i++) {
+    rec[`vendor${i}_name`]     = r[`vendor${i}_name`]     || r[`Vendor${i}_Name`]     || null;
+    rec[`vendor${i}_quantity`] = int(r[`vendor${i}_quantity`] || r[`Vendor${i}_Quantity`] || "");
+    rec[`vendor${i}_price`]    = num(r[`vendor${i}_price`]    || r[`Vendor${i}_Price`]    || "");
+  }
+  return rec;
+}
+
 const statusFor = (stock: number) => {
   if (stock === 0) return { label: "Out of Stock", variant: "destructive" as const };
   if (stock < 20)  return { label: "Low Stock",    variant: "secondary"  as const };
@@ -306,32 +428,6 @@ function FitmentDetailsDialog({
     const { error } = await supabase.from("products").update(draft as never).eq("id", draft.id);
     setSaving(false);
     if (error) { toast.error(error.message); return; }
-    // Audit: log price/stock and per-vendor price/qty changes
-    const trackedKeys = [
-      "price", "wholesale_price", "stock", "total_vendor_inventory",
-      ...Array.from({ length: 21 }, (_, i) => `vendor${i+1}_price`),
-      ...Array.from({ length: 21 }, (_, i) => `vendor${i+1}_quantity`),
-    ] as (keyof Product)[];
-    const { before, after, changed } = diffFields(
-      product as unknown as Record<string, unknown>,
-      draft as unknown as Record<string, unknown>,
-      trackedKeys as unknown as (keyof Record<string, unknown>)[],
-    );
-    if (changed.length) {
-      const hasPrice = changed.some(k => String(k).includes("price"));
-      const hasStock = changed.some(k => String(k).includes("stock") || String(k).includes("quantity") || String(k).includes("inventory"));
-      const action = hasPrice && hasStock
-        ? "inventory.bulk_updated"
-        : hasPrice ? "inventory.price_changed" : "inventory.stock_changed";
-      void logAudit({
-        action,
-        entity_type: "product",
-        entity_id: draft.id,
-        entity_label: `${draft.sku} — ${draft.item_name || draft.name}`,
-        before, after,
-        metadata: { changed_fields: changed, source: "product_detail_edit" },
-      });
-    }
     toast.success("Tire updated successfully");
     onSaved(draft);
     setEditMode(false);
@@ -746,6 +842,283 @@ function SelectColumnsModal({
 
 const emptyForm = { sku: "", name: "", category: "", price: "", stock: "" };
 
+// ─── Bulk Import Dialog ────────────────────────────────────────────────────────
+type ImportStage = "pick" | "preview" | "importing" | "done";
+
+function BulkImportDialog({
+  open, onClose, existingSkus, onComplete,
+}: {
+  open: boolean;
+  onClose: () => void;
+  existingSkus: Set<string>;
+  onComplete: () => void;
+}) {
+  const [stage, setStage]         = useState<ImportStage>("pick");
+  const [dragOver, setDragOver]   = useState(false);
+  const [fileName, setFileName]   = useState("");
+  const [parsedRows, setParsedRows] = useState<ParsedRow[]>([]);
+  const [skipErrors, setSkipErrors] = useState(true);
+  const [progress, setProgress]   = useState(0);
+  const [result, setResult]       = useState<{ inserted: number; updated: number; skipped: number; failed: { row: number; sku: string; reason: string }[] } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const reset = () => {
+    setStage("pick"); setFileName(""); setParsedRows([]);
+    setProgress(0); setResult(null); setSkipErrors(true);
+  };
+
+  const handleClose = () => { reset(); onClose(); };
+
+  const processFile = async (file: File) => {
+    setFileName(file.name);
+    const text = await file.text();
+    const rows = parseCsv(text);
+    if (!rows.length) { toast.error("CSV is empty or could not be parsed"); return; }
+
+    const seen = new Set<string>();
+    const parsed: ParsedRow[] = rows.map((r, i) => {
+      const pr = validateRow(r, i + 2, seen, existingSkus); // +2 because row 1 = header
+      if (pr.sku) seen.add(pr.sku);
+      return pr;
+    });
+    setParsedRows(parsed);
+    setStage("preview");
+  };
+
+  const handleFileSelect = (f: File | undefined) => {
+    if (!f) return;
+    if (!f.name.toLowerCase().endsWith(".csv")) { toast.error("Please select a .csv file"); return; }
+    processFile(f);
+  };
+
+  const validCount   = parsedRows.filter(r => r.status === "valid").length;
+  const warningCount = parsedRows.filter(r => r.status === "warning").length;
+  const errorCount   = parsedRows.filter(r => r.status === "error").length;
+  const updateCount  = parsedRows.filter(r => r.willUpdate && r.status !== "error").length;
+  const insertCount  = parsedRows.filter(r => !r.willUpdate && r.status !== "error").length;
+
+  const rowsToImport = skipErrors
+    ? parsedRows.filter(r => r.status !== "error")
+    : parsedRows;
+
+  const runImport = async () => {
+    setStage("importing");
+    setProgress(0);
+    const toImport = rowsToImport.filter(r => r.sku && r.name);
+    const failed: { row: number; sku: string; reason: string }[] = [];
+    let inserted = 0, updated = 0;
+    const skippedCount = parsedRows.length - toImport.length;
+
+    const BATCH = 200;
+    for (let i = 0; i < toImport.length; i += BATCH) {
+      const batch = toImport.slice(i, i + BATCH);
+      const records = batch.map(r => buildRecord(r.raw)).filter(Boolean) as Record<string, unknown>[];
+      try {
+        const { error } = await supabase.from("products").upsert(records as never[], { onConflict: "sku" });
+        if (error) {
+          batch.forEach(r => failed.push({ row: r.rowNum, sku: r.sku, reason: error.message }));
+        } else {
+          batch.forEach(r => { if (r.willUpdate) updated++; else inserted++; });
+        }
+      } catch (err) {
+        batch.forEach(r => failed.push({ row: r.rowNum, sku: r.sku, reason: err instanceof Error ? err.message : "Unknown error" }));
+      }
+      setProgress(Math.min(100, Math.round(((i + batch.length) / toImport.length) * 100)));
+    }
+
+    setResult({ inserted, updated, skipped: skippedCount + failed.length, failed });
+    setStage("done");
+    onComplete();
+  };
+
+  const downloadErrorReport = () => {
+    const errorRows = parsedRows.filter(r => r.status === "error" || r.issues.length > 0);
+    const lines = ["Row,SKU,Name,Status,Issues"];
+    errorRows.forEach(r => {
+      lines.push(`${r.rowNum},"${r.sku}","${r.name}",${r.status},"${r.issues.join("; ")}"`);
+    });
+    const blob = new Blob([lines.join("\n")], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "import-errors.csv"; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const statusBadge = (status: RowStatus) => {
+    if (status === "valid")   return <Badge className="bg-green-100 text-green-700 border-green-200 gap-1"><CheckCircle2 className="w-3 h-3"/>Valid</Badge>;
+    if (status === "warning") return <Badge className="bg-amber-100 text-amber-700 border-amber-200 gap-1"><AlertTriangle className="w-3 h-3"/>Warning</Badge>;
+    return <Badge variant="destructive" className="gap-1"><XCircle className="w-3 h-3"/>Error</Badge>;
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={v => { if (!v) handleClose(); }}>
+      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <FileSpreadsheet className="w-5 h-5"/> Bulk Import Tires
+          </DialogTitle>
+        </DialogHeader>
+
+        {/* ── Stage 1: Pick file ── */}
+        {stage === "pick" && (
+          <div className="py-4 space-y-4">
+            <div
+              onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={e => {
+                e.preventDefault(); setDragOver(false);
+                const f = e.dataTransfer.files?.[0];
+                handleFileSelect(f);
+              }}
+              onClick={() => fileInputRef.current?.click()}
+              className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-colors
+                ${dragOver ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 hover:bg-muted/30"}`}
+            >
+              <input ref={fileInputRef} type="file" accept=".csv" className="hidden"
+                onChange={e => handleFileSelect(e.target.files?.[0])} />
+              <Upload className="w-10 h-10 mx-auto mb-3 text-muted-foreground"/>
+              <p className="font-medium">Drag & drop your CSV here, or click to browse</p>
+              <p className="text-sm text-muted-foreground mt-1">Supports the full tire fitment CSV format — up to 150K+ rows</p>
+            </div>
+            <div className="text-sm text-muted-foreground space-y-1">
+              <p className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-green-600"/> We'll check every row before importing anything</p>
+              <p className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-green-600"/> You'll see exactly what will be added vs updated</p>
+              <p className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-green-600"/> Rows with errors can be skipped automatically</p>
+            </div>
+          </div>
+        )}
+
+        {/* ── Stage 2: Preview ── */}
+        {stage === "preview" && (
+          <div className="py-2 space-y-4">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <FileText className="w-4 h-4"/> {fileName} — {parsedRows.length.toLocaleString()} rows found
+            </div>
+
+            {/* Summary cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <Card className="p-3">
+                <p className="text-xs text-muted-foreground">Valid</p>
+                <p className="text-2xl font-bold text-green-600">{validCount.toLocaleString()}</p>
+              </Card>
+              <Card className="p-3">
+                <p className="text-xs text-muted-foreground">Warnings</p>
+                <p className="text-2xl font-bold text-amber-600">{warningCount.toLocaleString()}</p>
+              </Card>
+              <Card className="p-3">
+                <p className="text-xs text-muted-foreground">Errors</p>
+                <p className="text-2xl font-bold text-red-600">{errorCount.toLocaleString()}</p>
+              </Card>
+              <Card className="p-3">
+                <p className="text-xs text-muted-foreground">New vs Update</p>
+                <p className="text-sm font-semibold">{insertCount.toLocaleString()} new · {updateCount.toLocaleString()} update</p>
+              </Card>
+            </div>
+
+            {errorCount > 0 && (
+              <label className="flex items-center gap-2 text-sm bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                <Checkbox checked={skipErrors} onCheckedChange={v => setSkipErrors(!!v)} />
+                Skip the {errorCount} row(s) with errors and import the rest
+              </label>
+            )}
+
+            {/* Row-level table (first 50 shown for performance) */}
+            <div className="border border-border rounded-lg overflow-hidden">
+              <div className="max-h-72 overflow-y-auto">
+                <Table>
+                  <TableHeader className="sticky top-0 bg-background">
+                    <TableRow>
+                      <TableHead className="w-14">Row</TableHead>
+                      <TableHead>SKU</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Issues</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {parsedRows.slice(0, 50).map(r => (
+                      <TableRow key={r.rowNum} className={r.status === "error" ? "bg-red-50" : r.status === "warning" ? "bg-amber-50" : ""}>
+                        <TableCell className="text-xs text-muted-foreground">{r.rowNum}</TableCell>
+                        <TableCell className="text-xs font-mono">{r.sku || "—"}</TableCell>
+                        <TableCell className="text-xs max-w-[200px] truncate">{r.name || "—"}</TableCell>
+                        <TableCell>{statusBadge(r.status)}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{r.issues.join(", ") || "—"}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              {parsedRows.length > 50 && (
+                <p className="text-xs text-muted-foreground text-center py-2 border-t border-border">
+                  Showing first 50 of {parsedRows.length.toLocaleString()} rows — all rows will be processed on import
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── Stage 3: Importing ── */}
+        {stage === "importing" && (
+          <div className="py-10 space-y-4 text-center">
+            <Loader2 className="w-8 h-8 mx-auto animate-spin text-primary"/>
+            <p className="font-medium">Importing tires… {progress}%</p>
+            <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden">
+              <div className="bg-primary h-2.5 rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
+            </div>
+            <p className="text-sm text-muted-foreground">Please don't close this window</p>
+          </div>
+        )}
+
+        {/* ── Stage 4: Done ── */}
+        {stage === "done" && result && (
+          <div className="py-4 space-y-4">
+            <div className="flex flex-col items-center text-center gap-2 py-4">
+              <CheckCircle2 className="w-12 h-12 text-green-500"/>
+              <p className="text-lg font-semibold">Import complete</p>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <Card className="p-3 text-center">
+                <p className="text-2xl font-bold text-green-600">{result.inserted.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">Inserted</p>
+              </Card>
+              <Card className="p-3 text-center">
+                <p className="text-2xl font-bold text-blue-600">{result.updated.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">Updated</p>
+              </Card>
+              <Card className="p-3 text-center">
+                <p className="text-2xl font-bold text-muted-foreground">{result.skipped.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">Skipped</p>
+              </Card>
+            </div>
+            {(errorCount > 0 || result.failed.length > 0) && (
+              <Button variant="outline" size="sm" onClick={downloadErrorReport} className="w-full">
+                <Download className="w-4 h-4 mr-2"/> Download error report
+              </Button>
+            )}
+          </div>
+        )}
+
+        <DialogFooter>
+          {stage === "pick" && (
+            <Button variant="outline" onClick={handleClose}>Cancel</Button>
+          )}
+          {stage === "preview" && (
+            <>
+              <Button variant="outline" onClick={() => setStage("pick")}><RotateCcw className="w-4 h-4 mr-2"/>Choose different file</Button>
+              <Button onClick={runImport} disabled={validCount + warningCount === 0}>
+                Import {(skipErrors ? validCount + warningCount : parsedRows.length).toLocaleString()} rows <ArrowRight className="w-4 h-4 ml-2"/>
+              </Button>
+            </>
+          )}
+          {stage === "done" && (
+            <Button onClick={handleClose}>Close</Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function Inventory() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading]   = useState(true);
@@ -763,11 +1136,10 @@ export function Inventory() {
   const [bulkOpen, setBulkOpen] = useState(false);
   const [bulkForm, setBulkForm] = useState({ price:"", stock:"", category:"", mode:"set" as "set"|"adjust" });
   const [bulkBusy, setBulkBusy] = useState(false);
-  const [importBusy, setImportBusy] = useState(false);
+  const [bulkImportOpen, setBulkImportOpen] = useState(false);
   const [fitmentProduct, setFitmentProduct] = useState<Product | null>(null);
   const [fitmentOpen, setFitmentOpen]       = useState(false);
   const [colModalOpen, setColModalOpen]     = useState(false);
-  const csvRef = useRef<HTMLInputElement>(null);
 
   // Visible columns — default on for important ones
   const [visible, setVisible] = useState<Record<string, boolean>>(
@@ -783,104 +1155,9 @@ export function Inventory() {
   };
   useEffect(() => { load(); }, []);
 
-  // ── Import CSV (full CSV format from the uploaded file) ───────────────────
-  const importCsv = async (file: File) => {
-    setImportBusy(true);
-    try {
-      const text = await file.text();
-      const rows = parseCsv(text);
-      if (!rows.length) { toast.error("CSV is empty"); return; }
-
-      const records = rows.map(r => {
-        const sku  = pickVal(r, "ge_sku", "sku");
-        const name = pickVal(r, "item_name", "name");
-        if (!sku || !name) return null;
-
-        // lowest vendor price fallback
-        let lowestVendorPrice: number | null = null;
-        for (let i = 1; i <= 21; i++) {
-          const vp = num(r[`vendor${i}_price`] || "");
-          if (vp != null && (lowestVendorPrice === null || vp < lowestVendorPrice)) lowestVendorPrice = vp;
-        }
-        const wp = num(pickVal(r, "wholesale_price"));
-
-        const rec: Record<string,unknown> = {
-          sku,
-          name,
-          category:   pickVal(r, "category") || "MM",
-          price:      wp ?? lowestVendorPrice ?? 0,
-          stock:      int(pickVal(r, "stock")) ?? int(pickVal(r, "total_vendor_inventory")) ?? 0,
-          // All CSV columns
-          aspect:                     r.aspect || null,
-          base_ge_sku:                r.base_ge_sku || null,
-          brand:                      r.brand || null,
-          brand_logo:                 r.brand_logo || null,
-          description:                r.description || null,
-          features_and_benefits:      r.features_and_benefits || null,
-          images:                     r.images || null,
-          item_name:                  r.item_name || null,
-          manufacturer_product_code:  r.manufacturer_product_code || null,
-          master_brand_id:            r.master_brand_id || null,
-          master_model_id:            r.master_model_id || null,
-          max_inflation_press:        r.max_inflation_press || null,
-          max_load:                   r.max_load || null,
-          meas_rim_width:             r.meas_rim_width || null,
-          model:                      r.model || null,
-          mtlid:                      r.mtlid || null,
-          overall_diam:               r.overall_diam || null,
-          p_metric:                   r.p_metric || null,
-          ply:                        r.ply || null,
-          ply_rating:                 r.ply_rating || null,
-          raw_size:                   r.raw_size || null,
-          revs_per_mile:              r.revs_per_mile || null,
-          rim:                        r.rim || null,
-          rim_width_max:              r.rim_width_max || null,
-          rim_width_min:              r.rim_width_min || null,
-          rim_width_range:            r.rim_width_range || null,
-          run_flat:                   r.run_flat || null,
-          section:                    r.section || null,
-          sidewall_abr:               r.sidewall_abr || null,
-          size:                       r.size || null,
-          tire_load:                  r.tire_load || null,
-          tire_speed:                 r.tire_speed || null,
-          tire_weight:                r.tire_weight || null,
-          tread_depth:                r.tread_depth || null,
-          tread_type:                 r.tread_type || null,
-          upc:                        r.upc || null,
-          utqg:                       r.utqg || null,
-          warranty:                   r.warranty || null,
-          wholesale_price:            num(r.wholesale_price) ,
-          total_vendor_inventory:     int(r.total_vendor_inventory || r.Total_Vendor_Inventory),
-        };
-        // Vendors 1–21 — handle both Vendor1_Name and vendor1_name
-        for (let i = 1; i <= 21; i++) {
-          rec[`vendor${i}_name`]     = r[`vendor${i}_name`]     || r[`Vendor${i}_Name`]     || null;
-          rec[`vendor${i}_quantity`] = int(r[`vendor${i}_quantity`] || r[`Vendor${i}_Quantity`] || "");
-          rec[`vendor${i}_price`]    = num(r[`vendor${i}_price`]    || r[`Vendor${i}_Price`]    || "");
-        }
-        return rec;
-      }).filter(Boolean);
-
-      if (!records.length) { toast.error("No valid rows found"); return; }
-
-      // Insert in batches of 200
-      let inserted = 0;
-      for (let i = 0; i < records.length; i += 200) {
-        const batch = records.slice(i, i + 200);
-        const { error } = await supabase.from("products").upsert(batch as never[], { onConflict: "sku" });
-        if (error) throw error;
-        inserted += batch.length;
-        toast.success(`Importing... ${inserted} / ${records.length}`);
-      }
-      toast.success(`✅ Imported ${records.length} tires successfully!`);
-      await load();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Import failed");
-    } finally {
-      setImportBusy(false);
-      if (csvRef.current) csvRef.current.value = "";
-    }
-  };
+  // Set of SKUs already in the DB — used by the bulk import dialog to flag
+  // which rows are new inserts vs updates to existing tires.
+  const existingSkus = useMemo(() => new Set(products.map(p => p.sku)), [products]);
 
   // ── CRUD ──────────────────────────────────────────────────────────────────
   const handleAdd = async () => {
@@ -908,31 +1185,14 @@ export function Inventory() {
   const handleUpdate = async () => {
     if (!editing) return;
     setSaving(true);
-    const newPrice = Number(editForm.price) || 0;
-    const newStock = Number(editForm.stock) || 0;
     const { error } = await supabase.from("products").update({
       sku: editForm.sku, name: editForm.name,
       category: editForm.category || "MM",
-      price: newPrice, stock: newStock,
+      price: Number(editForm.price) || 0,
+      stock: Number(editForm.stock) || 0,
     }).eq("id", editing.id);
     setSaving(false);
     if (error) { toast.error(error.message); return; }
-    if (Number(editing.price) !== newPrice) {
-      void logAudit({
-        action: "inventory.price_changed", entity_type: "product",
-        entity_id: editing.id, entity_label: `${editForm.sku} — ${editForm.name}`,
-        before: { price: editing.price }, after: { price: newPrice },
-        metadata: { source: "quick_edit" },
-      });
-    }
-    if (Number(editing.stock) !== newStock) {
-      void logAudit({
-        action: "inventory.stock_changed", entity_type: "product",
-        entity_id: editing.id, entity_label: `${editForm.sku} — ${editForm.name}`,
-        before: { stock: editing.stock }, after: { stock: newStock },
-        metadata: { source: "quick_edit" },
-      });
-    }
     toast.success("Tire updated"); setEditing(null); load();
   };
 
@@ -961,11 +1221,6 @@ export function Inventory() {
     const { error } = await supabase.from("products").update(patch as never).in("id", ids);
     setBulkBusy(false);
     if (error) return toast.error(error.message);
-    void logAudit({
-      action: "inventory.bulk_updated", entity_type: "product",
-      entity_id: null, entity_label: `${ids.length} product(s)`,
-      after: patch, metadata: { product_ids: ids, source: "bulk_edit" },
-    });
     toast.success(`${ids.length} tire(s) updated`);
     setBulkOpen(false); setBulkForm({ price:"",stock:"",category:"",mode:"set" }); load();
   };
@@ -1059,11 +1314,8 @@ export function Inventory() {
           <p className="text-muted-foreground mt-1">Full tire catalog with all CSV fields — {products.length.toLocaleString()} tires loaded.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <input ref={csvRef} type="file" accept=".csv" className="hidden"
-            onChange={e=>{ const f=e.target.files?.[0]; if(f) importCsv(f); }} />
-          <Button variant="outline" size="sm" disabled={importBusy} onClick={()=>csvRef.current?.click()}>
-            {importBusy ? <Loader2 className="w-4 h-4 animate-spin mr-2"/> : <Upload className="w-4 h-4 mr-2"/>}
-            {importBusy ? "Importing..." : "Import CSV"}
+          <Button variant="outline" size="sm" onClick={() => setBulkImportOpen(true)}>
+            <Upload className="w-4 h-4 mr-2"/> Import CSV
           </Button>
           <Button variant="outline" size="sm" onClick={exportCsv}>
             <Download className="w-4 h-4 mr-2"/> Export CSV
@@ -1177,7 +1429,7 @@ export function Inventory() {
             </Button>
             <Select value={String(pageSize)} onValueChange={v=>{setPageSize(Number(v));setPage(1);}}>
               <SelectTrigger className="h-9 w-24"><SelectValue/></SelectTrigger>
-              <SelectContent>{[25,50,100,200,1000,5000].map(n=><SelectItem key={n} value={String(n)}>{n}</SelectItem>)}</SelectContent>
+              <SelectContent>{[25,50,100,200].map(n=><SelectItem key={n} value={String(n)}>{n}</SelectItem>)}</SelectContent>
             </Select>
             <span className="text-sm text-muted-foreground">Page {safePage}/{totalPages}</span>
           </div>
@@ -1305,6 +1557,14 @@ export function Inventory() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ── Bulk Import Dialog ── */}
+      <BulkImportDialog
+        open={bulkImportOpen}
+        onClose={() => setBulkImportOpen(false)}
+        existingSkus={existingSkus}
+        onComplete={load}
+      />
 
     </div>
   );
