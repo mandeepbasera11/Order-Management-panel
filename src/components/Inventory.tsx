@@ -843,7 +843,8 @@ function SelectColumnsModal({
 const emptyForm = { sku: "", name: "", category: "", price: "", stock: "" };
 
 // ─── Bulk Import Dialog ────────────────────────────────────────────────────────
-type ImportStage = "pick" | "preview" | "importing" | "done";
+// Yield to browser between chunks so the UI stays responsive on large CSVs
+const yieldToBrowser = () => new Promise<void>(resolve => setTimeout(resolve, 0));
 
 function BulkImportDialog({
   open, onClose, existingSkus, onComplete,
@@ -853,44 +854,88 @@ function BulkImportDialog({
   existingSkus: Set<string>;
   onComplete: () => void;
 }) {
-  const [stage, setStage]         = useState<ImportStage>("pick");
-  const [dragOver, setDragOver]   = useState(false);
-  const [fileName, setFileName]   = useState("");
+  type ImportStage = "pick" | "parsing" | "preview" | "importing" | "done";
+
+  const [stage, setStage]           = useState<ImportStage>("pick");
+  const [dragOver, setDragOver]     = useState(false);
+  const [fileName, setFileName]     = useState("");
+  const [fileSize, setFileSize]     = useState("");
+  const [parseProgress, setParseProgress] = useState(0);
   const [parsedRows, setParsedRows] = useState<ParsedRow[]>([]);
   const [skipErrors, setSkipErrors] = useState(true);
-  const [progress, setProgress]   = useState(0);
-  const [result, setResult]       = useState<{ inserted: number; updated: number; skipped: number; failed: { row: number; sku: string; reason: string }[] } | null>(null);
+  const [importProgress, setImportProgress] = useState(0);
+  const [importedSoFar, setImportedSoFar]   = useState(0);
+  const [totalToImport, setTotalToImport]   = useState(0);
+  const [result, setResult]         = useState<{
+    inserted: number; updated: number; skipped: number;
+    failed: { row: number; sku: string; reason: string }[];
+  } | null>(null);
+  const [parseError, setParseError] = useState("");
+  const [filterStatus, setFilterStatus] = useState<"all"|"error"|"warning"|"valid">("all");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const reset = () => {
-    setStage("pick"); setFileName(""); setParsedRows([]);
-    setProgress(0); setResult(null); setSkipErrors(true);
+    setStage("pick"); setFileName(""); setFileSize(""); setParseProgress(0);
+    setParsedRows([]); setSkipErrors(true); setImportProgress(0);
+    setImportedSoFar(0); setTotalToImport(0); setResult(null); setParseError("");
+    setFilterStatus("all");
   };
-
   const handleClose = () => { reset(); onClose(); };
 
+  // ── Process large CSV in async chunks so UI never freezes ──────────────────
   const processFile = async (file: File) => {
+    setParseError("");
     setFileName(file.name);
-    const text = await file.text();
-    const rows = parseCsv(text);
-    if (!rows.length) { toast.error("CSV is empty or could not be parsed"); return; }
+    setFileSize((file.size / 1024 / 1024).toFixed(1) + " MB");
+    setParseProgress(0);
+    setStage("parsing");
 
-    const seen = new Set<string>();
-    const parsed: ParsedRow[] = rows.map((r, i) => {
-      const pr = validateRow(r, i + 2, seen, existingSkus); // +2 because row 1 = header
-      if (pr.sku) seen.add(pr.sku);
-      return pr;
-    });
-    setParsedRows(parsed);
-    setStage("preview");
+    try {
+      // Read as text
+      const text = await file.text();
+
+      // Parse CSV in 2000-row chunks to keep UI responsive
+      const allRawRows = parseCsv(text);
+      if (!allRawRows.length) {
+        setParseError("CSV is empty or headers could not be detected. Make sure the first row contains column names.");
+        setStage("pick");
+        return;
+      }
+
+      const CHUNK = 2000;
+      const seen  = new Set<string>();
+      const parsed: ParsedRow[] = [];
+
+      for (let i = 0; i < allRawRows.length; i += CHUNK) {
+        const chunk = allRawRows.slice(i, i + CHUNK);
+        for (const r of chunk) {
+          const pr = validateRow(r, i + parsed.length + 2, seen, existingSkus);
+          if (pr.sku) seen.add(pr.sku);
+          parsed.push(pr);
+        }
+        setParseProgress(Math.round(((i + chunk.length) / allRawRows.length) * 100));
+        await yieldToBrowser(); // let React re-render progress bar
+      }
+
+      setParsedRows(parsed);
+      setStage("preview");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Unknown error while reading file";
+      setParseError(msg);
+      setStage("pick");
+    }
   };
 
   const handleFileSelect = (f: File | undefined) => {
     if (!f) return;
-    if (!f.name.toLowerCase().endsWith(".csv")) { toast.error("Please select a .csv file"); return; }
+    if (!f.name.toLowerCase().endsWith(".csv")) {
+      setParseError("Please select a .csv file (not .xlsx or .xls)");
+      return;
+    }
     processFile(f);
   };
 
+  // ── Counts ─────────────────────────────────────────────────────────────────
   const validCount   = parsedRows.filter(r => r.status === "valid").length;
   const warningCount = parsedRows.filter(r => r.status === "warning").length;
   const errorCount   = parsedRows.filter(r => r.status === "error").length;
@@ -898,20 +943,27 @@ function BulkImportDialog({
   const insertCount  = parsedRows.filter(r => !r.willUpdate && r.status !== "error").length;
 
   const rowsToImport = skipErrors
-    ? parsedRows.filter(r => r.status !== "error")
-    : parsedRows;
+    ? parsedRows.filter(r => r.status !== "error" && r.sku && r.name)
+    : parsedRows.filter(r => r.sku && r.name);
 
+  const previewRows = parsedRows
+    .filter(r => filterStatus === "all" ? true : r.status === filterStatus)
+    .slice(0, 100);
+
+  // ── Run import in batches ──────────────────────────────────────────────────
   const runImport = async () => {
     setStage("importing");
-    setProgress(0);
-    const toImport = rowsToImport.filter(r => r.sku && r.name);
+    setImportProgress(0);
+    setImportedSoFar(0);
+    setTotalToImport(rowsToImport.length);
+
     const failed: { row: number; sku: string; reason: string }[] = [];
     let inserted = 0, updated = 0;
-    const skippedCount = parsedRows.length - toImport.length;
+    const skippedCount = parsedRows.length - rowsToImport.length;
 
-    const BATCH = 200;
-    for (let i = 0; i < toImport.length; i += BATCH) {
-      const batch = toImport.slice(i, i + BATCH);
+    const BATCH = 150; // smaller batch = more reliable on slow connections
+    for (let i = 0; i < rowsToImport.length; i += BATCH) {
+      const batch   = rowsToImport.slice(i, i + BATCH);
       const records = batch.map(r => buildRecord(r.raw)).filter(Boolean) as Record<string, unknown>[];
       try {
         const { error } = await supabase.from("products").upsert(records as never[], { onConflict: "sku" });
@@ -923,7 +975,10 @@ function BulkImportDialog({
       } catch (err) {
         batch.forEach(r => failed.push({ row: r.rowNum, sku: r.sku, reason: err instanceof Error ? err.message : "Unknown error" }));
       }
-      setProgress(Math.min(100, Math.round(((i + batch.length) / toImport.length) * 100)));
+      const done = i + batch.length;
+      setImportedSoFar(done);
+      setImportProgress(Math.min(100, Math.round((done / rowsToImport.length) * 100)));
+      await yieldToBrowser();
     }
 
     setResult({ inserted, updated, skipped: skippedCount + failed.length, failed });
@@ -931,189 +986,306 @@ function BulkImportDialog({
     onComplete();
   };
 
+  // ── Download error CSV ─────────────────────────────────────────────────────
   const downloadErrorReport = () => {
-    const errorRows = parsedRows.filter(r => r.status === "error" || r.issues.length > 0);
+    const errorRows = parsedRows.filter(r => r.status !== "valid");
     const lines = ["Row,SKU,Name,Status,Issues"];
     errorRows.forEach(r => {
-      lines.push(`${r.rowNum},"${r.sku}","${r.name}",${r.status},"${r.issues.join("; ")}"`);
+      lines.push(`${r.rowNum},"${r.sku.replace(/"/g,'""')}","${r.name.replace(/"/g,'""')}",${r.status},"${r.issues.join("; ")}"`);
     });
     const blob = new Blob([lines.join("\n")], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = "import-errors.csv"; a.click();
+    const a = document.createElement("a"); a.href = url; a.download = "import-error-report.csv"; a.click();
     URL.revokeObjectURL(url);
   };
 
   const statusBadge = (status: RowStatus) => {
-    if (status === "valid")   return <Badge className="bg-green-100 text-green-700 border-green-200 gap-1"><CheckCircle2 className="w-3 h-3"/>Valid</Badge>;
-    if (status === "warning") return <Badge className="bg-amber-100 text-amber-700 border-amber-200 gap-1"><AlertTriangle className="w-3 h-3"/>Warning</Badge>;
-    return <Badge variant="destructive" className="gap-1"><XCircle className="w-3 h-3"/>Error</Badge>;
+    if (status === "valid")   return <Badge className="bg-green-100 text-green-700 border border-green-200 text-xs gap-1 py-0"><CheckCircle2 className="w-3 h-3"/>Valid</Badge>;
+    if (status === "warning") return <Badge className="bg-amber-100 text-amber-700 border border-amber-200 text-xs gap-1 py-0"><AlertTriangle className="w-3 h-3"/>Warning</Badge>;
+    return <Badge className="bg-red-100 text-red-700 border border-red-200 text-xs gap-1 py-0"><XCircle className="w-3 h-3"/>Error</Badge>;
   };
 
   return (
-    <Dialog open={open} onOpenChange={v => { if (!v) handleClose(); }}>
-      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileSpreadsheet className="w-5 h-5"/> Bulk Import Tires
-          </DialogTitle>
-        </DialogHeader>
+    <Dialog open={open} onOpenChange={v => { if (!v && stage !== "importing") handleClose(); }}>
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col gap-0 p-0 overflow-hidden">
 
-        {/* ── Stage 1: Pick file ── */}
-        {stage === "pick" && (
-          <div className="py-4 space-y-4">
-            <div
-              onDragOver={e => { e.preventDefault(); setDragOver(true); }}
-              onDragLeave={() => setDragOver(false)}
-              onDrop={e => {
-                e.preventDefault(); setDragOver(false);
-                const f = e.dataTransfer.files?.[0];
-                handleFileSelect(f);
-              }}
-              onClick={() => fileInputRef.current?.click()}
-              className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-colors
-                ${dragOver ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 hover:bg-muted/30"}`}
-            >
-              <input ref={fileInputRef} type="file" accept=".csv" className="hidden"
-                onChange={e => handleFileSelect(e.target.files?.[0])} />
-              <Upload className="w-10 h-10 mx-auto mb-3 text-muted-foreground"/>
-              <p className="font-medium">Drag & drop your CSV here, or click to browse</p>
-              <p className="text-sm text-muted-foreground mt-1">Supports the full tire fitment CSV format — up to 150K+ rows</p>
-            </div>
-            <div className="text-sm text-muted-foreground space-y-1">
-              <p className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-green-600"/> We'll check every row before importing anything</p>
-              <p className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-green-600"/> You'll see exactly what will be added vs updated</p>
-              <p className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-green-600"/> Rows with errors can be skipped automatically</p>
-            </div>
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <div className="flex items-center gap-2">
+            <FileSpreadsheet className="w-5 h-5 text-indigo-500"/>
+            <h2 className="font-bold text-base">Bulk Import Tires</h2>
+            {fileName && <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{fileName} {fileSize && `· ${fileSize}`}</span>}
           </div>
-        )}
-
-        {/* ── Stage 2: Preview ── */}
-        {stage === "preview" && (
-          <div className="py-2 space-y-4">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <FileText className="w-4 h-4"/> {fileName} — {parsedRows.length.toLocaleString()} rows found
-            </div>
-
-            {/* Summary cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <Card className="p-3">
-                <p className="text-xs text-muted-foreground">Valid</p>
-                <p className="text-2xl font-bold text-green-600">{validCount.toLocaleString()}</p>
-              </Card>
-              <Card className="p-3">
-                <p className="text-xs text-muted-foreground">Warnings</p>
-                <p className="text-2xl font-bold text-amber-600">{warningCount.toLocaleString()}</p>
-              </Card>
-              <Card className="p-3">
-                <p className="text-xs text-muted-foreground">Errors</p>
-                <p className="text-2xl font-bold text-red-600">{errorCount.toLocaleString()}</p>
-              </Card>
-              <Card className="p-3">
-                <p className="text-xs text-muted-foreground">New vs Update</p>
-                <p className="text-sm font-semibold">{insertCount.toLocaleString()} new · {updateCount.toLocaleString()} update</p>
-              </Card>
-            </div>
-
-            {errorCount > 0 && (
-              <label className="flex items-center gap-2 text-sm bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                <Checkbox checked={skipErrors} onCheckedChange={v => setSkipErrors(!!v)} />
-                Skip the {errorCount} row(s) with errors and import the rest
-              </label>
-            )}
-
-            {/* Row-level table (first 50 shown for performance) */}
-            <div className="border border-border rounded-lg overflow-hidden">
-              <div className="max-h-72 overflow-y-auto">
-                <Table>
-                  <TableHeader className="sticky top-0 bg-background">
-                    <TableRow>
-                      <TableHead className="w-14">Row</TableHead>
-                      <TableHead>SKU</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Issues</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {parsedRows.slice(0, 50).map(r => (
-                      <TableRow key={r.rowNum} className={r.status === "error" ? "bg-red-50" : r.status === "warning" ? "bg-amber-50" : ""}>
-                        <TableCell className="text-xs text-muted-foreground">{r.rowNum}</TableCell>
-                        <TableCell className="text-xs font-mono">{r.sku || "—"}</TableCell>
-                        <TableCell className="text-xs max-w-[200px] truncate">{r.name || "—"}</TableCell>
-                        <TableCell>{statusBadge(r.status)}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{r.issues.join(", ") || "—"}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-              {parsedRows.length > 50 && (
-                <p className="text-xs text-muted-foreground text-center py-2 border-t border-border">
-                  Showing first 50 of {parsedRows.length.toLocaleString()} rows — all rows will be processed on import
-                </p>
-              )}
-            </div>
+          {/* Step indicator */}
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            {(["pick","preview","importing","done"] as const).map((s, i) => (
+              <span key={s} className="flex items-center gap-1">
+                <span className={`w-5 h-5 rounded-full flex items-center justify-center font-bold text-xs
+                  ${stage === s ? "bg-indigo-500 text-white" :
+                    (["preview","importing","done"].indexOf(stage) > i) ? "bg-green-500 text-white" :
+                    "bg-muted text-muted-foreground"}`}>{i + 1}</span>
+                {i < 3 && <span className="w-4 h-px bg-border"/>}
+              </span>
+            ))}
           </div>
-        )}
+        </div>
 
-        {/* ── Stage 3: Importing ── */}
-        {stage === "importing" && (
-          <div className="py-10 space-y-4 text-center">
-            <Loader2 className="w-8 h-8 mx-auto animate-spin text-primary"/>
-            <p className="font-medium">Importing tires… {progress}%</p>
-            <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden">
-              <div className="bg-primary h-2.5 rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
-            </div>
-            <p className="text-sm text-muted-foreground">Please don't close this window</p>
-          </div>
-        )}
+        {/* Body — scrollable */}
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
 
-        {/* ── Stage 4: Done ── */}
-        {stage === "done" && result && (
-          <div className="py-4 space-y-4">
-            <div className="flex flex-col items-center text-center gap-2 py-4">
-              <CheckCircle2 className="w-12 h-12 text-green-500"/>
-              <p className="text-lg font-semibold">Import complete</p>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <Card className="p-3 text-center">
-                <p className="text-2xl font-bold text-green-600">{result.inserted.toLocaleString()}</p>
-                <p className="text-xs text-muted-foreground">Inserted</p>
-              </Card>
-              <Card className="p-3 text-center">
-                <p className="text-2xl font-bold text-blue-600">{result.updated.toLocaleString()}</p>
-                <p className="text-xs text-muted-foreground">Updated</p>
-              </Card>
-              <Card className="p-3 text-center">
-                <p className="text-2xl font-bold text-muted-foreground">{result.skipped.toLocaleString()}</p>
-                <p className="text-xs text-muted-foreground">Skipped</p>
-              </Card>
-            </div>
-            {(errorCount > 0 || result.failed.length > 0) && (
-              <Button variant="outline" size="sm" onClick={downloadErrorReport} className="w-full">
-                <Download className="w-4 h-4 mr-2"/> Download error report
-              </Button>
-            )}
-          </div>
-        )}
-
-        <DialogFooter>
-          {stage === "pick" && (
-            <Button variant="outline" onClick={handleClose}>Cancel</Button>
-          )}
-          {stage === "preview" && (
+          {/* ── Stage: pick ── */}
+          {(stage === "pick" || stage === "parsing") && (
             <>
-              <Button variant="outline" onClick={() => setStage("pick")}><RotateCcw className="w-4 h-4 mr-2"/>Choose different file</Button>
-              <Button onClick={runImport} disabled={validCount + warningCount === 0}>
-                Import {(skipErrors ? validCount + warningCount : parsedRows.length).toLocaleString()} rows <ArrowRight className="w-4 h-4 ml-2"/>
-              </Button>
+              {stage === "pick" && (
+                <div
+                  onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+                  onDragLeave={() => setDragOver(false)}
+                  onDrop={e => { e.preventDefault(); setDragOver(false); handleFileSelect(e.dataTransfer.files?.[0]); }}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`border-2 border-dashed rounded-xl py-12 text-center cursor-pointer transition-all
+                    ${dragOver ? "border-indigo-400 bg-indigo-50 scale-[1.01]" : "border-border hover:border-indigo-300 hover:bg-muted/30"}`}
+                >
+                  <input ref={fileInputRef} type="file" accept=".csv" className="hidden"
+                    onChange={e => handleFileSelect(e.target.files?.[0])} />
+                  <Upload className="w-12 h-12 mx-auto mb-3 text-indigo-400"/>
+                  <p className="font-semibold text-base">Drag & drop your CSV here</p>
+                  <p className="text-sm text-muted-foreground mt-1">or click to browse files</p>
+                  <p className="text-xs text-muted-foreground mt-3 bg-muted inline-block px-3 py-1 rounded-full">
+                    Supports full tire fitment CSV — up to 150K+ rows
+                  </p>
+                </div>
+              )}
+
+              {stage === "parsing" && (
+                <div className="py-8 text-center space-y-4">
+                  <Loader2 className="w-10 h-10 mx-auto animate-spin text-indigo-500"/>
+                  <p className="font-semibold">Reading & validating your CSV…</p>
+                  <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden">
+                    <div className="bg-indigo-500 h-2.5 rounded-full transition-all duration-200" style={{ width: `${parseProgress}%` }}/>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{parseProgress}% complete — please wait</p>
+                </div>
+              )}
+
+              {parseError && (
+                <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-lg p-3">
+                  <XCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5"/>
+                  <div>
+                    <p className="font-medium text-red-700 text-sm">Could not read file</p>
+                    <p className="text-xs text-red-600 mt-0.5">{parseError}</p>
+                  </div>
+                </div>
+              )}
+
+              {stage === "pick" && (
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { icon:<CheckCircle2 className="w-4 h-4 text-green-600"/>, text:"Every row validated before importing" },
+                    { icon:<Eye className="w-4 h-4 text-blue-600"/>,          text:"Preview what will be added vs updated" },
+                    { icon:<X className="w-4 h-4 text-orange-500"/>,          text:"Error rows can be skipped automatically" },
+                  ].map((tip, i) => (
+                    <div key={i} className="flex items-start gap-2 bg-muted/40 rounded-lg p-3">
+                      <span className="shrink-0 mt-0.5">{tip.icon}</span>
+                      <p className="text-xs text-muted-foreground">{tip.text}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </>
           )}
-          {stage === "done" && (
-            <Button onClick={handleClose}>Close</Button>
+
+          {/* ── Stage: preview ── */}
+          {stage === "preview" && (
+            <>
+              {/* Summary cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[
+                  { label:"Total rows",  value:parsedRows.length, color:"text-foreground",    bg:"" },
+                  { label:"✅ Valid",     value:validCount,        color:"text-green-600",     bg:"bg-green-50 border-green-200" },
+                  { label:"⚠️ Warnings",  value:warningCount,      color:"text-amber-600",     bg:"bg-amber-50 border-amber-200" },
+                  { label:"❌ Errors",    value:errorCount,        color:"text-red-600",       bg:"bg-red-50 border-red-200" },
+                ].map(c => (
+                  <div key={c.label} className={`rounded-xl border p-4 ${c.bg || "border-border"}`}>
+                    <p className="text-xs text-muted-foreground">{c.label}</p>
+                    <p className={`text-2xl font-bold mt-1 ${c.color}`}>{c.value.toLocaleString()}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* New vs update */}
+              <div className="flex gap-3">
+                <div className="flex-1 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
+                  <p className="text-xs text-blue-600">🆕 New tires to add</p>
+                  <p className="text-xl font-bold text-blue-700 mt-0.5">{insertCount.toLocaleString()}</p>
+                </div>
+                <div className="flex-1 rounded-lg border border-violet-200 bg-violet-50 px-4 py-3">
+                  <p className="text-xs text-violet-600">🔄 Existing tires to update</p>
+                  <p className="text-xl font-bold text-violet-700 mt-0.5">{updateCount.toLocaleString()}</p>
+                </div>
+              </div>
+
+              {/* Skip errors toggle */}
+              {errorCount > 0 && (
+                <label className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 cursor-pointer">
+                  <Checkbox checked={skipErrors} onCheckedChange={v => setSkipErrors(!!v)} />
+                  <div>
+                    <p className="text-sm font-medium">Skip {errorCount.toLocaleString()} error row{errorCount === 1 ? "" : "s"} and import the rest</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Recommended — error rows have missing SKU or name</p>
+                  </div>
+                </label>
+              )}
+
+              {/* Filter tabs */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs text-muted-foreground">Show:</span>
+                {(["all","valid","warning","error"] as const).map(f => (
+                  <button key={f} onClick={() => setFilterStatus(f)}
+                    className={`text-xs px-3 py-1 rounded-full border transition-colors capitalize
+                      ${filterStatus === f
+                        ? f === "valid"   ? "bg-green-100 text-green-700 border-green-300"
+                        : f === "warning" ? "bg-amber-100 text-amber-700 border-amber-300"
+                        : f === "error"   ? "bg-red-100 text-red-700 border-red-300"
+                        : "bg-indigo-100 text-indigo-700 border-indigo-300"
+                        : "bg-white text-muted-foreground border-border hover:bg-muted/40"}`}>
+                    {f === "all" ? `All (${parsedRows.length.toLocaleString()})` :
+                     f === "valid"   ? `Valid (${validCount.toLocaleString()})` :
+                     f === "warning" ? `Warnings (${warningCount.toLocaleString()})` :
+                     `Errors (${errorCount.toLocaleString()})`}
+                  </button>
+                ))}
+              </div>
+
+              {/* Preview table */}
+              <div className="border border-border rounded-lg overflow-hidden">
+                <div className="max-h-64 overflow-y-auto">
+                  <Table>
+                    <TableHeader className="sticky top-0 bg-background z-10">
+                      <TableRow>
+                        <TableHead className="w-12 text-xs">Row</TableHead>
+                        <TableHead className="text-xs">SKU</TableHead>
+                        <TableHead className="text-xs">Name</TableHead>
+                        <TableHead className="text-xs w-20">Price</TableHead>
+                        <TableHead className="text-xs w-20">Stock</TableHead>
+                        <TableHead className="text-xs w-24">Status</TableHead>
+                        <TableHead className="text-xs">Issues</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {previewRows.length === 0 ? (
+                        <TableRow><TableCell colSpan={7} className="text-center text-xs text-muted-foreground py-8">No rows match this filter</TableCell></TableRow>
+                      ) : previewRows.map(r => (
+                        <TableRow key={r.rowNum}
+                          className={r.status === "error" ? "bg-red-50 hover:bg-red-100" : r.status === "warning" ? "bg-amber-50 hover:bg-amber-100" : "hover:bg-green-50"}>
+                          <TableCell className="text-xs text-muted-foreground">{r.rowNum}</TableCell>
+                          <TableCell className="text-xs font-mono">{r.sku || <span className="text-red-400">missing</span>}</TableCell>
+                          <TableCell className="text-xs max-w-[160px] truncate">{r.name || <span className="text-red-400">missing</span>}</TableCell>
+                          <TableCell className="text-xs">{r.price ? `$${r.price}` : "—"}</TableCell>
+                          <TableCell className="text-xs">{r.stock ?? "—"}</TableCell>
+                          <TableCell>{statusBadge(r.status)}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground max-w-[180px] truncate">{r.issues.join(", ") || "—"}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                {parsedRows.length > 100 && (
+                  <div className="text-xs text-muted-foreground text-center py-2 border-t border-border bg-muted/20">
+                    Showing first 100 of {parsedRows.length.toLocaleString()} rows — all rows will be imported
+                  </div>
+                )}
+              </div>
+            </>
           )}
-        </DialogFooter>
+
+          {/* ── Stage: importing ── */}
+          {stage === "importing" && (
+            <div className="py-10 space-y-5 text-center">
+              <div className="w-16 h-16 rounded-full bg-indigo-100 flex items-center justify-center mx-auto">
+                <Loader2 className="w-8 h-8 animate-spin text-indigo-600"/>
+              </div>
+              <div>
+                <p className="font-bold text-lg">Importing tires…</p>
+                <p className="text-sm text-muted-foreground mt-1">{importedSoFar.toLocaleString()} of {totalToImport.toLocaleString()} rows processed</p>
+              </div>
+              <div className="space-y-1">
+                <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
+                  <div className="bg-indigo-500 h-3 rounded-full transition-all duration-300" style={{ width: `${importProgress}%` }}/>
+                </div>
+                <p className="text-xs text-muted-foreground">{importProgress}%</p>
+              </div>
+              <p className="text-xs text-muted-foreground bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 inline-block">
+                ⚠️ Please don't close this window — import in progress
+              </p>
+            </div>
+          )}
+
+          {/* ── Stage: done ── */}
+          {stage === "done" && result && (
+            <div className="space-y-5">
+              <div className="flex flex-col items-center gap-2 py-4">
+                <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+                  <CheckCircle2 className="w-9 h-9 text-green-600"/>
+                </div>
+                <p className="text-xl font-bold">Import complete!</p>
+                <p className="text-sm text-muted-foreground">Your tire catalog has been updated</p>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="rounded-xl border border-green-200 bg-green-50 p-4 text-center">
+                  <p className="text-3xl font-bold text-green-600">{result.inserted.toLocaleString()}</p>
+                  <p className="text-xs text-green-700 mt-1">🆕 Inserted</p>
+                </div>
+                <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-center">
+                  <p className="text-3xl font-bold text-blue-600">{result.updated.toLocaleString()}</p>
+                  <p className="text-xs text-blue-700 mt-1">🔄 Updated</p>
+                </div>
+                <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-center">
+                  <p className="text-3xl font-bold text-gray-600">{result.skipped.toLocaleString()}</p>
+                  <p className="text-xs text-gray-700 mt-1">⏭️ Skipped</p>
+                </div>
+              </div>
+              {result.failed.length > 0 && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <p className="text-sm font-medium text-red-700 mb-1">{result.failed.length} rows failed during upload</p>
+                  <p className="text-xs text-red-600">Download the error report to see which rows need to be re-imported.</p>
+                </div>
+              )}
+              {(errorCount > 0 || result.failed.length > 0) && (
+                <Button variant="outline" className="w-full" onClick={downloadErrorReport}>
+                  <Download className="w-4 h-4 mr-2"/> Download error report CSV
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        {stage !== "importing" && (
+          <div className="border-t border-border px-6 py-4 flex items-center justify-between bg-muted/20">
+            {stage === "pick" || stage === "parsing" ? (
+              <Button variant="outline" onClick={handleClose} disabled={stage === "parsing"}>Cancel</Button>
+            ) : stage === "preview" ? (
+              <>
+                <Button variant="outline" onClick={() => { reset(); }}>
+                  <RotateCcw className="w-4 h-4 mr-2"/> Choose different file
+                </Button>
+                <div className="flex items-center gap-3">
+                  <p className="text-xs text-muted-foreground">
+                    Will import <strong>{rowsToImport.length.toLocaleString()}</strong> rows
+                  </p>
+                  <Button
+                    onClick={runImport}
+                    disabled={rowsToImport.length === 0}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                  >
+                    Start Import <ArrowRight className="w-4 h-4 ml-2"/>
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <Button className="ml-auto" onClick={handleClose}>✅ Done — Close</Button>
+            )}
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
