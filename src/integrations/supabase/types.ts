@@ -612,6 +612,75 @@ export type Database = {
           },
         ]
       }
+      tires: {
+        Row: {
+          aspect_ratio: number | null
+          brand: string | null
+          cost: number | null
+          created_at: string | null
+          id: string
+          image_url: string | null
+          load_index: string | null
+          model: string | null
+          price: number | null
+          qty_on_hand: number | null
+          qty_reserved: number | null
+          rim_size: number | null
+          season: string | null
+          sku: string
+          speed_rating: string | null
+          status: string | null
+          type: string | null
+          vendor: string | null
+          warehouse: string | null
+          width: number | null
+        }
+        Insert: {
+          aspect_ratio?: number | null
+          brand?: string | null
+          cost?: number | null
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          load_index?: string | null
+          model?: string | null
+          price?: number | null
+          qty_on_hand?: number | null
+          qty_reserved?: number | null
+          rim_size?: number | null
+          season?: string | null
+          sku: string
+          speed_rating?: string | null
+          status?: string | null
+          type?: string | null
+          vendor?: string | null
+          warehouse?: string | null
+          width?: number | null
+        }
+        Update: {
+          aspect_ratio?: number | null
+          brand?: string | null
+          cost?: number | null
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          load_index?: string | null
+          model?: string | null
+          price?: number | null
+          qty_on_hand?: number | null
+          qty_reserved?: number | null
+          rim_size?: number | null
+          season?: string | null
+          sku?: string
+          speed_rating?: string | null
+          status?: string | null
+          type?: string | null
+          vendor?: string | null
+          warehouse?: string | null
+          width?: number | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
