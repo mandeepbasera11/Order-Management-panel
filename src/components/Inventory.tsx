@@ -1595,7 +1595,7 @@ export function Inventory() {
             </DialogTrigger>
             <DialogContent>
               <DialogHeader><DialogTitle>Add Tire</DialogTitle></DialogHeader>
-              <div className="grid gap-4 py-4">< grid grid-cols-1 md:grid-cols-2 gap-8>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="grid gap-2"><Label>GE SKU *</Label><Input value={form.sku} onChange={e=>setForm({...form,sku:e.target.value})} placeholder="GE-Ironman-91202-1"/></div>
                 <div className="grid gap-2"><Label>Item Name *</Label><Input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Ironman All Country AT 265/70R17"/></div>
                 <div className="grid gap-2"><Label>Brand *</Label><Input value={form.brand} onChange={e=>setForm({...form,brand:e.target.value})} placeholder="Ironman"/></div>
