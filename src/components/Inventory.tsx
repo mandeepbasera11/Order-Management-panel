@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import PlatformListings from "./PlatformListings";
 
 // ─── Type ─────────────────────────────────────────────────────────────────────
 type Product = {
@@ -696,20 +697,8 @@ function FitmentDetailsDialog({
           {/* ── Platform Listings ── */}
           <div>
             <SectionTitle>Platform Listings</SectionTitle>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-              {["Amazon","Walmart","eBay"].map(p=>(
-                <div key={p} className="rounded-lg border border-border p-4 space-y-2">
-                  <div className="flex items-center gap-2 font-semibold text-sm">
-                    {p==="Amazon"&&<ShoppingCart className="w-4 h-4"/>}
-                    {p==="Walmart"&&<Building2 className="w-4 h-4"/>}
-                    {p==="eBay"&&<Globe className="w-4 h-4"/>}
-                    {p}
-                  </div>
-                  <Badge variant="outline" className="text-xs">Not Listed</Badge>
-                </div>
-              ))}
-            </div>
-            <div className="rounded-lg border-2 border-green-200 bg-green-50 p-4 w-fit space-y-1">
+            <PlatformListings />
+            <div className="rounded-lg border-2 border-green-200 bg-green-50 p-4 w-fit space-y-1 mt-4">
               <div className="flex items-center gap-2 font-semibold text-sm">
                 <ShoppingCart className="w-4 h-4 text-green-600"/>Shopify
               </div>
