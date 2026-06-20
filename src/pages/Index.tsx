@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { PageLayout } from "@/components/PageLayout";
-import { OperationsDashboard as Dashboard } from "@/components/Dashboard";
 import { OperationsDashboard } from "@/components/OperationsDashboard";
 import { ExecutiveDashboard } from "@/components/ExecutiveDashboard";
 import { Inventory } from "@/components/Inventory";
