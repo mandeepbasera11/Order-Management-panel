@@ -1598,7 +1598,9 @@ export function Inventory() {
               <div className="grid gap-4 py-2">
                 <div className="grid gap-2"><Label>GE SKU *</Label><Input value={form.sku} onChange={e=>setForm({...form,sku:e.target.value})} placeholder="GE-Ironman-91202-1"/></div>
                 <div className="grid gap-2"><Label>Item Name *</Label><Input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Ironman All Country AT 265/70R17"/></div>
-                <div className="grid gap-2"><Label>Brand *</Label><Input value={form.brand} onChange={e=>setForm({...form,brand:e.target.value})} placeholder="265/70R17"/></div>
+                <div className="grid gap-2"><Label>Brand *</Label><Input value={form.brand} onChange={e=>setForm({...form,brand:e.target.value})} placeholder="Ironman"/></div>
+                 <div className="grid gap-2"><Label>Size *</Label><Input value={form.size} onChange={e=>setForm({...form,size:e.target.value})} placeholder="265/70R17"/></div>
+                 <div className="grid gap-2"><Label>Manufacturer Code </Label><Input value={form.manufacturercode} onChange={e=>setForm({...form,manufacturercode:e.target.value})} placeholder="3672478"/></div>
                 <div className="grid gap-2"><Label>Category</Label>
                   <Select value={form.category} onValueChange={v=>setForm({...form,category:v})}>
                     <SelectTrigger><SelectValue placeholder="Select category"/></SelectTrigger>
