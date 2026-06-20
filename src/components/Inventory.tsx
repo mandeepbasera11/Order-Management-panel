@@ -24,7 +24,6 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import PlatformListings from "./PlatformListings";
 
 // ─── Type ─────────────────────────────────────────────────────────────────────
 type Product = {
@@ -211,11 +210,22 @@ const parseCsvLine = (line: string): string[] => {
   return out;
 };
 
+// ── Header normalization ────────────────────────────────────────────────────
+// Real-world CSVs use all kinds of header spellings: "GE SKU", "Ge_Sku",
+// "sku ", "Item Name", "ItemName", "Product Name"... This collapses any
+// header down to a stable snake_case key so lookups are forgiving.
+const normalizeHeader = (h: string): string =>
+  h
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")  // any run of non-alphanumeric -> single underscore
+    .replace(/^_+|_+$/g, "");      // trim leading/trailing underscores
+
 // Small-file fallback (kept for anything that still calls it directly)
 const parseCsv = (text: string): Record<string, string>[] => {
   const lines = text.split(/\r\n|\n|\r/).filter(l => l.length > 0);
   if (!lines.length) return [];
-  const headers = parseCsvLine(lines[0]).map(h => h.trim().toLowerCase());
+  const headers = parseCsvLine(lines[0]).map(normalizeHeader);
   return lines.slice(1).map(line => {
     const cells = parseCsvLine(line);
     const obj: Record<string,string> = {};
@@ -224,12 +234,19 @@ const parseCsv = (text: string): Record<string, string>[] => {
   });
 };
 
+// Looks up a value by trying several normalized aliases in order — handles
+// SKU columns being named "sku", "ge_sku", "GE SKU", "Item SKU", etc.
 const pickVal = (row: Record<string,string>, ...keys: string[]) => {
-  for (const k of keys) { const v = row[k]; if (v!=null&&v!=="") return v; }
+  for (const k of keys) { const v = row[k]; if (v!=null && String(v).trim()!=="") return String(v).trim(); }
   return "";
 };
-const num = (v: string) => { const n = parseFloat(v); return isNaN(n) ? null : n; };
-const int = (v: string) => { const n = parseInt(v); return isNaN(n) ? null : n; };
+
+// Broader alias sets used by the bulk importer — first match wins.
+const SKU_ALIASES  = ["ge_sku","sku","item_sku","product_sku","tire_sku","part_number","partnumber","base_ge_sku","upc","mtlid","manufacturer_product_code"];
+const NAME_ALIASES = ["item_name","name","product_name","title","tire_name","description","item"];
+
+const num = (v: string) => { const n = parseFloat(String(v).replace(/[$,]/g,"")); return isNaN(n) ? null : n; };
+const int = (v: string) => { const n = parseInt(String(v).replace(/[$,]/g,"")); return isNaN(n) ? null : n; };
 
 // Shared mutable holder so streamParseCsv can pass parsed headers back
 // without changing its per-row callback signature.
@@ -270,7 +287,7 @@ async function streamParseCsv(
       if (!line.length) continue;
       const cells = parseCsvLine(line);
       if (!headers) {
-        headers = cells.map(h => h.trim().toLowerCase());
+        headers = cells.map(normalizeHeader);
         continue; // header row — don't emit as data
       }
       onRow(cells, rowIndex++);
@@ -313,18 +330,18 @@ function validateRow(
   existingSkus: Set<string>
 ): ParsedRow {
   const issues: string[] = [];
-  const sku  = pickVal(r, "ge_sku", "sku");
-  const name = pickVal(r, "item_name", "name");
+  const sku  = pickVal(r, ...SKU_ALIASES);
+  const name = pickVal(r, ...NAME_ALIASES);
 
   let lowestVendorPrice: number | null = null;
   for (let i = 1; i <= 21; i++) {
     const vp = num(r[`vendor${i}_price`] || "");
     if (vp != null && (lowestVendorPrice === null || vp < lowestVendorPrice)) lowestVendorPrice = vp;
   }
-  const wp = num(pickVal(r, "wholesale_price"));
+  const wp = num(pickVal(r, "wholesale_price", "price"));
   const price = wp ?? lowestVendorPrice ?? 0;
-  const stock = int(pickVal(r, "stock")) ?? int(pickVal(r, "total_vendor_inventory")) ?? 0;
-  const category = pickVal(r, "category") || "MM";
+  const stock = int(pickVal(r, "stock", "quantity", "qty")) ?? int(pickVal(r, "total_vendor_inventory")) ?? 0;
+  const category = pickVal(r, "category", "type") || "MM";
 
   if (!sku)  issues.push("Missing SKU");
   if (!name) issues.push("Missing item name");
@@ -337,6 +354,9 @@ function validateRow(
 
   const willUpdate = !!sku && existingSkus.has(sku);
 
+  // Only a genuinely missing SKU or name blocks a row as an "error" — every
+  // other issue (no price, duplicate, negative stock) is just a "warning"
+  // since those rows can still be imported if the user chooses to.
   let status: RowStatus = "valid";
   if (!sku || !name) status = "error";
   else if (issues.length > 0) status = "warning";
@@ -344,24 +364,33 @@ function validateRow(
   return { rowNum, raw: r, sku, name, category, price, stock, status, issues, isDuplicateInFile, willUpdate };
 }
 
-// Build the full DB record from a raw CSV row (same mapping as before)
-function buildRecord(r: Record<string, string>): Record<string, unknown> | null {
-  const sku  = pickVal(r, "ge_sku", "sku");
-  const name = pickVal(r, "item_name", "name");
-  if (!sku || !name) return null;
+// Build the full DB record from a raw CSV row (same mapping as before).
+// allowMissingSku: when true, auto-generates a placeholder SKU/name instead
+// of rejecting the row — used when the user chooses to "import anyway"
+// despite missing SKU/name on some rows.
+function buildRecord(r: Record<string, string>, allowMissingSku = false): Record<string, unknown> | null {
+  let sku  = pickVal(r, ...SKU_ALIASES);
+  let name = pickVal(r, ...NAME_ALIASES);
+
+  if (!sku || !name) {
+    if (!allowMissingSku) return null;
+    // Generate a stable-ish fallback so the row can still be saved.
+    if (!sku)  sku  = `AUTO-${Math.random().toString(36).slice(2, 10).toUpperCase()}`;
+    if (!name) name = sku;
+  }
 
   let lowestVendorPrice: number | null = null;
   for (let i = 1; i <= 21; i++) {
     const vp = num(r[`vendor${i}_price`] || "");
     if (vp != null && (lowestVendorPrice === null || vp < lowestVendorPrice)) lowestVendorPrice = vp;
   }
-  const wp = num(pickVal(r, "wholesale_price"));
+  const wp = num(pickVal(r, "wholesale_price", "price"));
 
   const rec: Record<string, unknown> = {
     sku, name,
-    category:   pickVal(r, "category") || "MM",
+    category:   pickVal(r, "category", "type") || "MM",
     price:      wp ?? lowestVendorPrice ?? 0,
-    stock:      int(pickVal(r, "stock")) ?? int(pickVal(r, "total_vendor_inventory")) ?? 0,
+    stock:      int(pickVal(r, "stock", "quantity", "qty")) ?? int(pickVal(r, "total_vendor_inventory")) ?? 0,
     aspect:                     r.aspect || null,
     base_ge_sku:                r.base_ge_sku || null,
     brand:                      r.brand || null,
@@ -369,7 +398,7 @@ function buildRecord(r: Record<string, string>): Record<string, unknown> | null 
     description:                r.description || null,
     features_and_benefits:      r.features_and_benefits || null,
     images:                     r.images || null,
-    item_name:                  r.item_name || null,
+    item_name:                  r.item_name || name || null,
     manufacturer_product_code:  r.manufacturer_product_code || null,
     master_brand_id:            r.master_brand_id || null,
     master_model_id:            r.master_model_id || null,
@@ -418,45 +447,6 @@ const statusFor = (stock: number) => {
 };
 
 // ─── Fitment Details Dialog (with full inline edit) ───────────────────────────
-type DraftSetter = (key: keyof Product, val: string) => void;
-
-function EditField({
-  label, fieldKey, type = "text", red, draft, set,
-}: {
-  label: string; fieldKey: keyof Product; type?: string; red?: boolean;
-  draft: Product; set: DraftSetter;
-}) {
-  return (
-    <div className="flex items-center justify-between py-1.5 border-b border-border last:border-0 gap-3">
-      <span className={`text-sm font-medium shrink-0 w-40 ${red?"text-red-500":"text-muted-foreground"}`}>{label}:</span>
-      <Input
-        type={type}
-        className="h-7 text-sm text-right"
-        value={(draft[fieldKey] as string | number | null) ?? ""}
-        onChange={e => set(fieldKey, e.target.value)}
-      />
-    </div>
-  );
-}
-
-function EditTextarea({
-  label, fieldKey, draft, set,
-}: {
-  label: string; fieldKey: keyof Product; draft: Product; set: DraftSetter;
-}) {
-  return (
-    <div className="space-y-1 py-1.5 border-b border-border last:border-0">
-      <span className="text-sm font-medium text-muted-foreground">{label}:</span>
-      <textarea
-        rows={3}
-        className="w-full text-sm rounded-md border border-input bg-background px-3 py-1.5 resize-y focus:outline-none focus:ring-2 focus:ring-ring"
-        value={(draft[fieldKey] as string | null) ?? ""}
-        onChange={e => set(fieldKey, e.target.value)}
-      />
-    </div>
-  );
-}
-
 function FitmentDetailsDialog({
   product, open, onClose, onSaved,
 }: {
@@ -485,6 +475,36 @@ function FitmentDetailsDialog({
     <div className="flex items-start justify-between py-2 border-b border-border last:border-0 gap-4">
       <span className={`text-sm font-medium shrink-0 ${red?"text-red-500":"text-muted-foreground"}`}>{label}:</span>
       <span className={`text-sm text-right break-all ${red?"text-red-500":"text-foreground"}`}>{value || "N/A"}</span>
+    </div>
+  );
+
+  // Edit row — label + input side-by-side
+  const EditField = ({
+    label, fieldKey, type = "text", red,
+  }: {
+    label: string; fieldKey: keyof Product; type?: string; red?: boolean;
+  }) => (
+    <div className="flex items-center justify-between py-1.5 border-b border-border last:border-0 gap-3">
+      <span className={`text-sm font-medium shrink-0 w-40 ${red?"text-red-500":"text-muted-foreground"}`}>{label}:</span>
+      <Input
+        type={type}
+        className="h-7 text-sm text-right"
+        value={(draft[fieldKey] as string | number | null) ?? ""}
+        onChange={e => set(fieldKey, e.target.value)}
+      />
+    </div>
+  );
+
+  // Textarea edit row (for description, features)
+  const EditTextarea = ({ label, fieldKey }: { label: string; fieldKey: keyof Product }) => (
+    <div className="space-y-1 py-1.5 border-b border-border last:border-0">
+      <span className="text-sm font-medium text-muted-foreground">{label}:</span>
+      <textarea
+        rows={3}
+        className="w-full text-sm rounded-md border border-input bg-background px-3 py-1.5 resize-y focus:outline-none focus:ring-2 focus:ring-ring"
+        value={(draft[fieldKey] as string | null) ?? ""}
+        onChange={e => set(fieldKey, e.target.value)}
+      />
     </div>
   );
 
@@ -559,21 +579,21 @@ function FitmentDetailsDialog({
               <SectionTitle>Basic Information</SectionTitle>
               {editMode ? (
                 <>
-                  <EditField label="GE SKU"                    fieldKey="sku" draft={draft} set={set} />
-                  <EditField label="Item Name"                 fieldKey="item_name" draft={draft} set={set} />
-                  <EditField label="MTLID"                     fieldKey="mtlid" draft={draft} set={set} />
-                  <EditField label="Master Brand ID"           fieldKey="master_brand_id" draft={draft} set={set} />
-                  <EditField label="Brand"                     fieldKey="brand" draft={draft} set={set} />
-                  <EditField label="Master Model ID"           fieldKey="master_model_id" draft={draft} set={set} />
-                  <EditField label="Model"                     fieldKey="model" draft={draft} set={set} />
-                  <EditField label="Wholesale Price"           fieldKey="wholesale_price" type="number" draft={draft} set={set} />
-                  <EditField label="Images"                    fieldKey="images" draft={draft} set={set} />
-                  <EditField label="Brand Logo"                fieldKey="brand_logo" draft={draft} set={set} />
-                  <EditField label="Category"                  fieldKey="category" draft={draft} set={set} />
-                  <EditField label="Size"                      fieldKey="size" draft={draft} set={set} />
-                  <EditField label="Raw Size"                  fieldKey="raw_size" draft={draft} set={set} />
-                  <EditField label="Manufacturer Code"         fieldKey="manufacturer_product_code" draft={draft} set={set} />
-                  <EditField label="UPC"                       fieldKey="upc" draft={draft} set={set} />
+                  <EditField label="GE SKU"                    fieldKey="sku" />
+                  <EditField label="Item Name"                 fieldKey="item_name" />
+                  <EditField label="MTLID"                     fieldKey="mtlid" />
+                  <EditField label="Master Brand ID"           fieldKey="master_brand_id" />
+                  <EditField label="Brand"                     fieldKey="brand" />
+                  <EditField label="Master Model ID"           fieldKey="master_model_id" />
+                  <EditField label="Model"                     fieldKey="model" />
+                  <EditField label="Wholesale Price"           fieldKey="wholesale_price" type="number" />
+                  <EditField label="Images"                    fieldKey="images" />
+                  <EditField label="Brand Logo"                fieldKey="brand_logo" />
+                  <EditField label="Category"                  fieldKey="category" />
+                  <EditField label="Size"                      fieldKey="size" />
+                  <EditField label="Raw Size"                  fieldKey="raw_size" />
+                  <EditField label="Manufacturer Code"         fieldKey="manufacturer_product_code" />
+                  <EditField label="UPC"                       fieldKey="upc" />
                 </>
               ) : (
                 <>
@@ -610,14 +630,14 @@ function FitmentDetailsDialog({
               <SectionTitle>Size Specifications</SectionTitle>
               {editMode ? (
                 <>
-                  <EditField label="Section"          fieldKey="section" draft={draft} set={set} />
-                  <EditField label="Aspect"           fieldKey="aspect" draft={draft} set={set} />
-                  <EditField label="Rim"              fieldKey="rim" draft={draft} set={set} />
-                  <EditField label="Rim Width Range"  fieldKey="rim_width_range" draft={draft} set={set} />
-                  <EditField label="Rim Width Min"    fieldKey="rim_width_min" draft={draft} set={set} />
-                  <EditField label="Rim Width Max"    fieldKey="rim_width_max" draft={draft} set={set} />
-                  <EditField label="Meas Rim Width"   fieldKey="meas_rim_width" draft={draft} set={set} />
-                  <EditField label="Overall Diameter" fieldKey="overall_diam" draft={draft} set={set} />
+                  <EditField label="Section"          fieldKey="section" />
+                  <EditField label="Aspect"           fieldKey="aspect" />
+                  <EditField label="Rim"              fieldKey="rim" />
+                  <EditField label="Rim Width Range"  fieldKey="rim_width_range" />
+                  <EditField label="Rim Width Min"    fieldKey="rim_width_min" />
+                  <EditField label="Rim Width Max"    fieldKey="rim_width_max" />
+                  <EditField label="Meas Rim Width"   fieldKey="meas_rim_width" />
+                  <EditField label="Overall Diameter" fieldKey="overall_diam" />
                 </>
               ) : (
                 <>
@@ -634,7 +654,7 @@ function FitmentDetailsDialog({
 
               <SectionTitle red>Tire Shipping Data:</SectionTitle>
               {editMode
-                ? <EditField label="Tire Weight" fieldKey="tire_weight" red draft={draft} set={set} />
+                ? <EditField label="Tire Weight" fieldKey="tire_weight" red />
                 : <Field     label="Tire Weight" value={product.tire_weight} red />
               }
             </div>
@@ -648,13 +668,13 @@ function FitmentDetailsDialog({
               <SectionTitle>Performance Ratings</SectionTitle>
               {editMode ? (
                 <>
-                  <EditField label="Tire Load"           fieldKey="tire_load" draft={draft} set={set} />
-                  <EditField label="Tire Speed"          fieldKey="tire_speed" draft={draft} set={set} />
-                  <EditField label="Ply"                 fieldKey="ply" draft={draft} set={set} />
-                  <EditField label="Ply Rating"          fieldKey="ply_rating" draft={draft} set={set} />
-                  <EditField label="UTQG"                fieldKey="utqg" draft={draft} set={set} />
-                  <EditField label="Max Inflation Press" fieldKey="max_inflation_press" draft={draft} set={set} />
-                  <EditField label="Max Load"            fieldKey="max_load" draft={draft} set={set} />
+                  <EditField label="Tire Load"           fieldKey="tire_load" />
+                  <EditField label="Tire Speed"          fieldKey="tire_speed" />
+                  <EditField label="Ply"                 fieldKey="ply" />
+                  <EditField label="Ply Rating"          fieldKey="ply_rating" />
+                  <EditField label="UTQG"                fieldKey="utqg" />
+                  <EditField label="Max Inflation Press" fieldKey="max_inflation_press" />
+                  <EditField label="Max Load"            fieldKey="max_load" />
                 </>
               ) : (
                 <>
@@ -674,12 +694,12 @@ function FitmentDetailsDialog({
               <SectionTitle>Technical Specifications</SectionTitle>
               {editMode ? (
                 <>
-                  <EditField label="Tread Type"    fieldKey="tread_type" draft={draft} set={set} />
-                  <EditField label="Tread Depth"   fieldKey="tread_depth" draft={draft} set={set} />
-                  <EditField label="Run Flat"      fieldKey="run_flat" draft={draft} set={set} />
-                  <EditField label="Sidewall ABR"  fieldKey="sidewall_abr" draft={draft} set={set} />
-                  <EditField label="P Metric"      fieldKey="p_metric" draft={draft} set={set} />
-                  <EditField label="Revs Per Mile" fieldKey="revs_per_mile" draft={draft} set={set} />
+                  <EditField label="Tread Type"    fieldKey="tread_type" />
+                  <EditField label="Tread Depth"   fieldKey="tread_depth" />
+                  <EditField label="Run Flat"      fieldKey="run_flat" />
+                  <EditField label="Sidewall ABR"  fieldKey="sidewall_abr" />
+                  <EditField label="P Metric"      fieldKey="p_metric" />
+                  <EditField label="Revs Per Mile" fieldKey="revs_per_mile" />
                 </>
               ) : (
                 <>
@@ -697,8 +717,20 @@ function FitmentDetailsDialog({
           {/* ── Platform Listings ── */}
           <div>
             <SectionTitle>Platform Listings</SectionTitle>
-            <PlatformListings />
-            <div className="rounded-lg border-2 border-green-200 bg-green-50 p-4 w-fit space-y-1 mt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+              {["Amazon","Walmart","eBay"].map(p=>(
+                <div key={p} className="rounded-lg border border-border p-4 space-y-2">
+                  <div className="flex items-center gap-2 font-semibold text-sm">
+                    {p==="Amazon"&&<ShoppingCart className="w-4 h-4"/>}
+                    {p==="Walmart"&&<Building2 className="w-4 h-4"/>}
+                    {p==="eBay"&&<Globe className="w-4 h-4"/>}
+                    {p}
+                  </div>
+                  <Badge variant="outline" className="text-xs">Not Listed</Badge>
+                </div>
+              ))}
+            </div>
+            <div className="rounded-lg border-2 border-green-200 bg-green-50 p-4 w-fit space-y-1">
               <div className="flex items-center gap-2 font-semibold text-sm">
                 <ShoppingCart className="w-4 h-4 text-green-600"/>Shopify
               </div>
@@ -761,9 +793,9 @@ function FitmentDetailsDialog({
             <SectionTitle>Descriptions</SectionTitle>
             {editMode ? (
               <div className="space-y-3">
-                <EditTextarea label="Description"         fieldKey="description" draft={draft} set={set} />
-                <EditTextarea label="Features & Benefits" fieldKey="features_and_benefits" draft={draft} set={set} />
-                <EditTextarea label="Warranty"            fieldKey="warranty" draft={draft} set={set} />
+                <EditTextarea label="Description"         fieldKey="description" />
+                <EditTextarea label="Features & Benefits" fieldKey="features_and_benefits" />
+                <EditTextarea label="Warranty"            fieldKey="warranty" />
               </div>
             ) : (
               <div className="space-y-4">
@@ -949,7 +981,7 @@ function BulkImportDialog({
   // itself slow the browser down even with streaming reads. Above this many
   // rows, we stop keeping every row in memory and switch to "summary only"
   // mode (still imports everything correctly, just skips the per-row table).
-  const MAX_ROWS_IN_MEMORY = 2000_000;
+  const MAX_ROWS_IN_MEMORY = 300_000;
 
   // ── Stream-parse the file in 4MB chunks — works for files of any size ──────
   // Never calls file.text() on the whole file, so even 500MB+ CSVs won't
@@ -1031,9 +1063,13 @@ function BulkImportDialog({
   const updateCount  = parsedRows.filter(r => r.willUpdate && r.status !== "error").length;
   const insertCount  = parsedRows.filter(r => !r.willUpdate && r.status !== "error").length;
 
+  // When skipErrors is ON (default + recommended): only valid/warning rows.
+  // When skipErrors is OFF: every row is imported, including ones with a
+  // missing SKU or name — those get an auto-generated placeholder SKU so
+  // they still land in the catalog and can be fixed up afterward.
   const rowsToImport = skipErrors
-    ? parsedRows.filter(r => r.status !== "error" && r.sku && r.name)
-    : parsedRows.filter(r => r.sku && r.name);
+    ? parsedRows.filter(r => r.status !== "error")
+    : parsedRows;
 
   const previewRows = parsedRows
     .filter(r => filterStatus === "all" ? true : r.status === filterStatus)
@@ -1053,16 +1089,19 @@ function BulkImportDialog({
     const BATCH = 150; // smaller batch = more reliable on slow connections
     for (let i = 0; i < rowsToImport.length; i += BATCH) {
       const batch   = rowsToImport.slice(i, i + BATCH);
-      const records = batch.map(r => buildRecord(r.raw)).filter(Boolean) as Record<string, unknown>[];
+      // allowMissingSku=true lets error rows (missing sku/name) through with
+      // an auto-generated placeholder when the user unchecked "skip errors".
+      const records = batch.map(r => buildRecord(r.raw, !skipErrors)).filter(Boolean) as Record<string, unknown>[];
+      if (!records.length) { continue; }
       try {
         const { error } = await supabase.from("products").upsert(records as never[], { onConflict: "sku" });
         if (error) {
-          batch.forEach(r => failed.push({ row: r.rowNum, sku: r.sku, reason: error.message }));
+          batch.forEach(r => failed.push({ row: r.rowNum, sku: r.sku || "(auto-generated)", reason: error.message }));
         } else {
           batch.forEach(r => { if (r.willUpdate) updated++; else inserted++; });
         }
       } catch (err) {
-        batch.forEach(r => failed.push({ row: r.rowNum, sku: r.sku, reason: err instanceof Error ? err.message : "Unknown error" }));
+        batch.forEach(r => failed.push({ row: r.rowNum, sku: r.sku || "(auto-generated)", reason: err instanceof Error ? err.message : "Unknown error" }));
       }
       const done = i + batch.length;
       setImportedSoFar(done);
@@ -1189,6 +1228,30 @@ function BulkImportDialog({
           {/* ── Stage: preview ── */}
           {stage === "preview" && (
             <>
+              {/* Diagnostic banner if nearly every row failed — likely a header mismatch */}
+              {errorCount > 0 && errorCount >= parsedRows.length * 0.9 && (
+                <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-lg p-4">
+                  <AlertTriangle className="w-5 h-5 text-red-500 shrink-0 mt-0.5"/>
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-red-700">
+                      Almost every row is missing SKU/name — this usually means the column headers didn't match
+                    </p>
+                    <p className="text-xs text-red-600">
+                      We detected these columns in your file's header row:
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {headerCols.slice(0, 30).map(h => (
+                        <span key={h} className="text-xs font-mono bg-white border border-red-200 text-red-700 px-2 py-0.5 rounded">{h}</span>
+                      ))}
+                      {headerCols.length > 30 && <span className="text-xs text-red-500">+{headerCols.length - 30} more</span>}
+                    </div>
+                    <p className="text-xs text-red-600">
+                      We look for a SKU column named one of: <strong>sku, ge_sku, item_sku, product_sku, part_number</strong> — and a name column named one of: <strong>name, item_name, product_name, title</strong>. If your file uses different names, rename the header row and re-upload, or check "Import all rows" below to keep them with auto-generated SKUs.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Summary cards */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
@@ -1221,8 +1284,16 @@ function BulkImportDialog({
                 <label className="flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 cursor-pointer">
                   <Checkbox checked={skipErrors} onCheckedChange={v => setSkipErrors(!!v)} />
                   <div>
-                    <p className="text-sm font-medium">Skip {errorCount.toLocaleString()} error row{errorCount === 1 ? "" : "s"} and import the rest</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Recommended — error rows have missing SKU or name</p>
+                    <p className="text-sm font-medium">
+                      {skipErrors
+                        ? `Skip ${errorCount.toLocaleString()} error row${errorCount === 1 ? "" : "s"} and import the rest`
+                        : `Import all ${parsedRows.length.toLocaleString()} rows, including ${errorCount.toLocaleString()} with missing SKU/name`}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {skipErrors
+                        ? "Recommended — error rows have missing SKU or name and won't be added"
+                        : "Rows with no SKU or name will get an auto-generated placeholder SKU so they're still imported"}
+                    </p>
                   </div>
                 </label>
               )}
@@ -1595,19 +1666,9 @@ export function Inventory() {
             </DialogTrigger>
             <DialogContent>
               <DialogHeader><DialogTitle>Add Tire</DialogTitle></DialogHeader>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="grid gap-4 py-2">
                 <div className="grid gap-2"><Label>GE SKU *</Label><Input value={form.sku} onChange={e=>setForm({...form,sku:e.target.value})} placeholder="GE-Ironman-91202-1"/></div>
                 <div className="grid gap-2"><Label>Item Name *</Label><Input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Ironman All Country AT 265/70R17"/></div>
-                <div className="grid gap-2"><Label>Brand *</Label><Input value={form.brand} onChange={e=>setForm({...form,brand:e.target.value})} placeholder="Ironman"/></div>
-                 <div className="grid gap-2"><Label>Size *</Label><Input value={form.size} onChange={e=>setForm({...form,size:e.target.value})} placeholder="265/70R17"/></div>
-                 <div className="grid gap-2"><Label>Manufacturer Code </Label><Input value={form.manufacturercode} onChange={e=>setForm({...form,manufacturercode:e.target.value})} placeholder="3672478"/></div>
-                
-                <div className="grid gap-2"><Label>Tire Load </Label><Input value={form.tireload} onChange={e=>setForm({...form,tireload:e.target.value})} placeholder="91/92/94/95/99/101/102 etc"/></div>
-            <div className="grid gap-2"><Label>Tire Speed </Label><Input value={form.tirespeed} onChange={e=>setForm({...form,tirespeed:e.target.value})} placeholder="H/T/Y etc"/></div>
-                
-                
-                
-                
                 <div className="grid gap-2"><Label>Category</Label>
                   <Select value={form.category} onValueChange={v=>setForm({...form,category:v})}>
                     <SelectTrigger><SelectValue placeholder="Select category"/></SelectTrigger>
