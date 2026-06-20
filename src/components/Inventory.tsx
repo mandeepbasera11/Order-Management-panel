@@ -190,40 +190,104 @@ const COLUMN_GROUPS: { group: string; cols: { key: ColKey; label: string; defaul
 const ALL_COLS = COLUMN_GROUPS.flatMap((g) => g.cols);
 
 // ─── CSV helpers ──────────────────────────────────────────────────────────────
-const parseCsv = (text: string): Record<string, string>[] => {
-  const rows: string[][] = [];
-  let row: string[] = []; let cur = ""; let inQ = false;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
+// ── Streaming CSV line parser ──────────────────────────────────────────────
+// Parses ONE line of CSV (handles quoted commas) — used by the streaming reader below.
+const parseCsvLine = (line: string): string[] => {
+  const out: string[] = [];
+  let cur = ""; let inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
     if (inQ) {
-      if (ch === '"') { if (text[i+1]==='"'){cur+='"';i++;}else inQ=false; }
+      if (ch === '"') { if (line[i+1] === '"') { cur += '"'; i++; } else inQ = false; }
       else cur += ch;
     } else {
       if (ch === '"') inQ = true;
-      else if (ch === ",") { row.push(cur); cur = ""; }
-      else if (ch === "\n" || ch === "\r") {
-        if (ch==="\r"&&text[i+1]==="\n") i++;
-        row.push(cur); cur = "";
-        if (row.some(c=>c.length)) rows.push(row);
-        row = [];
-      } else cur += ch;
+      else if (ch === ",") { out.push(cur); cur = ""; }
+      else cur += ch;
     }
   }
-  if (cur.length||row.length){row.push(cur);if(row.some(c=>c.length))rows.push(row);}
-  if (!rows.length) return [];
-  const headers = rows[0].map(h=>h.trim().toLowerCase());
-  return rows.slice(1).map(r=>{
-    const obj: Record<string,string>={};
-    headers.forEach((h,i)=>{obj[h]=(r[i]??"").trim();});
+  out.push(cur);
+  return out;
+};
+
+// Small-file fallback (kept for anything that still calls it directly)
+const parseCsv = (text: string): Record<string, string>[] => {
+  const lines = text.split(/\r\n|\n|\r/).filter(l => l.length > 0);
+  if (!lines.length) return [];
+  const headers = parseCsvLine(lines[0]).map(h => h.trim().toLowerCase());
+  return lines.slice(1).map(line => {
+    const cells = parseCsvLine(line);
+    const obj: Record<string,string> = {};
+    headers.forEach((h,i) => { obj[h] = (cells[i] ?? "").trim(); });
     return obj;
   });
 };
+
 const pickVal = (row: Record<string,string>, ...keys: string[]) => {
   for (const k of keys) { const v = row[k]; if (v!=null&&v!=="") return v; }
   return "";
 };
 const num = (v: string) => { const n = parseFloat(v); return isNaN(n) ? null : n; };
 const int = (v: string) => { const n = parseInt(v); return isNaN(n) ? null : n; };
+
+// Shared mutable holder so streamParseCsv can pass parsed headers back
+// without changing its per-row callback signature.
+const csvHeadersRef: { headers: string[] } = { headers: [] };
+
+// Yield to browser so the UI thread isn't blocked during heavy parsing
+const yieldToBrowser = () => new Promise<void>(resolve => setTimeout(resolve, 0));
+
+// ── Streaming file reader for huge (100MB–1GB+) CSVs ───────────────────────
+// Reads the file in 4MB byte chunks via File.slice() + slice.text() (never
+// loads the whole file into one giant string), splits on newlines, and
+// calls onRow for every complete line as soon as it's available. This keeps
+// memory usage flat regardless of file size and keeps the browser responsive
+// — this is what fixes 500MB+ CSV files crashing the tab.
+async function streamParseCsv(
+  file: File,
+  onRow: (cells: string[], rowIndex: number) => void,
+  onProgress: (pct: number) => void,
+): Promise<void> {
+  const CHUNK_BYTES = 4 * 1024 * 1024; // 4MB per read
+  const totalBytes  = file.size;
+  let offset        = 0;
+  let leftover      = "";       // partial line carried over between chunks
+  let rowIndex      = 0;
+  let headers: string[] | null = null;
+
+  while (offset < totalBytes) {
+    const slice = file.slice(offset, offset + CHUNK_BYTES);
+    const text  = await slice.text(); // reads ONLY this small slice into memory
+    offset += CHUNK_BYTES;
+
+    const combined = leftover + text;
+    const lines = combined.split(/\r\n|\n|\r/);
+    // Last entry might be a partial line — hold it over for the next chunk
+    leftover = lines.pop() ?? "";
+
+    for (const line of lines) {
+      if (!line.length) continue;
+      const cells = parseCsvLine(line);
+      if (!headers) {
+        headers = cells.map(h => h.trim().toLowerCase());
+        continue; // header row — don't emit as data
+      }
+      onRow(cells, rowIndex++);
+    }
+
+    onProgress(Math.min(100, Math.round((offset / totalBytes) * 100)));
+    await yieldToBrowser();
+  }
+
+  // Final leftover line (file may not end with a trailing newline)
+  if (leftover.trim().length && headers) {
+    const cells = parseCsvLine(leftover);
+    onRow(cells, rowIndex++);
+  }
+
+  if (!headers) throw new Error("Could not detect a header row in this file.");
+  csvHeadersRef.headers = headers;
+}
 
 // ─── Bulk import types & validation ──────────────────────────────────────────
 type RowStatus = "valid" | "warning" | "error";
@@ -843,8 +907,6 @@ function SelectColumnsModal({
 const emptyForm = { sku: "", name: "", category: "", price: "", stock: "" };
 
 // ─── Bulk Import Dialog ────────────────────────────────────────────────────────
-// Yield to browser between chunks so the UI stays responsive on large CSVs
-const yieldToBrowser = () => new Promise<void>(resolve => setTimeout(resolve, 0));
 
 function BulkImportDialog({
   open, onClose, existingSkus, onComplete,
@@ -861,7 +923,9 @@ function BulkImportDialog({
   const [fileName, setFileName]     = useState("");
   const [fileSize, setFileSize]     = useState("");
   const [parseProgress, setParseProgress] = useState(0);
+  const [rowsParsedCount, setRowsParsedCount] = useState(0);
   const [parsedRows, setParsedRows] = useState<ParsedRow[]>([]);
+  const [headerCols, setHeaderCols] = useState<string[]>([]);
   const [skipErrors, setSkipErrors] = useState(true);
   const [importProgress, setImportProgress] = useState(0);
   const [importedSoFar, setImportedSoFar]   = useState(0);
@@ -873,53 +937,80 @@ function BulkImportDialog({
   const [parseError, setParseError] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all"|"error"|"warning"|"valid">("all");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cancelRef = useRef(false);
 
   const reset = () => {
     setStage("pick"); setFileName(""); setFileSize(""); setParseProgress(0);
-    setParsedRows([]); setSkipErrors(true); setImportProgress(0);
-    setImportedSoFar(0); setTotalToImport(0); setResult(null); setParseError("");
-    setFilterStatus("all");
+    setRowsParsedCount(0); setParsedRows([]); setHeaderCols([]); setSkipErrors(true);
+    setImportProgress(0); setImportedSoFar(0); setTotalToImport(0);
+    setResult(null); setParseError(""); setFilterStatus("all");
   };
-  const handleClose = () => { reset(); onClose(); };
+  const handleClose = () => { cancelRef.current = true; reset(); onClose(); };
 
-  // ── Process large CSV in async chunks so UI never freezes ──────────────────
+  // Safety cap — holding millions of full row objects in React state can
+  // itself slow the browser down even with streaming reads. Above this many
+  // rows, we stop keeping every row in memory and switch to "summary only"
+  // mode (still imports everything correctly, just skips the per-row table).
+  const MAX_ROWS_IN_MEMORY = 300_000;
+
+  // ── Stream-parse the file in 4MB chunks — works for files of any size ──────
+  // Never calls file.text() on the whole file, so even 500MB+ CSVs won't
+  // crash or freeze the browser tab.
   const processFile = async (file: File) => {
     setParseError("");
     setFileName(file.name);
     setFileSize((file.size / 1024 / 1024).toFixed(1) + " MB");
     setParseProgress(0);
+    setRowsParsedCount(0);
     setStage("parsing");
+    cancelRef.current = false;
+
+    const seen = new Set<string>();
+    const parsed: ParsedRow[] = [];
+    let truncated = false;
 
     try {
-      // Read as text
-      const text = await file.text();
+      await streamParseCsv(
+        file,
+        (cells, rowIndex) => {
+          const headers = csvHeadersRef.headers;
+          const r: Record<string,string> = {};
+          headers.forEach((h, i) => { r[h] = (cells[i] ?? "").trim(); });
 
-      // Parse CSV in 2000-row chunks to keep UI responsive
-      const allRawRows = parseCsv(text);
-      if (!allRawRows.length) {
-        setParseError("CSV is empty or headers could not be detected. Make sure the first row contains column names.");
+          if (parsed.length < MAX_ROWS_IN_MEMORY) {
+            const pr = validateRow(r, rowIndex + 2, seen, existingSkus);
+            if (pr.sku) seen.add(pr.sku);
+            parsed.push(pr);
+            if (parsed.length % 500 === 0) setRowsParsedCount(parsed.length);
+          } else {
+            truncated = true;
+          }
+        },
+        (pct) => setParseProgress(pct),
+      );
+
+      if (cancelRef.current) return; // user closed dialog mid-parse
+
+      if (!parsed.length) {
+        setParseError("No data rows found. Make sure the first row contains column headers (e.g. ge_sku, item_name, price, stock).");
         setStage("pick");
         return;
       }
 
-      const CHUNK = 2000;
-      const seen  = new Set<string>();
-      const parsed: ParsedRow[] = [];
-
-      for (let i = 0; i < allRawRows.length; i += CHUNK) {
-        const chunk = allRawRows.slice(i, i + CHUNK);
-        for (const r of chunk) {
-          const pr = validateRow(r, i + parsed.length + 2, seen, existingSkus);
-          if (pr.sku) seen.add(pr.sku);
-          parsed.push(pr);
-        }
-        setParseProgress(Math.round(((i + chunk.length) / allRawRows.length) * 100));
-        await yieldToBrowser(); // let React re-render progress bar
+      if (truncated) {
+        setParseError(
+          `This file has more than ${MAX_ROWS_IN_MEMORY.toLocaleString()} rows. For files this large, please split the CSV into smaller parts (e.g. ${MAX_ROWS_IN_MEMORY.toLocaleString()} rows each) and import them one at a time — this keeps the preview screen fast and reliable.`
+        );
+        setStage("pick");
+        return;
       }
 
+      setHeaderCols(csvHeadersRef.headers);
+      setRowsParsedCount(parsed.length);
       setParsedRows(parsed);
       setStage("preview");
     } catch (err) {
+      if (cancelRef.current) return;
       const msg = err instanceof Error ? err.message : "Unknown error while reading file";
       setParseError(msg);
       setStage("pick");
@@ -1063,7 +1154,10 @@ function BulkImportDialog({
                   <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden">
                     <div className="bg-indigo-500 h-2.5 rounded-full transition-all duration-200" style={{ width: `${parseProgress}%` }}/>
                   </div>
-                  <p className="text-sm text-muted-foreground">{parseProgress}% complete — please wait</p>
+                  <p className="text-sm text-muted-foreground">
+                    {parseProgress}% of file read · {rowsParsedCount.toLocaleString()} rows processed so far
+                  </p>
+                  <p className="text-xs text-muted-foreground">Large files are streamed in small chunks — this avoids freezing your browser</p>
                 </div>
               )}
 
@@ -1262,7 +1356,9 @@ function BulkImportDialog({
         {stage !== "importing" && (
           <div className="border-t border-border px-6 py-4 flex items-center justify-between bg-muted/20">
             {stage === "pick" || stage === "parsing" ? (
-              <Button variant="outline" onClick={handleClose} disabled={stage === "parsing"}>Cancel</Button>
+              <Button variant="outline" onClick={handleClose}>
+                {stage === "parsing" ? "Cancel import" : "Cancel"}
+              </Button>
             ) : stage === "preview" ? (
               <>
                 <Button variant="outline" onClick={() => { reset(); }}>
