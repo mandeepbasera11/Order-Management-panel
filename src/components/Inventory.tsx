@@ -417,6 +417,45 @@ const statusFor = (stock: number) => {
 };
 
 // ─── Fitment Details Dialog (with full inline edit) ───────────────────────────
+type DraftSetter = (key: keyof Product, val: string) => void;
+
+function EditField({
+  label, fieldKey, type = "text", red, draft, set,
+}: {
+  label: string; fieldKey: keyof Product; type?: string; red?: boolean;
+  draft: Product; set: DraftSetter;
+}) {
+  return (
+    <div className="flex items-center justify-between py-1.5 border-b border-border last:border-0 gap-3">
+      <span className={`text-sm font-medium shrink-0 w-40 ${red?"text-red-500":"text-muted-foreground"}`}>{label}:</span>
+      <Input
+        type={type}
+        className="h-7 text-sm text-right"
+        value={(draft[fieldKey] as string | number | null) ?? ""}
+        onChange={e => set(fieldKey, e.target.value)}
+      />
+    </div>
+  );
+}
+
+function EditTextarea({
+  label, fieldKey, draft, set,
+}: {
+  label: string; fieldKey: keyof Product; draft: Product; set: DraftSetter;
+}) {
+  return (
+    <div className="space-y-1 py-1.5 border-b border-border last:border-0">
+      <span className="text-sm font-medium text-muted-foreground">{label}:</span>
+      <textarea
+        rows={3}
+        className="w-full text-sm rounded-md border border-input bg-background px-3 py-1.5 resize-y focus:outline-none focus:ring-2 focus:ring-ring"
+        value={(draft[fieldKey] as string | null) ?? ""}
+        onChange={e => set(fieldKey, e.target.value)}
+      />
+    </div>
+  );
+}
+
 function FitmentDetailsDialog({
   product, open, onClose, onSaved,
 }: {
@@ -445,36 +484,6 @@ function FitmentDetailsDialog({
     <div className="flex items-start justify-between py-2 border-b border-border last:border-0 gap-4">
       <span className={`text-sm font-medium shrink-0 ${red?"text-red-500":"text-muted-foreground"}`}>{label}:</span>
       <span className={`text-sm text-right break-all ${red?"text-red-500":"text-foreground"}`}>{value || "N/A"}</span>
-    </div>
-  );
-
-  // Edit row — label + input side-by-side
-  const EditField = ({
-    label, fieldKey, type = "text", red,
-  }: {
-    label: string; fieldKey: keyof Product; type?: string; red?: boolean;
-  }) => (
-    <div className="flex items-center justify-between py-1.5 border-b border-border last:border-0 gap-3">
-      <span className={`text-sm font-medium shrink-0 w-40 ${red?"text-red-500":"text-muted-foreground"}`}>{label}:</span>
-      <Input
-        type={type}
-        className="h-7 text-sm text-right"
-        value={(draft[fieldKey] as string | number | null) ?? ""}
-        onChange={e => set(fieldKey, e.target.value)}
-      />
-    </div>
-  );
-
-  // Textarea edit row (for description, features)
-  const EditTextarea = ({ label, fieldKey }: { label: string; fieldKey: keyof Product }) => (
-    <div className="space-y-1 py-1.5 border-b border-border last:border-0">
-      <span className="text-sm font-medium text-muted-foreground">{label}:</span>
-      <textarea
-        rows={3}
-        className="w-full text-sm rounded-md border border-input bg-background px-3 py-1.5 resize-y focus:outline-none focus:ring-2 focus:ring-ring"
-        value={(draft[fieldKey] as string | null) ?? ""}
-        onChange={e => set(fieldKey, e.target.value)}
-      />
     </div>
   );
 
@@ -549,21 +558,21 @@ function FitmentDetailsDialog({
               <SectionTitle>Basic Information</SectionTitle>
               {editMode ? (
                 <>
-                  <EditField label="GE SKU"                    fieldKey="sku" />
-                  <EditField label="Item Name"                 fieldKey="item_name" />
-                  <EditField label="MTLID"                     fieldKey="mtlid" />
-                  <EditField label="Master Brand ID"           fieldKey="master_brand_id" />
-                  <EditField label="Brand"                     fieldKey="brand" />
-                  <EditField label="Master Model ID"           fieldKey="master_model_id" />
-                  <EditField label="Model"                     fieldKey="model" />
-                  <EditField label="Wholesale Price"           fieldKey="wholesale_price" type="number" />
-                  <EditField label="Images"                    fieldKey="images" />
-                  <EditField label="Brand Logo"                fieldKey="brand_logo" />
-                  <EditField label="Category"                  fieldKey="category" />
-                  <EditField label="Size"                      fieldKey="size" />
-                  <EditField label="Raw Size"                  fieldKey="raw_size" />
-                  <EditField label="Manufacturer Code"         fieldKey="manufacturer_product_code" />
-                  <EditField label="UPC"                       fieldKey="upc" />
+                  <EditField label="GE SKU"                    fieldKey="sku" draft={draft} set={set} />
+                  <EditField label="Item Name"                 fieldKey="item_name" draft={draft} set={set} />
+                  <EditField label="MTLID"                     fieldKey="mtlid" draft={draft} set={set} />
+                  <EditField label="Master Brand ID"           fieldKey="master_brand_id" draft={draft} set={set} />
+                  <EditField label="Brand"                     fieldKey="brand" draft={draft} set={set} />
+                  <EditField label="Master Model ID"           fieldKey="master_model_id" draft={draft} set={set} />
+                  <EditField label="Model"                     fieldKey="model" draft={draft} set={set} />
+                  <EditField label="Wholesale Price"           fieldKey="wholesale_price" type="number" draft={draft} set={set} />
+                  <EditField label="Images"                    fieldKey="images" draft={draft} set={set} />
+                  <EditField label="Brand Logo"                fieldKey="brand_logo" draft={draft} set={set} />
+                  <EditField label="Category"                  fieldKey="category" draft={draft} set={set} />
+                  <EditField label="Size"                      fieldKey="size" draft={draft} set={set} />
+                  <EditField label="Raw Size"                  fieldKey="raw_size" draft={draft} set={set} />
+                  <EditField label="Manufacturer Code"         fieldKey="manufacturer_product_code" draft={draft} set={set} />
+                  <EditField label="UPC"                       fieldKey="upc" draft={draft} set={set} />
                 </>
               ) : (
                 <>
@@ -600,14 +609,14 @@ function FitmentDetailsDialog({
               <SectionTitle>Size Specifications</SectionTitle>
               {editMode ? (
                 <>
-                  <EditField label="Section"          fieldKey="section" />
-                  <EditField label="Aspect"           fieldKey="aspect" />
-                  <EditField label="Rim"              fieldKey="rim" />
-                  <EditField label="Rim Width Range"  fieldKey="rim_width_range" />
-                  <EditField label="Rim Width Min"    fieldKey="rim_width_min" />
-                  <EditField label="Rim Width Max"    fieldKey="rim_width_max" />
-                  <EditField label="Meas Rim Width"   fieldKey="meas_rim_width" />
-                  <EditField label="Overall Diameter" fieldKey="overall_diam" />
+                  <EditField label="Section"          fieldKey="section" draft={draft} set={set} />
+                  <EditField label="Aspect"           fieldKey="aspect" draft={draft} set={set} />
+                  <EditField label="Rim"              fieldKey="rim" draft={draft} set={set} />
+                  <EditField label="Rim Width Range"  fieldKey="rim_width_range" draft={draft} set={set} />
+                  <EditField label="Rim Width Min"    fieldKey="rim_width_min" draft={draft} set={set} />
+                  <EditField label="Rim Width Max"    fieldKey="rim_width_max" draft={draft} set={set} />
+                  <EditField label="Meas Rim Width"   fieldKey="meas_rim_width" draft={draft} set={set} />
+                  <EditField label="Overall Diameter" fieldKey="overall_diam" draft={draft} set={set} />
                 </>
               ) : (
                 <>
@@ -624,7 +633,7 @@ function FitmentDetailsDialog({
 
               <SectionTitle red>Tire Shipping Data:</SectionTitle>
               {editMode
-                ? <EditField label="Tire Weight" fieldKey="tire_weight" red />
+                ? <EditField label="Tire Weight" fieldKey="tire_weight" red draft={draft} set={set} />
                 : <Field     label="Tire Weight" value={product.tire_weight} red />
               }
             </div>
@@ -638,13 +647,13 @@ function FitmentDetailsDialog({
               <SectionTitle>Performance Ratings</SectionTitle>
               {editMode ? (
                 <>
-                  <EditField label="Tire Load"           fieldKey="tire_load" />
-                  <EditField label="Tire Speed"          fieldKey="tire_speed" />
-                  <EditField label="Ply"                 fieldKey="ply" />
-                  <EditField label="Ply Rating"          fieldKey="ply_rating" />
-                  <EditField label="UTQG"                fieldKey="utqg" />
-                  <EditField label="Max Inflation Press" fieldKey="max_inflation_press" />
-                  <EditField label="Max Load"            fieldKey="max_load" />
+                  <EditField label="Tire Load"           fieldKey="tire_load" draft={draft} set={set} />
+                  <EditField label="Tire Speed"          fieldKey="tire_speed" draft={draft} set={set} />
+                  <EditField label="Ply"                 fieldKey="ply" draft={draft} set={set} />
+                  <EditField label="Ply Rating"          fieldKey="ply_rating" draft={draft} set={set} />
+                  <EditField label="UTQG"                fieldKey="utqg" draft={draft} set={set} />
+                  <EditField label="Max Inflation Press" fieldKey="max_inflation_press" draft={draft} set={set} />
+                  <EditField label="Max Load"            fieldKey="max_load" draft={draft} set={set} />
                 </>
               ) : (
                 <>
@@ -664,12 +673,12 @@ function FitmentDetailsDialog({
               <SectionTitle>Technical Specifications</SectionTitle>
               {editMode ? (
                 <>
-                  <EditField label="Tread Type"    fieldKey="tread_type" />
-                  <EditField label="Tread Depth"   fieldKey="tread_depth" />
-                  <EditField label="Run Flat"      fieldKey="run_flat" />
-                  <EditField label="Sidewall ABR"  fieldKey="sidewall_abr" />
-                  <EditField label="P Metric"      fieldKey="p_metric" />
-                  <EditField label="Revs Per Mile" fieldKey="revs_per_mile" />
+                  <EditField label="Tread Type"    fieldKey="tread_type" draft={draft} set={set} />
+                  <EditField label="Tread Depth"   fieldKey="tread_depth" draft={draft} set={set} />
+                  <EditField label="Run Flat"      fieldKey="run_flat" draft={draft} set={set} />
+                  <EditField label="Sidewall ABR"  fieldKey="sidewall_abr" draft={draft} set={set} />
+                  <EditField label="P Metric"      fieldKey="p_metric" draft={draft} set={set} />
+                  <EditField label="Revs Per Mile" fieldKey="revs_per_mile" draft={draft} set={set} />
                 </>
               ) : (
                 <>
@@ -763,9 +772,9 @@ function FitmentDetailsDialog({
             <SectionTitle>Descriptions</SectionTitle>
             {editMode ? (
               <div className="space-y-3">
-                <EditTextarea label="Description"         fieldKey="description" />
-                <EditTextarea label="Features & Benefits" fieldKey="features_and_benefits" />
-                <EditTextarea label="Warranty"            fieldKey="warranty" />
+                <EditTextarea label="Description"         fieldKey="description" draft={draft} set={set} />
+                <EditTextarea label="Features & Benefits" fieldKey="features_and_benefits" draft={draft} set={set} />
+                <EditTextarea label="Warranty"            fieldKey="warranty" draft={draft} set={set} />
               </div>
             ) : (
               <div className="space-y-4">
