@@ -698,7 +698,7 @@ function FitmentDetailsDialog({
           <div>
             <SectionTitle>Platform Listings</SectionTitle>
             <PlatformListings />
-            <div className="rounded-lg border-2 border-green-200 bg-green-50 p-4 w-fit space-y-1">
+            <div className="rounded-lg border-2 border-green-200 bg-green-50 p-4 w-fit space-y-1 mt-4">
               <div className="flex items-center gap-2 font-semibold text-sm">
                 <ShoppingCart className="w-4 h-4 text-green-600"/>Shopify
               </div>
