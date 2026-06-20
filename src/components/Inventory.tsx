@@ -448,35 +448,11 @@ function FitmentDetailsDialog({
     </div>
   );
 
-  // Edit row — label + input side-by-side
-  const EditField = ({
-    label, fieldKey, type = "text", red,
-  }: {
-    label: string; fieldKey: keyof Product; type?: string; red?: boolean;
-  }) => (
-    <div className="flex items-center justify-between py-1.5 border-b border-border last:border-0 gap-3">
-      <span className={`text-sm font-medium shrink-0 w-40 ${red?"text-red-500":"text-muted-foreground"}`}>{label}:</span>
-      <Input
-        type={type}
-        className="h-7 text-sm text-right"
-        value={(draft[fieldKey] as string | number | null) ?? ""}
-        onChange={e => set(fieldKey, e.target.value)}
-      />
-    </div>
-  );
+  const EditField = (props: { label: string; fieldKey: keyof Product; type?: string; red?: boolean }) =>
+    <EditFieldRow {...props} draft={draft} set={set} />;
 
-  // Textarea edit row (for description, features)
-  const EditTextarea = ({ label, fieldKey }: { label: string; fieldKey: keyof Product }) => (
-    <div className="space-y-1 py-1.5 border-b border-border last:border-0">
-      <span className="text-sm font-medium text-muted-foreground">{label}:</span>
-      <textarea
-        rows={3}
-        className="w-full text-sm rounded-md border border-input bg-background px-3 py-1.5 resize-y focus:outline-none focus:ring-2 focus:ring-ring"
-        value={(draft[fieldKey] as string | null) ?? ""}
-        onChange={e => set(fieldKey, e.target.value)}
-      />
-    </div>
-  );
+  const EditTextarea = (props: { label: string; fieldKey: keyof Product }) =>
+    <EditTextareaRow {...props} draft={draft} set={set} />;
 
   const SectionTitle = ({ children, red }: { children: React.ReactNode; red?: boolean }) => (
     <div className="mb-3 mt-2">
