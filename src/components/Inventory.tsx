@@ -417,6 +417,45 @@ const statusFor = (stock: number) => {
 };
 
 // ─── Fitment Details Dialog (with full inline edit) ───────────────────────────
+type DraftSetter = (key: keyof Product, val: string) => void;
+
+function EditField({
+  label, fieldKey, type = "text", red, draft, set,
+}: {
+  label: string; fieldKey: keyof Product; type?: string; red?: boolean;
+  draft: Product; set: DraftSetter;
+}) {
+  return (
+    <div className="flex items-center justify-between py-1.5 border-b border-border last:border-0 gap-3">
+      <span className={`text-sm font-medium shrink-0 w-40 ${red?"text-red-500":"text-muted-foreground"}`}>{label}:</span>
+      <Input
+        type={type}
+        className="h-7 text-sm text-right"
+        value={(draft[fieldKey] as string | number | null) ?? ""}
+        onChange={e => set(fieldKey, e.target.value)}
+      />
+    </div>
+  );
+}
+
+function EditTextarea({
+  label, fieldKey, draft, set,
+}: {
+  label: string; fieldKey: keyof Product; draft: Product; set: DraftSetter;
+}) {
+  return (
+    <div className="space-y-1 py-1.5 border-b border-border last:border-0">
+      <span className="text-sm font-medium text-muted-foreground">{label}:</span>
+      <textarea
+        rows={3}
+        className="w-full text-sm rounded-md border border-input bg-background px-3 py-1.5 resize-y focus:outline-none focus:ring-2 focus:ring-ring"
+        value={(draft[fieldKey] as string | null) ?? ""}
+        onChange={e => set(fieldKey, e.target.value)}
+      />
+    </div>
+  );
+}
+
 function FitmentDetailsDialog({
   product, open, onClose, onSaved,
 }: {
