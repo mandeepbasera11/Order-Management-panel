@@ -951,7 +951,7 @@ function BulkImportDialog({
   // itself slow the browser down even with streaming reads. Above this many
   // rows, we stop keeping every row in memory and switch to "summary only"
   // mode (still imports everything correctly, just skips the per-row table).
-  const MAX_ROWS_IN_MEMORY = 500_000;
+  const MAX_ROWS_IN_MEMORY = 1000_000;
 
   // ── Stream-parse the file in 4MB chunks — works for files of any size ──────
   // Never calls file.text() on the whole file, so even 500MB+ CSVs won't
