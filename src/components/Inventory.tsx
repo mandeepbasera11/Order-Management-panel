@@ -448,12 +448,6 @@ function FitmentDetailsDialog({
     </div>
   );
 
-  const EditField = (props: { label: string; fieldKey: keyof Product; type?: string; red?: boolean }) =>
-    <EditFieldRow {...props} draft={draft} set={set} />;
-
-  const EditTextarea = (props: { label: string; fieldKey: keyof Product }) =>
-    <EditTextareaRow {...props} draft={draft} set={set} />;
-
   const SectionTitle = ({ children, red }: { children: React.ReactNode; red?: boolean }) => (
     <div className="mb-3 mt-2">
       <h3 className={`text-base font-bold ${red?"text-red-500":"text-foreground"}`}>{children}</h3>
