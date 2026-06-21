@@ -1381,7 +1381,7 @@ function BulkImportDialog({
                 <p className="text-xs text-muted-foreground">{importProgress}%</p>
               </div>
               <p className="text-xs text-muted-foreground bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 inline-block">
-                ⚠️ Please don't close this window —> import in progress
+                ⚠️ Please don't close this window — import in progress
               </p>
             </div>
           )}
