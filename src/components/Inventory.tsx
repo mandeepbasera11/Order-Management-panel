@@ -1488,12 +1488,36 @@ export function Inventory() {
   );
 
   const load = async () => {
-    setLoading(true);
-    const { data, error } = await supabase.from("products").select("*").order("created_at", { ascending: false });
-    if (error) toast.error(error.message);
-    else setProducts((data ?? []) as unknown as Product[]);
+  setLoading(true);
+  // Supabase/PostgREST returns max 1000 rows per request by default.
+  // Loop in pages of 1000 until a page comes back shorter than the
+  // page size — that means we've reached the end of the table.
+  const PAGE_SIZE = 1000;
+  let allRows: Product[] = [];
+  let from = 0;
+
+  try {
+    while (true) {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .range(from, from + PAGE_SIZE - 1);
+
+      if (error) { toast.error(error.message); break; }
+      const chunk = (data ?? []) as unknown as Product[];
+      allRows = allRows.concat(chunk);
+
+      if (chunk.length < PAGE_SIZE) break; // last page reached
+      from += PAGE_SIZE;
+    }
+    setProducts(allRows);
+  } catch (err) {
+    toast.error(err instanceof Error ? err.message : "Failed to load tires");
+  } finally {
     setLoading(false);
-  };
+  }
+};
   useEffect(() => { load(); }, []);
 
   // Set of SKUs already in the DB — used by the bulk import dialog to flag
@@ -1815,7 +1839,7 @@ export function Inventory() {
             </Button>
             <Select value={String(pageSize)} onValueChange={v=>{setPageSize(Number(v));setPage(1);}}>
               <SelectTrigger className="h-9 w-24"><SelectValue/></SelectTrigger>
-              <SelectContent>{[25,50,100,200].map(n=><SelectItem key={n} value={String(n)}>{n}</SelectItem>)}</SelectContent>
+              <SelectContent>{[25,50,100,200,1000,1500,3000,5000].map(n=><SelectItem key={n} value={String(n)}>{n}</SelectItem>)}</SelectContent>
             </Select>
             <span className="text-sm text-muted-foreground">Page {safePage}/{totalPages}</span>
           </div>
