@@ -9,9 +9,6 @@ import Auth from "./pages/Auth";
 import { AuthProvider } from "./hooks/useAuth";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 
-import { BrandAnalytics } from "./pages/BrandAnalytics";
-<Route path="/brands" element={<BrandAnalytics />} />
-
 const queryClient = new QueryClient();
 
 const App = () => (
