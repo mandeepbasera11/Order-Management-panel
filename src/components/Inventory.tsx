@@ -1183,7 +1183,7 @@ function BulkImportDialog({
                   <p className="font-semibold text-base">Drag & drop your CSV here</p>
                   <p className="text-sm text-muted-foreground mt-1">or click to browse files</p>
                   <p className="text-xs text-muted-foreground mt-3 bg-muted inline-block px-3 py-1 rounded-full">
-                    Supports full tire fitment CSV —> up to 2M+ rows
+                    Supports full tire fitment CSV — up to 2M+ rows
                   </p>
                 </div>
               )}
