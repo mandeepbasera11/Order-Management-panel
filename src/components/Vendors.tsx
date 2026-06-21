@@ -79,9 +79,9 @@ export function Vendors() {
     <div className="flex-1 overflow-auto p-6 space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Vendors</h1>
-          <p className="text-sm text-muted-foreground">Manage supplier relationships and purchase contacts</p>
-        </div>
+         <div className="flex justify-end">
+  {/* Add Vendor button yahan as-is rehne do */}
+</div>
         <Button size="sm" onClick={openAdd}><Plus className="w-4 h-4 mr-1"/>Add Vendor</Button>
       </div>
 
