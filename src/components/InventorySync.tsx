@@ -16,7 +16,7 @@ type SyncStatus = "Synced" | "Pending" | "Error" | "Out of Sync";
 type Channel = { name: string; color: string; icon: string };
 
 const CHANNELS: Channel[] = [
-  { name: "Shopify",  color: "text-green-600",  icon: "🛍️" },
+  { name: "Shopify",  color: "text-green-600",  icon: < SiShopify /> },
   { name: "Amazon",   color: "text-orange-600", icon: "📦" },
   { name: "eBay",     color: "text-blue-600",   icon: "🔵" },
   { name: "Walmart",  color: "text-yellow-600", icon: "🟡" },
