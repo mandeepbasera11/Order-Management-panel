@@ -746,7 +746,17 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      brand_summary: {
+        Row: {
+          avg_price: number | null
+          brand: string | null
+          in_stock_pct: number | null
+          skus: number | null
+          units: number | null
+          value: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       claim_first_admin: { Args: never; Returns: boolean }
