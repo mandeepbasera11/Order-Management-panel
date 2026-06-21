@@ -934,7 +934,11 @@ function SelectColumnsModal({
   );
 }
 
-const emptyForm = { sku: "", name: "", category: "", price: "", stock: "" };
+const emptyForm = {
+  sku: "", name: "", brand: "", size: "",
+  manufacturer_product_code: "", tire_load: "", tire_speed: "",
+  category: "", price: "", stock: "",
+};
 
 // ─── Bulk Import Dialog ────────────────────────────────────────────────────────
 
@@ -1179,7 +1183,7 @@ function BulkImportDialog({
                   <p className="font-semibold text-base">Drag & drop your CSV here</p>
                   <p className="text-sm text-muted-foreground mt-1">or click to browse files</p>
                   <p className="text-xs text-muted-foreground mt-3 bg-muted inline-block px-3 py-1 rounded-full">
-                    Supports full tire fitment CSV — up to 150K+ rows
+                    Supports full tire fitment CSV —> up to 2M+ rows
                   </p>
                 </div>
               )}
@@ -1377,7 +1381,7 @@ function BulkImportDialog({
                 <p className="text-xs text-muted-foreground">{importProgress}%</p>
               </div>
               <p className="text-xs text-muted-foreground bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 inline-block">
-                ⚠️ Please don't close this window — import in progress
+                ⚠️ Please don't close this window —> import in progress
               </p>
             </div>
           )}
@@ -1501,7 +1505,14 @@ export function Inventory() {
     if (!form.sku || !form.name) { toast.error("SKU and Name are required"); return; }
     setSaving(true);
     const { error } = await supabase.from("products").insert({
-      sku: form.sku, name: form.name,
+      sku: form.sku,
+      name: form.name,
+      item_name: form.name,
+      brand: form.brand || null,
+      size: form.size || null,
+      manufacturer_product_code: form.manufacturer_product_code || null,
+      tire_load: form.tire_load || null,
+      tire_speed: form.tire_speed || null,
       category: form.category || "MM",
       price: Number(form.price) || 0,
       stock: Number(form.stock) || 0,
@@ -1523,7 +1534,14 @@ export function Inventory() {
     if (!editing) return;
     setSaving(true);
     const { error } = await supabase.from("products").update({
-      sku: editForm.sku, name: editForm.name,
+      sku: editForm.sku,
+      name: editForm.name,
+      item_name: editForm.name,
+      brand: editForm.brand || null,
+      size: editForm.size || null,
+      manufacturer_product_code: editForm.manufacturer_product_code || null,
+      tire_load: editForm.tire_load || null,
+      tire_speed: editForm.tire_speed || null,
       category: editForm.category || "MM",
       price: Number(editForm.price) || 0,
       stock: Number(editForm.stock) || 0,
@@ -1660,16 +1678,43 @@ export function Inventory() {
           <Button variant="outline" size="sm" onClick={load}>
             <RefreshCw className="w-4 h-4 mr-2"/> Refresh
           </Button>
-          <Dialog open={open} onOpenChange={setOpen}>
+          <Dialog open={open} onOpenChange={v => { setOpen(v); if (!v) setForm(emptyForm); }}>
             <DialogTrigger asChild>
               <Button size="sm"><Plus className="w-4 h-4 mr-2"/> Add Tire</Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-lg">
               <DialogHeader><DialogTitle>Add Tire</DialogTitle></DialogHeader>
-              <div className="grid gap-4 py-2">
-                <div className="grid gap-2"><Label>GE SKU *</Label><Input value={form.sku} onChange={e=>setForm({...form,sku:e.target.value})} placeholder="GE-Ironman-91202-1"/></div>
-                <div className="grid gap-2"><Label>Item Name *</Label><Input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Ironman All Country AT 265/70R17"/></div>
-                <div className="grid gap-2"><Label>Category</Label>
+              <div className="grid grid-cols-2 gap-4 py-2">
+                <div className="grid gap-2">
+                  <Label>GE SKU *</Label>
+                  <Input value={form.sku} onChange={e=>setForm({...form,sku:e.target.value})} placeholder="GE-Ironman-91202-1"/>
+                </div>
+                <div className="grid gap-2">
+                  <Label>Item Name *</Label>
+                  <Input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Ironman All Country AT 265/70..."/>
+                </div>
+                <div className="grid gap-2">
+                  <Label>Brand</Label>
+                  <Input value={form.brand} onChange={e=>setForm({...form,brand:e.target.value})} placeholder="Ironman"/>
+                </div>
+                <div className="grid gap-2">
+                  <Label>Size *</Label>
+                  <Input value={form.size} onChange={e=>setForm({...form,size:e.target.value})} placeholder="265/70R17"/>
+                </div>
+                <div className="grid gap-2">
+                  <Label>Manufacturer Code</Label>
+                  <Input value={form.manufacturer_product_code} onChange={e=>setForm({...form,manufacturer_product_code:e.target.value})} placeholder="3672478"/>
+                </div>
+                <div className="grid gap-2">
+                  <Label>Tire Load</Label>
+                  <Input value={form.tire_load} onChange={e=>setForm({...form,tire_load:e.target.value})} placeholder="91/92/94/95/99/101/102 etc"/>
+                </div>
+                <div className="grid gap-2">
+                  <Label>Tire Speed</Label>
+                  <Input value={form.tire_speed} onChange={e=>setForm({...form,tire_speed:e.target.value})} placeholder="H/T/Y etc"/>
+                </div>
+                <div className="grid gap-2">
+                  <Label>Category</Label>
                   <Select value={form.category} onValueChange={v=>setForm({...form,category:v})}>
                     <SelectTrigger><SelectValue placeholder="Select category"/></SelectTrigger>
                     <SelectContent>
@@ -1677,13 +1722,17 @@ export function Inventory() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2"><Label>Price</Label><Input type="number" step="0.01" value={form.price} onChange={e=>setForm({...form,price:e.target.value})}/></div>
-                  <div className="grid gap-2"><Label>Stock</Label><Input type="number" value={form.stock} onChange={e=>setForm({...form,stock:e.target.value})}/></div>
+                <div className="grid gap-2">
+                  <Label>Price</Label>
+                  <Input type="number" step="0.01" value={form.price} onChange={e=>setForm({...form,price:e.target.value})}/>
+                </div>
+                <div className="grid gap-2">
+                  <Label>Stock</Label>
+                  <Input type="number" value={form.stock} onChange={e=>setForm({...form,stock:e.target.value})}/>
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={()=>setOpen(false)}>Cancel</Button>
+                <Button variant="outline" onClick={()=>{ setOpen(false); setForm(emptyForm); }}>Cancel</Button>
                 <Button onClick={handleAdd} disabled={saving}>{saving&&<Loader2 className="w-4 h-4 animate-spin mr-1"/>}Save</Button>
               </DialogFooter>
             </DialogContent>
@@ -1808,7 +1857,18 @@ export function Inventory() {
                         <Eye className="w-4 h-4"/>
                       </Button>
                       <Button variant="outline" size="icon" className="h-8 w-8"
-                        onClick={()=>{ setEditing(item); setEditForm({sku:item.sku,name:item.item_name||item.name,category:item.category,price:String(item.price),stock:String(item.stock)}); }}>
+                        onClick={()=>{ setEditing(item); setEditForm({
+                          sku: item.sku,
+                          name: item.item_name || item.name,
+                          brand: item.brand || "",
+                          size: item.size || "",
+                          manufacturer_product_code: item.manufacturer_product_code || "",
+                          tire_load: item.tire_load || "",
+                          tire_speed: item.tire_speed || "",
+                          category: item.category,
+                          price: String(item.price),
+                          stock: String(item.stock),
+                        }); }}>
                         <Pencil className="w-4 h-4"/>
                       </Button>
                       <Button variant="destructive" size="icon" className="h-8 w-8" onClick={()=>handleDelete(item.id)}>
@@ -1854,21 +1914,24 @@ export function Inventory() {
 
       {/* ── Edit Dialog ── */}
       <Dialog open={!!editing} onOpenChange={o=>!o&&setEditing(null)}>
-        <DialogContent>
+        <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>Edit Tire</DialogTitle></DialogHeader>
-          <div className="grid gap-4 py-2">
+          <div className="grid grid-cols-2 gap-4 py-2">
             <div className="grid gap-2"><Label>GE SKU</Label><Input value={editForm.sku} onChange={e=>setEditForm({...editForm,sku:e.target.value})}/></div>
             <div className="grid gap-2"><Label>Item Name</Label><Input value={editForm.name} onChange={e=>setEditForm({...editForm,name:e.target.value})}/></div>
+            <div className="grid gap-2"><Label>Brand</Label><Input value={editForm.brand} onChange={e=>setEditForm({...editForm,brand:e.target.value})}/></div>
+            <div className="grid gap-2"><Label>Size</Label><Input value={editForm.size} onChange={e=>setEditForm({...editForm,size:e.target.value})}/></div>
+            <div className="grid gap-2"><Label>Manufacturer Code</Label><Input value={editForm.manufacturer_product_code} onChange={e=>setEditForm({...editForm,manufacturer_product_code:e.target.value})}/></div>
+            <div className="grid gap-2"><Label>Tire Load</Label><Input value={editForm.tire_load} onChange={e=>setEditForm({...editForm,tire_load:e.target.value})}/></div>
+            <div className="grid gap-2"><Label>Tire Speed</Label><Input value={editForm.tire_speed} onChange={e=>setEditForm({...editForm,tire_speed:e.target.value})}/></div>
             <div className="grid gap-2"><Label>Category</Label>
               <Select value={editForm.category} onValueChange={v=>setEditForm({...editForm,category:v})}>
                 <SelectTrigger><SelectValue/></SelectTrigger>
                 <SelectContent>{["MM","LT","HP","UHP","MC","OTR","HPLT"].map(c=><SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2"><Label>Price</Label><Input type="number" step="0.01" value={editForm.price} onChange={e=>setEditForm({...editForm,price:e.target.value})}/></div>
-              <div className="grid gap-2"><Label>Stock</Label><Input type="number" value={editForm.stock} onChange={e=>setEditForm({...editForm,stock:e.target.value})}/></div>
-            </div>
+            <div className="grid gap-2"><Label>Price</Label><Input type="number" step="0.01" value={editForm.price} onChange={e=>setEditForm({...editForm,price:e.target.value})}/></div>
+            <div className="grid gap-2"><Label>Stock</Label><Input type="number" value={editForm.stock} onChange={e=>setEditForm({...editForm,stock:e.target.value})}/></div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={()=>setEditing(null)}>Cancel</Button>
