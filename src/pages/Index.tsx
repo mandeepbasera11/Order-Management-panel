@@ -28,6 +28,7 @@ import { PermissionMatrix } from "@/components/PermissionMatrix";
 import { POS } from "@/components/POS";
 import { Vendors } from "@/components/Vendors";
 import { FTPSettings } from "@/components/FTPSettings";
+import { BrandAnalytics } from "@/pages/BrandAnalytics";
 import { Placeholder } from "@/components/Placeholder";
 import {
   LayoutDashboard, TrendingUp, ShoppingBag, CreditCard, Package, Car,
@@ -73,6 +74,7 @@ const PAGE_CONFIG: Record<string, PageConfig> = {
   "TPMS Management":      { component: () => <TPMSManagement />,                   icon:<Gauge className={sz}/>,          theme:"green",  subtitle:"Tire pressure monitoring and sensor inventory" },
   "Customer CRM":         { component: () => <CustomerCRM />,                      icon:<Users className={sz}/>,          theme:"pink",   subtitle:"Customer profiles, vehicles, notes and history" },
   "Reports":              { component: () => <Reports />,                          icon:<BarChart3 className={sz}/>,      theme:"violet", subtitle:"Sales, inventory, vendor and profitability analytics" },
+  "Brand Analytics":      { component: () => <BrandAnalytics />,                   icon:<BarChart3 className={sz}/>,      theme:"violet", subtitle:"Per-brand SKU, pricing and stock analytics" },
   "AI Features":          { component: () => <AIFeatures />,                       icon:<Sparkles className={sz}/>,       theme:"purple", subtitle:"Demand forecasting, AI suggestions and chat assistant" },
   "Alert Center":         { component: () => <AlertCenter />,                      icon:<Bell className={sz}/>,           theme:"orange", subtitle:"Smart alerts and internal team messaging" },
   "User Permissions":     { component: () => <UserPermissions />,                  icon:<ShieldCheck className={sz}/>,    theme:"red",    subtitle:"Staff roles, permissions and access control" },
