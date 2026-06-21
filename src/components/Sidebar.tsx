@@ -60,6 +60,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { name: "Executive Dashboard",  icon: LayoutDashboard },
       { name: "Reports",              icon: BarChart3       },
+      { name: "Brand Analytics",      icon: BarChart3       },
       { name: "AI Features",          icon: Sparkles        },
     ],
   },
