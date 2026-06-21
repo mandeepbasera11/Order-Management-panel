@@ -8,6 +8,12 @@ import {
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
+import { BarChart3 } from "lucide-react";
+<NavLink to="/brands">
+  <BarChart3 className="w-4 h-4" /> Brands
+</NavLink>
+
+
 type NavItem = { name: string; icon: React.ElementType };
 type NavGroup = { label: string; items: NavItem[] };
 
