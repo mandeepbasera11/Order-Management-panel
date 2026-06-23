@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -6,9 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Plus, Pencil, Trash2, Phone, Mail, Globe, Star, Package } from "lucide-react";
 import { toast } from "sonner";
+import { PageLayout } from "@/components/PageLayout";
+import { Building2 } from "lucide-react";
 
 type Vendor = {
   id:string; name:string; contact:string; email:string; phone:string; website:string;
@@ -33,11 +34,6 @@ export function Vendors() {
   const [editing, setEditing]   = useState<Vendor|null>(null);
   const [form, setForm]         = useState(emptyForm);
   const [selected, setSelected] = useState<Vendor|null>(null);
-
-  const filtered = vendors.filter(v => {
-    const q = search.toLowerCase();
-    return !q || v.name.toLowerCase().includes(q) || v.location.toLowerCase().includes(q);
-  });
 
   const openAdd = () => { setEditing(null); setForm(emptyForm); setOpen(true); };
   const openEdit = (v: Vendor) => {
@@ -75,143 +71,164 @@ export function Vendors() {
   const totalVolume   = vendors.reduce((s,v) => s+v.totalVolume, 0);
   const avgRating     = (vendors.reduce((s,v) => s+v.rating, 0)/vendors.length).toFixed(1);
 
+  const filtered = vendors.filter(v => {
+    const q = search.toLowerCase();
+    return !q || v.name.toLowerCase().includes(q) || v.location.toLowerCase().includes(q);
+  });
+
+  // Add Vendor button — orange header ke andar right side mein
+  const addButton = (
+    <button
+      onClick={openAdd}
+      className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 text-white text-sm font-medium px-4 py-2 rounded-lg border border-white/30 transition-colors"
+    >
+      <Plus className="w-4 h-4" /> Add Vendor
+    </button>
+  );
+
   return (
-    <div className="flex-1 overflow-auto p-6 space-y-5">
-  <div className="flex justify-end">
-    <Button size="sm" onClick={openAdd}><Plus className="w-4 h-4 mr-1"/>Add Vendor</Button>
-  </div>
+    <PageLayout
+      title="Vendors"
+      subtitle="Supplier profiles, ratings and contacts"
+      icon={<Building2 className="w-5 h-5" />}
+      theme="orange"
+      actions={addButton}
+    >
+      <div className="flex-1 overflow-auto p-6 space-y-5">
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {[
-          { label:"Active Vendors",  value:activeVendors,               color:"text-green-600" },
-          { label:"Total Vendors",   value:vendors.length,              color:"text-blue-600"  },
-          { label:"Total Volume",    value:`$${(totalVolume/1000).toFixed(0)}K`, color:"text-purple-600"},
-          { label:"Avg Rating",      value:`${avgRating}★`,             color:"text-yellow-600"},
-        ].map(s=>(
-          <Card key={s.label} className="p-4 text-center">
-            <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
-            <p className="text-xs text-muted-foreground mt-1">{s.label}</p>
-          </Card>
-        ))}
-      </div>
-
-      {/* Search */}
-      <Card className="p-4">
-        <div className="relative max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"/>
-          <Input className="pl-9" placeholder="Search vendors..." value={search} onChange={e=>setSearch(e.target.value)}/>
+        {/* Stats */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {[
+            { label:"Active Vendors",  value:activeVendors,               color:"text-green-600" },
+            { label:"Total Vendors",   value:vendors.length,              color:"text-blue-600"  },
+            { label:"Total Volume",    value:`$${(totalVolume/1000).toFixed(0)}K`, color:"text-purple-600"},
+            { label:"Avg Rating",      value:`${avgRating}★`,             color:"text-yellow-600"},
+          ].map(s=>(
+            <Card key={s.label} className="p-4 text-center">
+              <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
+              <p className="text-xs text-muted-foreground mt-1">{s.label}</p>
+            </Card>
+          ))}
         </div>
-      </Card>
 
-      {/* Vendor Table */}
-      <Card>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Vendor</TableHead>
-              <TableHead>Location</TableHead>
-              <TableHead>Categories</TableHead>
-              <TableHead>Lead Time</TableHead>
-              <TableHead>Min Order</TableHead>
-              <TableHead>Payment</TableHead>
-              <TableHead className="text-right">Rating</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.map(v=>(
-              <TableRow key={v.id} className="cursor-pointer hover:bg-muted/30" onClick={()=>setSelected(v)}>
-                <TableCell>
-                  <p className="font-semibold text-sm">{v.name}</p>
-                  <p className="text-xs text-muted-foreground">{v.contact}</p>
-                </TableCell>
-                <TableCell className="text-sm">{v.location}</TableCell>
-                <TableCell>
-                  <div className="flex gap-1 flex-wrap">
-                    {v.categories.slice(0,3).map(c=><Badge key={c} variant="outline" className="text-xs">{c}</Badge>)}
-                  </div>
-                </TableCell>
-                <TableCell className="text-sm">{v.leadTime}</TableCell>
-                <TableCell className="text-sm">{v.minOrder} units</TableCell>
-                <TableCell className="text-sm">{v.paymentTerms}</TableCell>
-                <TableCell className="text-right">
-                  <span className="flex items-center justify-end gap-1">
-                    <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500"/>
-                    <span className="font-bold text-sm">{v.rating}</span>
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <Badge className={v.status==="Active"?"bg-green-100 text-green-700":"bg-gray-100 text-gray-600"}>{v.status}</Badge>
-                </TableCell>
-                <TableCell onClick={e=>e.stopPropagation()}>
-                  <div className="flex gap-1">
-                    <Button size="icon" variant="outline" className="h-7 w-7" onClick={()=>openEdit(v)}><Pencil className="w-3.5 h-3.5"/></Button>
-                    <Button size="icon" variant="destructive" className="h-7 w-7" onClick={()=>deleteVendor(v.id)}><Trash2 className="w-3.5 h-3.5"/></Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </Card>
-
-      {/* Vendor Detail Dialog */}
-      <Dialog open={!!selected} onOpenChange={o=>!o&&setSelected(null)}>
-        <DialogContent className="max-w-lg">
-          {selected && (
-            <>
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <Package className="w-5 h-5"/>{selected.name}
-                  <Badge className={selected.status==="Active"?"bg-green-100 text-green-700":"bg-gray-100 text-gray-600"}>{selected.status}</Badge>
-                </DialogTitle>
-              </DialogHeader>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div className="flex items-center gap-2"><Mail className="w-4 h-4 text-muted-foreground"/>{selected.email}</div>
-                <div className="flex items-center gap-2"><Phone className="w-4 h-4 text-muted-foreground"/>{selected.phone}</div>
-                <div className="flex items-center gap-2"><Globe className="w-4 h-4 text-muted-foreground"/>{selected.website}</div>
-                <div><span className="text-muted-foreground">Contact: </span>{selected.contact}</div>
-                <div><span className="text-muted-foreground">Lead Time: </span><strong>{selected.leadTime}</strong></div>
-                <div><span className="text-muted-foreground">Min Order: </span><strong>{selected.minOrder} units</strong></div>
-                <div><span className="text-muted-foreground">Payment: </span><strong>{selected.paymentTerms}</strong></div>
-                <div><span className="text-muted-foreground">Rating: </span><strong className="text-yellow-600">{selected.rating}★</strong></div>
-                <div><span className="text-muted-foreground">Total Orders: </span><strong>{selected.totalOrders}</strong></div>
-                <div><span className="text-muted-foreground">Total Volume: </span><strong>${selected.totalVolume.toLocaleString()}</strong></div>
-              </div>
-              <div className="flex gap-1 flex-wrap">
-                {selected.categories.map(c=><Badge key={c} variant="outline">{c}</Badge>)}
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Add/Edit Dialog */}
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>{editing?"Edit Vendor":"Add Vendor"}</DialogTitle></DialogHeader>
-          <div className="space-y-3 py-2">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5 col-span-2"><Label>Vendor Name *</Label><Input value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/></div>
-              <div className="space-y-1.5"><Label>Contact Name</Label><Input value={form.contact} onChange={e=>setForm({...form,contact:e.target.value})}/></div>
-              <div className="space-y-1.5"><Label>Email *</Label><Input type="email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})}/></div>
-              <div className="space-y-1.5"><Label>Phone</Label><Input value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})}/></div>
-              <div className="space-y-1.5"><Label>Website</Label><Input value={form.website} onChange={e=>setForm({...form,website:e.target.value})}/></div>
-              <div className="space-y-1.5 col-span-2"><Label>Location</Label><Input value={form.location} onChange={e=>setForm({...form,location:e.target.value})} placeholder="City, State"/></div>
-              <div className="space-y-1.5 col-span-2"><Label>Categories (comma separated)</Label><Input value={form.categories} onChange={e=>setForm({...form,categories:e.target.value})} placeholder="MM, LT, HP"/></div>
-              <div className="space-y-1.5"><Label>Lead Time</Label><Input value={form.leadTime} onChange={e=>setForm({...form,leadTime:e.target.value})} placeholder="2-3 days"/></div>
-              <div className="space-y-1.5"><Label>Min Order (units)</Label><Input type="number" value={form.minOrder} onChange={e=>setForm({...form,minOrder:e.target.value})}/></div>
-              <div className="space-y-1.5 col-span-2"><Label>Payment Terms</Label><Input value={form.paymentTerms} onChange={e=>setForm({...form,paymentTerms:e.target.value})} placeholder="Net 30"/></div>
-            </div>
+        {/* Search */}
+        <Card className="p-4">
+          <div className="relative max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"/>
+            <Input className="pl-9" placeholder="Search vendors..." value={search} onChange={e=>setSearch(e.target.value)}/>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={()=>setOpen(false)}>Cancel</Button>
-            <Button onClick={save}>{editing?"Update":"Add Vendor"}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+        </Card>
+
+        {/* Vendor Table */}
+        <Card>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Vendor</TableHead>
+                <TableHead>Location</TableHead>
+                <TableHead>Categories</TableHead>
+                <TableHead>Lead Time</TableHead>
+                <TableHead>Min Order</TableHead>
+                <TableHead>Payment</TableHead>
+                <TableHead className="text-right">Rating</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.map(v=>(
+                <TableRow key={v.id} className="cursor-pointer hover:bg-muted/30" onClick={()=>setSelected(v)}>
+                  <TableCell>
+                    <p className="font-semibold text-sm">{v.name}</p>
+                    <p className="text-xs text-muted-foreground">{v.contact}</p>
+                  </TableCell>
+                  <TableCell className="text-sm">{v.location}</TableCell>
+                  <TableCell>
+                    <div className="flex gap-1 flex-wrap">
+                      {v.categories.slice(0,3).map(c=><Badge key={c} variant="outline" className="text-xs">{c}</Badge>)}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-sm">{v.leadTime}</TableCell>
+                  <TableCell className="text-sm">{v.minOrder} units</TableCell>
+                  <TableCell className="text-sm">{v.paymentTerms}</TableCell>
+                  <TableCell className="text-right">
+                    <span className="flex items-center justify-end gap-1">
+                      <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500"/>
+                      <span className="font-bold text-sm">{v.rating}</span>
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={v.status==="Active"?"bg-green-100 text-green-700":"bg-gray-100 text-gray-600"}>{v.status}</Badge>
+                  </TableCell>
+                  <TableCell onClick={e=>e.stopPropagation()}>
+                    <div className="flex gap-1">
+                      <Button size="icon" variant="outline" className="h-7 w-7" onClick={()=>openEdit(v)}><Pencil className="w-3.5 h-3.5"/></Button>
+                      <Button size="icon" variant="destructive" className="h-7 w-7" onClick={()=>deleteVendor(v.id)}><Trash2 className="w-3.5 h-3.5"/></Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
+
+        {/* Vendor Detail Dialog */}
+        <Dialog open={!!selected} onOpenChange={o=>!o&&setSelected(null)}>
+          <DialogContent className="max-w-lg">
+            {selected && (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Package className="w-5 h-5"/>{selected.name}
+                    <Badge className={selected.status==="Active"?"bg-green-100 text-green-700":"bg-gray-100 text-gray-600"}>{selected.status}</Badge>
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="flex items-center gap-2"><Mail className="w-4 h-4 text-muted-foreground"/>{selected.email}</div>
+                  <div className="flex items-center gap-2"><Phone className="w-4 h-4 text-muted-foreground"/>{selected.phone}</div>
+                  <div className="flex items-center gap-2"><Globe className="w-4 h-4 text-muted-foreground"/>{selected.website}</div>
+                  <div><span className="text-muted-foreground">Contact: </span>{selected.contact}</div>
+                  <div><span className="text-muted-foreground">Lead Time: </span><strong>{selected.leadTime}</strong></div>
+                  <div><span className="text-muted-foreground">Min Order: </span><strong>{selected.minOrder} units</strong></div>
+                  <div><span className="text-muted-foreground">Payment: </span><strong>{selected.paymentTerms}</strong></div>
+                  <div><span className="text-muted-foreground">Rating: </span><strong className="text-yellow-600">{selected.rating}★</strong></div>
+                  <div><span className="text-muted-foreground">Total Orders: </span><strong>{selected.totalOrders}</strong></div>
+                  <div><span className="text-muted-foreground">Total Volume: </span><strong>${selected.totalVolume.toLocaleString()}</strong></div>
+                </div>
+                <div className="flex gap-1 flex-wrap">
+                  {selected.categories.map(c=><Badge key={c} variant="outline">{c}</Badge>)}
+                </div>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Add/Edit Dialog */}
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+            <DialogHeader><DialogTitle>{editing?"Edit Vendor":"Add Vendor"}</DialogTitle></DialogHeader>
+            <div className="space-y-3 py-2">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5 col-span-2"><Label>Vendor Name *</Label><Input value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/></div>
+                <div className="space-y-1.5"><Label>Contact Name</Label><Input value={form.contact} onChange={e=>setForm({...form,contact:e.target.value})}/></div>
+                <div className="space-y-1.5"><Label>Email *</Label><Input type="email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})}/></div>
+                <div className="space-y-1.5"><Label>Phone</Label><Input value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})}/></div>
+                <div className="space-y-1.5"><Label>Website</Label><Input value={form.website} onChange={e=>setForm({...form,website:e.target.value})}/></div>
+                <div className="space-y-1.5 col-span-2"><Label>Location</Label><Input value={form.location} onChange={e=>setForm({...form,location:e.target.value})} placeholder="City, State"/></div>
+                <div className="space-y-1.5 col-span-2"><Label>Categories (comma separated)</Label><Input value={form.categories} onChange={e=>setForm({...form,categories:e.target.value})} placeholder="MM, LT, HP"/></div>
+                <div className="space-y-1.5"><Label>Lead Time</Label><Input value={form.leadTime} onChange={e=>setForm({...form,leadTime:e.target.value})} placeholder="2-3 days"/></div>
+                <div className="space-y-1.5"><Label>Min Order (units)</Label><Input type="number" value={form.minOrder} onChange={e=>setForm({...form,minOrder:e.target.value})}/></div>
+                <div className="space-y-1.5 col-span-2"><Label>Payment Terms</Label><Input value={form.paymentTerms} onChange={e=>setForm({...form,paymentTerms:e.target.value})} placeholder="Net 30"/></div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={()=>setOpen(false)}>Cancel</Button>
+              <Button onClick={save}>{editing?"Update":"Add Vendor"}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+      </div>
+    </PageLayout>
   );
 }
