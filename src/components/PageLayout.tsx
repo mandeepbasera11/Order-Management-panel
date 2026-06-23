@@ -22,10 +22,11 @@ interface PageLayoutProps {
   subtitle?: string;
   icon?: ReactNode;
   theme?: Theme;
+  actions?: ReactNode;
   children: ReactNode;
 }
 
-export function PageLayout({ title, subtitle, icon, theme = "blue", children }: PageLayoutProps) {
+export function PageLayout({ title, subtitle, icon, theme = "blue", actions, children }: PageLayoutProps) {
   const t = THEMES[theme] ?? THEMES.blue;
   return (
     <div className="flex-1 flex flex-col min-h-full bg-background">
