@@ -338,15 +338,13 @@ function validateRow(
     const vp = num(r[`vendor${i}_price`] || "");
     if (vp != null && (lowestVendorPrice === null || vp < lowestVendorPrice)) lowestVendorPrice = vp;
   }
-  const wp = num(pickVal(r, "wholesale_price", "price"));
+  const wp = num(pickVal(r, "wholesale_price", "price", "cost", "unit_price", "our_price", "retail_price", "map_price"));
   const price = wp ?? lowestVendorPrice ?? 0;
-  const stock = int(pickVal(r, "stock", "quantity", "qty")) ?? int(pickVal(r, "total_vendor_inventory")) ?? 0;
-  const category = pickVal(r, "category", "type") || "MM";
+  const stock = int(pickVal(r, "stock", "quantity", "qty", "on_hand", "available", "inventory")) ?? int(pickVal(r, "total_vendor_inventory")) ?? 0;
+  const category = pickVal(r, "category", "type", "product_type", "tire_type") || "MM";
 
   if (!sku)  issues.push("Missing SKU");
   if (!name) issues.push("Missing item name");
-
-  const isDuplicateInFile = !!sku && skusSeenSoFar.has(sku);
   if (isDuplicateInFile) issues.push("Duplicate SKU within this file");
 
   if (price === 0) issues.push("No price found (wholesale or vendor)");
@@ -384,13 +382,13 @@ function buildRecord(r: Record<string, string>, allowMissingSku = false): Record
     const vp = num(r[`vendor${i}_price`] || "");
     if (vp != null && (lowestVendorPrice === null || vp < lowestVendorPrice)) lowestVendorPrice = vp;
   }
-  const wp = num(pickVal(r, "wholesale_price", "price"));
+  const wp = num(pickVal(r, "wholesale_price", "price", "cost", "unit_price", "our_price", "retail_price", "map_price"));
 
   const rec: Record<string, unknown> = {
     sku, name,
     category:   pickVal(r, "category", "type") || "MM",
     price:      wp ?? lowestVendorPrice ?? 0,
-    stock:      int(pickVal(r, "stock", "quantity", "qty")) ?? int(pickVal(r, "total_vendor_inventory")) ?? 0,
+    stock:      int(pickVal(r, "stock", "quantity", "qty", "on_hand", "available", "inventory")) ?? int(pickVal(r, "total_vendor_inventory")) ?? 0,
     aspect:                     r.aspect || null,
     base_ge_sku:                r.base_ge_sku || null,
     brand:                      r.brand || null,
@@ -429,13 +427,13 @@ function buildRecord(r: Record<string, string>, allowMissingSku = false): Record
     upc:                        r.upc || null,
     utqg:                       r.utqg || null,
     warranty:                   r.warranty || null,
-    wholesale_price:            num(r.wholesale_price),
-    total_vendor_inventory:     int(r.total_vendor_inventory || r.Total_Vendor_Inventory),
+    wholesale_price:            num(pickVal(r, "wholesale_price", "cost", "unit_price", "map_price")),
+    total_vendor_inventory:     int(pickVal(r, "total_vendor_inventory", "total_inventory", "total_qty")),
   };
   for (let i = 1; i <= 21; i++) {
-    rec[`vendor${i}_name`]     = r[`vendor${i}_name`]     || r[`Vendor${i}_Name`]     || null;
-    rec[`vendor${i}_quantity`] = int(r[`vendor${i}_quantity`] || r[`Vendor${i}_Quantity`] || "");
-    rec[`vendor${i}_price`]    = num(r[`vendor${i}_price`]    || r[`Vendor${i}_Price`]    || "");
+    rec[`vendor${i}_name`]     = r[`vendor${i}_name`]     || null;
+    rec[`vendor${i}_quantity`] = int(r[`vendor${i}_quantity`] || "");
+    rec[`vendor${i}_price`]    = num(r[`vendor${i}_price`]    || "");
   }
   return rec;
 }
@@ -985,7 +983,7 @@ function BulkImportDialog({
   // itself slow the browser down even with streaming reads. Above this many
   // rows, we stop keeping every row in memory and switch to "summary only"
   // mode (still imports everything correctly, just skips the per-row table).
-  const MAX_ROWS_IN_MEMORY = 2000_000;
+  const MAX_ROWS_IN_MEMORY = 300_000;
 
   // ── Stream-parse the file in 4MB chunks — works for files of any size ──────
   // Never calls file.text() on the whole file, so even 500MB+ CSVs won't
@@ -1183,7 +1181,7 @@ function BulkImportDialog({
                   <p className="font-semibold text-base">Drag & drop your CSV here</p>
                   <p className="text-sm text-muted-foreground mt-1">or click to browse files</p>
                   <p className="text-xs text-muted-foreground mt-3 bg-muted inline-block px-3 py-1 rounded-full">
-                    Supports full tire fitment CSV — up to 2M+ rows
+                    Supports full tire fitment CSV — up to 150K+ rows
                   </p>
                 </div>
               )}
@@ -1488,36 +1486,12 @@ export function Inventory() {
   );
 
   const load = async () => {
-  setLoading(true);
-  // Supabase/PostgREST returns max 1000 rows per request by default.
-  // Loop in pages of 1000 until a page comes back shorter than the
-  // page size — that means we've reached the end of the table.
-  const PAGE_SIZE = 1000;
-  let allRows: Product[] = [];
-  let from = 0;
-
-  try {
-    while (true) {
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .range(from, from + PAGE_SIZE - 1);
-
-      if (error) { toast.error(error.message); break; }
-      const chunk = (data ?? []) as unknown as Product[];
-      allRows = allRows.concat(chunk);
-
-      if (chunk.length < PAGE_SIZE) break; // last page reached
-      from += PAGE_SIZE;
-    }
-    setProducts(allRows);
-  } catch (err) {
-    toast.error(err instanceof Error ? err.message : "Failed to load tires");
-  } finally {
+    setLoading(true);
+    const { data, error } = await supabase.from("products").select("*").order("created_at", { ascending: false });
+    if (error) toast.error(error.message);
+    else setProducts((data ?? []) as unknown as Product[]);
     setLoading(false);
-  }
-};
+  };
   useEffect(() => { load(); }, []);
 
   // Set of SKUs already in the DB — used by the bulk import dialog to flag
@@ -1839,7 +1813,7 @@ export function Inventory() {
             </Button>
             <Select value={String(pageSize)} onValueChange={v=>{setPageSize(Number(v));setPage(1);}}>
               <SelectTrigger className="h-9 w-24"><SelectValue/></SelectTrigger>
-              <SelectContent>{[25,50,100,200,1000,1500,3000,5000].map(n=><SelectItem key={n} value={String(n)}>{n}</SelectItem>)}</SelectContent>
+              <SelectContent>{[25,50,100,200].map(n=><SelectItem key={n} value={String(n)}>{n}</SelectItem>)}</SelectContent>
             </Select>
             <span className="text-sm text-muted-foreground">Page {safePage}/{totalPages}</span>
           </div>
