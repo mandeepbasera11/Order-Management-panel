@@ -39,7 +39,7 @@ import {
 
 // Pages that render their own full layout (no PageLayout header wrapper)
 const SELF_STYLED = new Set([
-  "Dashboard", "Executive Dashboard", "POS",
+  "Dashboard", "Executive Dashboard", "POS", "VENDORS"
 ]);
 
 type ColorTheme = "blue"|"purple"|"green"|"orange"|"pink"|"teal"|"red"|"indigo"|"cyan"|"violet";
