@@ -345,6 +345,8 @@ function validateRow(
 
   if (!sku)  issues.push("Missing SKU");
   if (!name) issues.push("Missing item name");
+
+  const isDuplicateInFile = !!sku && skusSeenSoFar.has(sku);
   if (isDuplicateInFile) issues.push("Duplicate SKU within this file");
 
   if (price === 0) issues.push("No price found (wholesale or vendor)");
@@ -983,7 +985,7 @@ function BulkImportDialog({
   // itself slow the browser down even with streaming reads. Above this many
   // rows, we stop keeping every row in memory and switch to "summary only"
   // mode (still imports everything correctly, just skips the per-row table).
-  const MAX_ROWS_IN_MEMORY = 300_000;
+  const MAX_ROWS_IN_MEMORY = 2000_000;
 
   // ── Stream-parse the file in 4MB chunks — works for files of any size ──────
   // Never calls file.text() on the whole file, so even 500MB+ CSVs won't
@@ -1181,7 +1183,7 @@ function BulkImportDialog({
                   <p className="font-semibold text-base">Drag & drop your CSV here</p>
                   <p className="text-sm text-muted-foreground mt-1">or click to browse files</p>
                   <p className="text-xs text-muted-foreground mt-3 bg-muted inline-block px-3 py-1 rounded-full">
-                    Supports full tire fitment CSV — up to 150K+ rows
+                    Supports full tire fitment CSV — up to 2M+ rows
                   </p>
                 </div>
               )}
