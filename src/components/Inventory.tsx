@@ -1090,23 +1090,78 @@ function BulkImportDialog({
     let inserted = 0, updated = 0;
     const skippedCount = parsedRows.length - rowsToImport.length;
 
-    const BATCH = 150; // smaller batch = more reliable on slow connections
+    const BATCH = 250;
+    // Track SKUs already sent in this run so a duplicate SKU later in the
+    // file doesn't blow up the whole batch with:
+    //   "ON CONFLICT DO UPDATE command cannot affect row a second time"
+    // Postgres rejects any upsert statement where the same conflict target
+    // (sku) appears more than once — this was the #1 cause of "import fails".
+    const sentSkus = new Set<string>();
+
+    // Retry a single row on its own so one bad record can't poison the
+    // entire batch (e.g. column length overflow, invalid numeric, etc.)
+    const tryOne = async (r: typeof rowsToImport[number]) => {
+      const rec = buildRecord(r.raw, !skipErrors);
+      if (!rec) { failed.push({ row: r.rowNum, sku: r.sku, reason: "Missing SKU or name" }); return; }
+      const sku = String(rec.sku);
+      if (sentSkus.has(sku)) { failed.push({ row: r.rowNum, sku, reason: "Duplicate SKU within file" }); return; }
+      const { error } = await supabase.from("products").upsert([rec] as never[], { onConflict: "sku" });
+      if (error) { failed.push({ row: r.rowNum, sku, reason: error.message }); return; }
+      sentSkus.add(sku);
+      if (r.willUpdate) updated++; else inserted++;
+    };
+
     for (let i = 0; i < rowsToImport.length; i += BATCH) {
-      const batch   = rowsToImport.slice(i, i + BATCH);
-      // allowMissingSku=true lets error rows (missing sku/name) through with
-      // an auto-generated placeholder when the user unchecked "skip errors".
-      const records = batch.map(r => buildRecord(r.raw, !skipErrors)).filter(Boolean) as Record<string, unknown>[];
-      if (!records.length) { continue; }
-      try {
-        const { error } = await supabase.from("products").upsert(records as never[], { onConflict: "sku" });
-        if (error) {
-          batch.forEach(r => failed.push({ row: r.rowNum, sku: r.sku || "(auto-generated)", reason: error.message }));
-        } else {
-          batch.forEach(r => { if (r.willUpdate) updated++; else inserted++; });
+      if (cancelRef.current) break;
+      const batch = rowsToImport.slice(i, i + BATCH);
+
+      // Build records + dedupe SKUs within this batch AND across previous
+      // batches. Later rows for the same SKU overwrite earlier ones (matches
+      // "last wins" semantics users expect from a CSV re-import).
+      const bySku = new Map<string, { rec: Record<string, unknown>; row: typeof batch[number] }>();
+      const skipped: typeof batch = [];
+      for (const r of batch) {
+        const rec = buildRecord(r.raw, !skipErrors);
+        if (!rec) { failed.push({ row: r.rowNum, sku: r.sku, reason: "Missing SKU or name" }); continue; }
+        const sku = String(rec.sku);
+        if (sentSkus.has(sku)) {
+          // Already imported in an earlier batch — retry as a single upsert
+          // at the end so it still updates (last-wins).
+          skipped.push(r);
+          continue;
         }
-      } catch (err) {
-        batch.forEach(r => failed.push({ row: r.rowNum, sku: r.sku || "(auto-generated)", reason: err instanceof Error ? err.message : "Unknown error" }));
+        bySku.set(sku, { rec, row: r });
       }
+
+      const records = Array.from(bySku.values()).map(v => v.rec);
+      if (records.length) {
+        try {
+          const { error } = await supabase.from("products").upsert(records as never[], { onConflict: "sku" });
+          if (error) {
+            // Whole-batch failure → retry each row individually so a single
+            // bad record doesn't sink the other 249.
+            for (const v of bySku.values()) {
+              if (cancelRef.current) break;
+              await tryOne(v.row);
+            }
+          } else {
+            for (const v of bySku.values()) {
+              sentSkus.add(String(v.rec.sku));
+              if (v.row.willUpdate) updated++; else inserted++;
+            }
+          }
+        } catch (err) {
+          const reason = err instanceof Error ? err.message : "Network error";
+          for (const v of bySku.values()) failed.push({ row: v.row.rowNum, sku: String(v.rec.sku), reason });
+        }
+      }
+
+      // Handle within-file duplicates one-by-one (they update the same row).
+      for (const r of skipped) {
+        if (cancelRef.current) break;
+        await tryOne(r);
+      }
+
       const done = i + batch.length;
       setImportedSoFar(done);
       setImportProgress(Math.min(100, Math.round((done / rowsToImport.length) * 100)));
