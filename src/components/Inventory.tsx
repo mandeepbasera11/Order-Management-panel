@@ -1098,7 +1098,6 @@ function BulkImportDialog({
     setTotalToImport(rowsToImport.length);
     setImportNote("Uploading file…");
 
-    const skippedCount = parsedRows.length - rowsToImport.length;
     const path = `imports/${crypto.randomUUID()}-${file.name.replace(/[^\w.\-]+/g, "_")}`;
 
     const { error: upErr } = await supabase.storage
