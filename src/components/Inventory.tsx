@@ -970,6 +970,9 @@ function BulkImportDialog({
   } | null>(null);
   const [parseError, setParseError] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all"|"error"|"warning"|"valid">("all");
+  const [file, setFile]             = useState<File | null>(null);
+  const [importId, setImportId]     = useState<string | null>(null);
+  const [importNote, setImportNote] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cancelRef = useRef(false);
 
@@ -978,6 +981,7 @@ function BulkImportDialog({
     setRowsParsedCount(0); setParsedRows([]); setHeaderCols([]); setSkipErrors(true);
     setImportProgress(0); setImportedSoFar(0); setTotalToImport(0);
     setResult(null); setParseError(""); setFilterStatus("all");
+    setFile(null); setImportId(null); setImportNote("");
   };
   const handleClose = () => { cancelRef.current = true; reset(); onClose(); };
 
@@ -992,6 +996,7 @@ function BulkImportDialog({
   // crash or freeze the browser tab.
   const processFile = async (file: File) => {
     setParseError("");
+    setFile(file);
     setFileName(file.name);
     setFileSize((file.size / 1024 / 1024).toFixed(1) + " MB");
     setParseProgress(0);
