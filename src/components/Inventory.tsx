@@ -970,6 +970,9 @@ function BulkImportDialog({
   } | null>(null);
   const [parseError, setParseError] = useState("");
   const [filterStatus, setFilterStatus] = useState<"all"|"error"|"warning"|"valid">("all");
+  const [file, setFile]             = useState<File | null>(null);
+  const [importId, setImportId]     = useState<string | null>(null);
+  const [importNote, setImportNote] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cancelRef = useRef(false);
 
@@ -978,6 +981,7 @@ function BulkImportDialog({
     setRowsParsedCount(0); setParsedRows([]); setHeaderCols([]); setSkipErrors(true);
     setImportProgress(0); setImportedSoFar(0); setTotalToImport(0);
     setResult(null); setParseError(""); setFilterStatus("all");
+    setFile(null); setImportId(null); setImportNote("");
   };
   const handleClose = () => { cancelRef.current = true; reset(); onClose(); };
 
@@ -992,6 +996,7 @@ function BulkImportDialog({
   // crash or freeze the browser tab.
   const processFile = async (file: File) => {
     setParseError("");
+    setFile(file);
     setFileName(file.name);
     setFileSize((file.size / 1024 / 1024).toFixed(1) + " MB");
     setParseProgress(0);
@@ -1079,99 +1084,87 @@ function BulkImportDialog({
     .filter(r => filterStatus === "all" ? true : r.status === filterStatus)
     .slice(0, 100);
 
-  // ── Run import in batches ──────────────────────────────────────────────────
+  // ── Run import as a background job (upload → edge function → poll) ─────────
+  // The browser no longer writes rows itself: it uploads the CSV to storage
+  // and hands off to the `import-tires` edge function, which processes the
+  // file server-side. That means huge files can't fail on a request timeout,
+  // and the user can close this dialog while it keeps running.
   const runImport = async () => {
+    if (!file) { toast.error("File is no longer available — please re-select it"); setStage("preview"); return; }
+
     setStage("importing");
     setImportProgress(0);
     setImportedSoFar(0);
     setTotalToImport(rowsToImport.length);
+    setImportNote("Uploading file…");
 
-    const failed: { row: number; sku: string; reason: string }[] = [];
-    let inserted = 0, updated = 0;
-    const skippedCount = parsedRows.length - rowsToImport.length;
+    const path = `imports/${crypto.randomUUID()}-${file.name.replace(/[^\w.\-]+/g, "_")}`;
 
-    const BATCH = 250;
-    // Track SKUs already sent in this run so a duplicate SKU later in the
-    // file doesn't blow up the whole batch with:
-    //   "ON CONFLICT DO UPDATE command cannot affect row a second time"
-    // Postgres rejects any upsert statement where the same conflict target
-    // (sku) appears more than once — this was the #1 cause of "import fails".
-    const sentSkus = new Set<string>();
-
-    // Retry a single row on its own so one bad record can't poison the
-    // entire batch (e.g. column length overflow, invalid numeric, etc.)
-    const tryOne = async (r: typeof rowsToImport[number]) => {
-      const rec = buildRecord(r.raw, !skipErrors);
-      if (!rec) { failed.push({ row: r.rowNum, sku: r.sku, reason: "Missing SKU or name" }); return; }
-      const sku = String(rec.sku);
-      if (sentSkus.has(sku)) { failed.push({ row: r.rowNum, sku, reason: "Duplicate SKU within file" }); return; }
-      const { error } = await supabase.from("products").upsert([rec] as never[], { onConflict: "sku" });
-      if (error) { failed.push({ row: r.rowNum, sku, reason: error.message }); return; }
-      sentSkus.add(sku);
-      if (r.willUpdate) updated++; else inserted++;
-    };
-
-    for (let i = 0; i < rowsToImport.length; i += BATCH) {
-      if (cancelRef.current) break;
-      const batch = rowsToImport.slice(i, i + BATCH);
-
-      // Build records + dedupe SKUs within this batch AND across previous
-      // batches. Later rows for the same SKU overwrite earlier ones (matches
-      // "last wins" semantics users expect from a CSV re-import).
-      const bySku = new Map<string, { rec: Record<string, unknown>; row: typeof batch[number] }>();
-      const skipped: typeof batch = [];
-      for (const r of batch) {
-        const rec = buildRecord(r.raw, !skipErrors);
-        if (!rec) { failed.push({ row: r.rowNum, sku: r.sku, reason: "Missing SKU or name" }); continue; }
-        const sku = String(rec.sku);
-        if (sentSkus.has(sku)) {
-          // Already imported in an earlier batch — retry as a single upsert
-          // at the end so it still updates (last-wins).
-          skipped.push(r);
-          continue;
-        }
-        bySku.set(sku, { rec, row: r });
-      }
-
-      const records = Array.from(bySku.values()).map(v => v.rec);
-      if (records.length) {
-        try {
-          const { error } = await supabase.from("products").upsert(records as never[], { onConflict: "sku" });
-          if (error) {
-            // Whole-batch failure → retry each row individually so a single
-            // bad record doesn't sink the other 249.
-            for (const v of bySku.values()) {
-              if (cancelRef.current) break;
-              await tryOne(v.row);
-            }
-          } else {
-            for (const v of bySku.values()) {
-              sentSkus.add(String(v.rec.sku));
-              if (v.row.willUpdate) updated++; else inserted++;
-            }
-          }
-        } catch (err) {
-          const reason = err instanceof Error ? err.message : "Network error";
-          for (const v of bySku.values()) failed.push({ row: v.row.rowNum, sku: String(v.rec.sku), reason });
-        }
-      }
-
-      // Handle within-file duplicates one-by-one (they update the same row).
-      for (const r of skipped) {
-        if (cancelRef.current) break;
-        await tryOne(r);
-      }
-
-      const done = i + batch.length;
-      setImportedSoFar(done);
-      setImportProgress(Math.min(100, Math.round((done / rowsToImport.length) * 100)));
-      await yieldToBrowser();
+    const { error: upErr } = await supabase.storage
+      .from("inventory")
+      .upload(path, file, { contentType: "text/csv", upsert: false });
+    if (upErr) {
+      toast.error(`Upload failed: ${upErr.message}`);
+      setStage("preview");
+      return;
     }
 
-    setResult({ inserted, updated, skipped: skippedCount + failed.length, failed });
-    setStage("done");
-    onComplete();
+    setImportNote("Starting background job…");
+    const { data, error: fnErr } = await supabase.functions.invoke("import-tires", {
+      body: { path, filename: file.name, skipErrors },
+    });
+    const jobId = (data as { importId?: string } | null)?.importId;
+    if (fnErr || !jobId) {
+      toast.error(fnErr?.message ?? "Could not start the import job");
+      setStage("preview");
+      return;
+    }
+    setImportId(jobId);
+    setImportNote("Processing on the server — you can close this window");
+    toast.success("Import started — progress is tracked on the Import Status page");
   };
+
+  // ── Poll the job row until it finishes ─────────────────────────────────────
+  useEffect(() => {
+    if (!importId || stage !== "importing") return;
+    let active = true;
+
+    const tick = async () => {
+      const { data, error } = await supabase
+        .from("csv_imports")
+        .select("status, progress, total_rows, success_count, failed_count, error_message")
+        .eq("id", importId)
+        .maybeSingle();
+      if (!active || error || !data) return;
+
+      setImportProgress(data.progress ?? 0);
+      setImportedSoFar((data.success_count ?? 0) + (data.failed_count ?? 0));
+      setTotalToImport(data.total_rows ?? 0);
+
+      if (data.status === "completed" || data.status === "failed") {
+        active = false;
+        clearInterval(timer);
+        const success = data.success_count ?? 0;
+        const updated = Math.min(success, updateCount);
+        setResult({
+          inserted: success - updated,
+          updated,
+          skipped: (parsedRows.length - rowsToImport.length) + (data.failed_count ?? 0),
+          failed: data.failed_count
+            ? [{ row: 0, sku: "—", reason: data.error_message ?? "See Import Status page" }]
+            : [],
+        });
+        setStage("done");
+        if (data.status === "failed") toast.error(data.error_message ?? "Import failed");
+        onComplete();
+      }
+    };
+
+    const timer = setInterval(tick, 2000);
+    tick();
+    return () => { active = false; clearInterval(timer); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [importId, stage]);
 
   // ── Download error CSV ─────────────────────────────────────────────────────
   const downloadErrorReport = () => {
@@ -1193,7 +1186,7 @@ function BulkImportDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={v => { if (!v && stage !== "importing") handleClose(); }}>
+    <Dialog open={open} onOpenChange={v => { if (!v) handleClose(); }}>
       <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col gap-0 p-0 overflow-hidden">
 
         {/* Header */}
@@ -1427,7 +1420,11 @@ function BulkImportDialog({
               </div>
               <div>
                 <p className="font-bold text-lg">Importing tires…</p>
-                <p className="text-sm text-muted-foreground mt-1">{importedSoFar.toLocaleString()} of {totalToImport.toLocaleString()} rows processed</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {totalToImport
+                    ? `${importedSoFar.toLocaleString()} of ${totalToImport.toLocaleString()} rows processed so far`
+                    : importNote || "Working…"}
+                </p>
               </div>
               <div className="space-y-1">
                 <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
@@ -1435,8 +1432,9 @@ function BulkImportDialog({
                 </div>
                 <p className="text-xs text-muted-foreground">{importProgress}%</p>
               </div>
-              <p className="text-xs text-muted-foreground bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 inline-block">
-                ⚠️ Please don't close this window — import in progress
+              <p className="text-xs text-muted-foreground bg-blue-50 border border-blue-200 rounded-lg px-4 py-2 inline-block">
+                Running as a background job on the server — you can safely close this window and
+                follow progress on the Import Status page.
               </p>
             </div>
           )}
@@ -1481,9 +1479,13 @@ function BulkImportDialog({
         </div>
 
         {/* Footer */}
-        {stage !== "importing" && (
+        {true && (
           <div className="border-t border-border px-6 py-4 flex items-center justify-between bg-muted/20">
-            {stage === "pick" || stage === "parsing" ? (
+            {stage === "importing" ? (
+              <Button variant="outline" className="ml-auto" onClick={handleClose}>
+                Close — keeps running in background
+              </Button>
+            ) : stage === "pick" || stage === "parsing" ? (
               <Button variant="outline" onClick={handleClose}>
                 {stage === "parsing" ? "Cancel import" : "Cancel"}
               </Button>
