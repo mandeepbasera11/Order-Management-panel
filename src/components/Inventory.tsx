@@ -1186,7 +1186,7 @@ function BulkImportDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={v => { if (!v && stage !== "importing") handleClose(); }}>
+    <Dialog open={open} onOpenChange={v => { if (!v) handleClose(); }}>
       <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col gap-0 p-0 overflow-hidden">
 
         {/* Header */}
@@ -1479,9 +1479,13 @@ function BulkImportDialog({
         </div>
 
         {/* Footer */}
-        {stage !== "importing" && (
+        {true && (
           <div className="border-t border-border px-6 py-4 flex items-center justify-between bg-muted/20">
-            {stage === "pick" || stage === "parsing" ? (
+            {stage === "importing" ? (
+              <Button variant="outline" className="ml-auto" onClick={handleClose}>
+                Close — keeps running in background
+              </Button>
+            ) : stage === "pick" || stage === "parsing" ? (
               <Button variant="outline" onClick={handleClose}>
                 {stage === "parsing" ? "Cancel import" : "Cancel"}
               </Button>
