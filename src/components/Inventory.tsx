@@ -1420,7 +1420,11 @@ function BulkImportDialog({
               </div>
               <div>
                 <p className="font-bold text-lg">Importing tires…</p>
-                <p className="text-sm text-muted-foreground mt-1">{importedSoFar.toLocaleString()} of {totalToImport.toLocaleString()} rows processed</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {totalToImport
+                    ? `${importedSoFar.toLocaleString()} of ${totalToImport.toLocaleString()} rows processed so far`
+                    : importNote || "Working…"}
+                </p>
               </div>
               <div className="space-y-1">
                 <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
@@ -1428,8 +1432,9 @@ function BulkImportDialog({
                 </div>
                 <p className="text-xs text-muted-foreground">{importProgress}%</p>
               </div>
-              <p className="text-xs text-muted-foreground bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 inline-block">
-                ⚠️ Please don't close this window — import in progress
+              <p className="text-xs text-muted-foreground bg-blue-50 border border-blue-200 rounded-lg px-4 py-2 inline-block">
+                Running as a background job on the server — you can safely close this window and
+                follow progress on the Import Status page.
               </p>
             </div>
           )}
