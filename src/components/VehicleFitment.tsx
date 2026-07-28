@@ -1446,12 +1446,12 @@ export function VehicleFitment() {
               <Label>Submodel / Trim</Label>
               {formSubmodels.length > 0 ? (
                 <Select
-                  value={form.submodel ?? ""}
-                  onValueChange={(v) => setForm((f) => ({ ...f, submodel: v }))}
+                  value={form.submodel || "__none"}
+                  onValueChange={(v) => setForm((f) => ({ ...f, submodel: v === "__none" ? "" : v }))}
                 >
                   <SelectTrigger><SelectValue placeholder="Select Submodel" /></SelectTrigger>
                   <SelectContent className="max-h-64">
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="__none">None</SelectItem>
                     {formSubmodels.map((s) => (
                       <SelectItem key={s} value={s}>{s}</SelectItem>
                     ))}
@@ -1496,12 +1496,12 @@ export function VehicleFitment() {
             <div className="space-y-2">
               <Label>Drive Type</Label>
               <Select
-                value={form.drive_type ?? ""}
-                onValueChange={(v) => setForm((f) => ({ ...f, drive_type: v }))}
+                value={form.drive_type || "__unknown"}
+                onValueChange={(v) => setForm((f) => ({ ...f, drive_type: v === "__unknown" ? "" : v }))}
               >
                 <SelectTrigger><SelectValue placeholder="Select Drive Type" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Unknown</SelectItem>
+                  <SelectItem value="__unknown">Unknown</SelectItem>
                   <SelectItem value="FWD">FWD — Front-Wheel Drive</SelectItem>
                   <SelectItem value="RWD">RWD — Rear-Wheel Drive</SelectItem>
                   <SelectItem value="AWD">AWD — All-Wheel Drive</SelectItem>
@@ -1515,12 +1515,12 @@ export function VehicleFitment() {
             <div className="space-y-2">
               <Label>Body Type</Label>
               <Select
-                value={form.body_type ?? ""}
-                onValueChange={(v) => setForm((f) => ({ ...f, body_type: v }))}
+                value={form.body_type || "__unknown"}
+                onValueChange={(v) => setForm((f) => ({ ...f, body_type: v === "__unknown" ? "" : v }))}
               >
                 <SelectTrigger><SelectValue placeholder="Select Body Type" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Unknown</SelectItem>
+                  <SelectItem value="__unknown">Unknown</SelectItem>
                   <SelectItem value="Sedan">Sedan</SelectItem>
                   <SelectItem value="Coupe">Coupe</SelectItem>
                   <SelectItem value="Hatchback">Hatchback</SelectItem>
