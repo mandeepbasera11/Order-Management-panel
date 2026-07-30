@@ -201,8 +201,8 @@ export function AppointmentScheduler() {
                 ))}
                 {/* Time slots */}
                 {TIMES.map(time => (
-                  <>
-                    <div key={`t-${time}`} className="text-xs text-muted-foreground p-2 font-mono">{time}</div>
+                  <div key={`row-${time}`} className="contents">
+                    <div className="text-xs text-muted-foreground p-2 font-mono">{time}</div>
                     {BAYS.map(bay => {
                       const appt = appts.find(a => a.date===dateFilter && a.time===time && a.bay===bay);
                       return (
@@ -216,7 +216,7 @@ export function AppointmentScheduler() {
                         </div>
                       );
                     })}
-                  </>
+                  </div>
                 ))}
               </div>
             </div>

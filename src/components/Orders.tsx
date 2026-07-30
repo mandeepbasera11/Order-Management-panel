@@ -508,6 +508,49 @@ export function Orders() {
 
   const bulkAdvance = async () => { for (const id of Array.from(selected)) await advanceStatus(id); setSelected(new Set()); };
 
+  // Advance every order currently visible in the filtered list.
+  const processCurrentPage = async () => {
+    const targets = filtered.filter(o => {
+      const i = STATUS_FLOW.indexOf(o.status as any);
+      return i >= 0 && i < STATUS_FLOW.length - 1;
+    });
+    if (!targets.length) { toast.info("No processable orders on this page"); return; }
+    for (const o of targets) await advanceStatus(o.id);
+    toast.success(`Processed ${targets.length} order(s)`);
+  };
+
+  // Move every "New Order" into Processing.
+  const processPendingOrders = async () => {
+    const targets = orders.filter(o => o.status === "New Order");
+    if (!targets.length) { toast.info("No pending orders to process"); return; }
+    for (const o of targets) await advanceStatus(o.id);
+    toast.success(`${targets.length} pending order(s) moved to Processing`);
+  };
+
+  // Generate a printable shipping-label sheet for the selected orders.
+  const printLabels = () => {
+    const rows = orders.filter(o => selected.has(o.id));
+    if (!rows.length) { toast.error("No orders selected"); return; }
+    const w = window.open("", "_blank", "width=800,height=900");
+    if (!w) { toast.error("Popup blocked — allow popups to print labels"); return; }
+    w.document.write(`<html><head><title>Shipping Labels</title><style>
+      body{font-family:system-ui,sans-serif;padding:16px}
+      .label{border:1px solid #333;border-radius:8px;padding:16px;margin-bottom:12px;page-break-inside:avoid}
+      h2{margin:0 0 6px;font-size:16px} p{margin:2px 0;font-size:13px}
+    </style></head><body>${rows.map(o => `
+      <div class="label">
+        <h2>${o.orderNo}</h2>
+        <p><strong>${o.customer}</strong></p>
+        <p>${o.email ?? ""}</p>
+        <p>Carrier: ${o.carrier ?? "—"} &middot; Tracking: ${o.trackingNo ?? "—"}</p>
+        <p>Warehouse: ${o.warehouse ?? "—"} &middot; Status: ${o.status}</p>
+      </div>`).join("")}</body></html>`);
+    w.document.close();
+    w.focus();
+    w.print();
+    toast.success(`Prepared ${rows.length} label(s)`);
+  };
+
   const saveOrderChanges = async () => {
     if (!editOrder) return;
     const { error } = await supabase.from("orders").update({
@@ -628,8 +671,8 @@ export function Orders() {
           <p className="text-sm text-muted-foreground">Manage and track all customer orders</p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Button variant="outline" size="sm"><RefreshCw className="w-4 h-4 mr-1"/>Process Current Page</Button>
-          <Button size="sm"><RefreshCw className="w-4 h-4 mr-1"/>Process Pending Orders</Button>
+          <Button variant="outline" size="sm" onClick={processCurrentPage}><RefreshCw className="w-4 h-4 mr-1"/>Process Current Page</Button>
+          <Button size="sm" onClick={processPendingOrders}><RefreshCw className="w-4 h-4 mr-1"/>Process Pending Orders</Button>
         </div>
       </div>
 
@@ -782,7 +825,7 @@ export function Orders() {
             <Card className="p-3 flex items-center gap-3 bg-muted/40">
               <span className="text-sm font-medium">{selected.size} selected</span>
               <Button size="sm" variant="outline" onClick={bulkAdvance}><ChevronRight className="w-4 h-4 mr-1"/>Advance Status</Button>
-              <Button size="sm" variant="outline"><FileText className="w-4 h-4 mr-1"/>Print Labels</Button>
+              <Button size="sm" variant="outline" onClick={printLabels}><FileText className="w-4 h-4 mr-1"/>Print Labels</Button>
               <Button size="sm" variant="destructive" onClick={bulkCancel}><XCircle className="w-4 h-4 mr-1"/>Cancel</Button>
               <Button size="sm" variant="ghost" onClick={()=>setSelected(new Set())}>Clear</Button>
             </Card>
