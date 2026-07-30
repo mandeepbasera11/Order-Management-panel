@@ -19,7 +19,7 @@ type Customer = {
   orders:{orderNo:string;date:string;total:number;status:string;items:string}[];
 };
 
-const CUSTOMERS: Customer[] = [
+const SEED_CUSTOMERS: Customer[] = [
   {id:"1",name:"Mike Johnson",    email:"mike@example.com",   phone:"(555)111-2222",since:"2022-03-15",totalOrders:12,totalSpent:4820,creditLimit:5000,preferredBrand:"Michelin",  tier:"Gold",  vehicles:[{year:2021,make:"Toyota",model:"RAV4",trim:"XLE"}],      notes:"Prefers premium brands. Rush orders OK.",orders:[{orderNo:"ORD-2026-0001",date:"2026-05-30",total:580,status:"New Order",items:"Michelin Defender 225/65R17 x4"}]},
   {id:"2",name:"Sarah Williams",  email:"sarah@example.com",  phone:"(555)222-3333",since:"2023-01-08",totalOrders:6, totalSpent:2340,creditLimit:3000,preferredBrand:"Goodyear",  tier:"Silver",vehicles:[{year:2020,make:"Honda",model:"Civic",trim:"Sport"}],    notes:"Monthly subscription customer.",orders:[{orderNo:"ORD-2026-0002",date:"2026-05-29",total:480,status:"Processing",items:"Goodyear Assurance 205/55R16 x4"}]},
   {id:"3",name:"Tom Brown",       email:"tom@example.com",    phone:"(555)333-4444",since:"2021-11-22",totalOrders:18,totalSpent:8960,creditLimit:10000,preferredBrand:"BFGoodrich",tier:"Gold",  vehicles:[{year:2023,make:"Ford",model:"F-150",trim:"Lariat"},{year:2019,make:"Jeep",model:"Wrangler",trim:"Rubicon"}],notes:"Fleet customer — 2 trucks.",orders:[{orderNo:"ORD-2026-0003",date:"2026-05-28",total:840,status:"Picking",items:"BFGoodrich KO2 265/70R17 x4"}]},
@@ -30,15 +30,42 @@ const CUSTOMERS: Customer[] = [
 const TIER_COLORS = { Gold:"bg-yellow-100 text-yellow-700", Silver:"bg-gray-100 text-gray-600", Bronze:"bg-orange-100 text-orange-700", New:"bg-blue-100 text-blue-700" };
 
 export function CustomerCRM() {
+  const [customers, setCustomers] = useState<Customer[]>(SEED_CUSTOMERS);
   const [search, setSearch]       = useState("");
   const [selected, setSelected]   = useState<Customer|null>(null);
   const [newNote, setNewNote]      = useState("");
   const [notes, setNotes]         = useState<Record<string,string[]>>({});
+  const [addOpen, setAddOpen]     = useState(false);
+  const blankForm = { name:"", email:"", phone:"", creditLimit:"", preferredBrand:"", notes:"" };
+  const [form, setForm]           = useState(blankForm);
 
-  const filtered = useMemo(() => CUSTOMERS.filter(c => {
+  const filtered = useMemo(() => customers.filter(c => {
     const q = search.toLowerCase();
     return !q || c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q) || c.phone.includes(q);
-  }), [search]);
+  }), [search, customers]);
+
+  const addCustomer = () => {
+    if (!form.name.trim()) { toast.error("Customer name is required"); return; }
+    const customer: Customer = {
+      id: crypto.randomUUID(),
+      name: form.name.trim(),
+      email: form.email.trim(),
+      phone: form.phone.trim(),
+      since: new Date().toISOString().slice(0,10),
+      totalOrders: 0,
+      totalSpent: 0,
+      creditLimit: Number(form.creditLimit) || 0,
+      preferredBrand: form.preferredBrand.trim() || "—",
+      vehicles: [],
+      notes: form.notes.trim(),
+      tier: "New",
+      orders: [],
+    };
+    setCustomers(cs => [customer, ...cs]);
+    setForm(blankForm);
+    setAddOpen(false);
+    toast.success(`${customer.name} added`);
+  };
 
   const addNote = (customerId: string) => {
     if (!newNote.trim()) return;
@@ -46,8 +73,9 @@ export function CustomerCRM() {
     setNewNote(""); toast.success("Note added");
   };
 
-  const totalRevenue = CUSTOMERS.reduce((s,c) => s + c.totalSpent, 0);
-  const goldCustomers = CUSTOMERS.filter(c => c.tier === "Gold").length;
+  const totalRevenue = customers.reduce((s,c) => s + c.totalSpent, 0);
+  const totalOrders = customers.reduce((s,c) => s + c.totalOrders, 0);
+  const goldCustomers = customers.filter(c => c.tier === "Gold").length;
 
   return (
     <div className="flex-1 overflow-auto p-6 space-y-5">
@@ -56,16 +84,16 @@ export function CustomerCRM() {
           <h1 className="text-2xl font-bold">Customer Management (CRM)</h1>
           <p className="text-sm text-muted-foreground">Customer profiles, purchase history and vehicle details</p>
         </div>
-        <Button size="sm"><Plus className="w-4 h-4 mr-1"/>Add Customer</Button>
+        <Button size="sm" onClick={()=>setAddOpen(true)}><Plus className="w-4 h-4 mr-1"/>Add Customer</Button>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          {label:"Total Customers", value:CUSTOMERS.length,         color:"text-blue-600"},
+          {label:"Total Customers", value:customers.length,         color:"text-blue-600"},
           {label:"Gold Tier",       value:goldCustomers,             color:"text-yellow-600"},
           {label:"Total Revenue",   value:`$${totalRevenue.toLocaleString()}`, color:"text-green-600"},
-          {label:"Avg Order Value", value:`$${Math.round(totalRevenue/CUSTOMERS.reduce((s,c)=>s+c.totalOrders,0))}`, color:"text-purple-600"},
+          {label:"Avg Order Value", value:`$${totalOrders ? Math.round(totalRevenue/totalOrders).toLocaleString() : 0}`, color:"text-purple-600"},
         ].map(s => (
           <Card key={s.label} className="p-4 text-center">
             <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
@@ -227,6 +255,47 @@ export function CustomerCRM() {
               </div>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Customer Dialog */}
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><User className="w-5 h-5"/>Add Customer</DialogTitle></DialogHeader>
+          <div className="space-y-3 py-1">
+            <div className="space-y-1.5">
+              <Label>Full Name *</Label>
+              <Input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Jane Cooper"/>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Email</Label>
+                <Input type="email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})} placeholder="jane@example.com"/>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Phone</Label>
+                <Input value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} placeholder="(555) 000-0000"/>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Credit Limit ($)</Label>
+                <Input type="number" min="0" value={form.creditLimit} onChange={e=>setForm({...form,creditLimit:e.target.value})} placeholder="2000"/>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Preferred Brand</Label>
+                <Input value={form.preferredBrand} onChange={e=>setForm({...form,preferredBrand:e.target.value})} placeholder="Michelin"/>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Notes</Label>
+              <Input value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} placeholder="Fleet customer, prefers rush orders"/>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={()=>setAddOpen(false)}>Cancel</Button>
+            <Button onClick={addCustomer}>Add Customer</Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
