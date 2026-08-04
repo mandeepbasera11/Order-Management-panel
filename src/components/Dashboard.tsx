@@ -25,7 +25,7 @@ type OrderFilter = "all" | "pending" | "backorders" | "errors" | "highvalue";
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 
 // Anchor series to real Date objects so the picker can filter them.
-const TODAY = new Date(2026, 5, 4); // Jun 4, 2026
+const TODAY = new Date(2026, 8, 4); // Aug 4, 2026
 const SERIES_DAYS = 60;
 const fullSeries = Array.from({ length: SERIES_DAYS }, (_, i) => {
   const d = startOfDay(subDays(TODAY, SERIES_DAYS - 1 - i));
