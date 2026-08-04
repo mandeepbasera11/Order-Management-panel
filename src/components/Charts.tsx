@@ -23,11 +23,11 @@ const salesData = [
 ];
 
 const categoryData = [
-  { name: "All-Season", sales: 1840 },
-  { name: "Performance", sales: 1120 },
-  { name: "Winter", sales: 680 },
-  { name: "All-Terrain", sales: 920 },
-  { name: "Touring", sales: 560 },
+  { name: "All-Season", sales: 1850 },
+  { name: "Performance", sales: 11300 },
+  { name: "Winter", sales: 690 },
+  { name: "All-Terrain", sales: 930 },
+  { name: "Touring", sales: 570 },
 ];
 
 export function SalesChart() {
