@@ -20,7 +20,7 @@ type SyncStatus   = "synced"   | "delayed" | "failed";
 type SystemStatus = "online"   | "active"  | "partial" | "offline";
 type OrderFilter  = "all" | "pending" | "backorders" | "errors" | "highvalue";
 
-const TODAY       = new Date(2026, 8, 4);
+const TODAY       = new Date();
 const SERIES_DAYS = 60;
 
 const fullSeries = Array.from({ length: SERIES_DAYS }, (_, i) => {
