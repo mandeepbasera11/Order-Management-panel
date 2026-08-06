@@ -21,7 +21,7 @@ type SystemStatus = "online"   | "active"  | "partial" | "offline";
 type OrderFilter  = "all" | "pending" | "backorders" | "errors" | "highvalue";
 
 const TODAY       = new Date();
-const SERIES_DAYS = 7;
+const SERIES_DAYS = today;
 
 const fullSeries = Array.from({ length: SERIES_DAYS }, (_, i) => {
   const d = startOfDay(subDays(TODAY, SERIES_DAYS - 1 - i));
