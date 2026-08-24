@@ -29,7 +29,10 @@ import { POS } from "@/components/POS";
 import { Vendors } from "@/components/Vendors";
 import { FTPSettings } from "@/components/FTPSettings";
 import { BrandAnalytics } from "@/pages/BrandAnalytics";
-import { Placeholder } from "@/components/Placeholder";
+import { GETireHickory } from "@/components/GETireHickory";
+import { TiresReverseLookup } from "@/components/TiresReverseLookup";
+import { OrderArchive } from "@/components/OrderArchive";
+import { ListingMirrorSync } from "@/components/ListingMirrorSync";
 import {
   LayoutDashboard, TrendingUp, ShoppingBag, CreditCard, Package, Car,
   Warehouse, RefreshCw, Building2, DollarSign, Store, FlaskConical, Gauge,
@@ -46,6 +49,7 @@ const SELF_STYLED = new Set([
   "Reports", "Brand Analytics", "AI Features", "Alert Center",
   "User Permissions", "Permission Matrix", "2FA & Security", "Audit Logs",
   "Activity Monitor", "Error Logs", "FTP Settings",
+  "GE Tire Hickory Inventory", "Tires Reverse Lookup", "Order Archive", "Listing Mirror Sync",
 ]);
 
 type ColorTheme = "blue"|"purple"|"green"|"orange"|"pink"|"teal"|"red"|"indigo"|"cyan"|"violet";
@@ -66,7 +70,7 @@ const PAGE_CONFIG: Record<string, PageConfig> = {
   "POS":                  { component: () => <POS />,                              icon:<CreditCard className={sz}/>,     theme:"green",  subtitle:"In-store point of sale" },
   "Manage Tires":         { component: () => <Inventory />,                        icon:<Package className={sz}/>,        theme:"indigo", subtitle:"Search, filter and manage your tire catalog" },
   "Vehicle Fitment":      { component: () => <VehicleFitment />,                   icon:<Car className={sz}/>,            theme:"teal",   subtitle:"Vehicle-tire compatibility database" },
-  "GE Tire Hickory Inventory": { component: () => <Placeholder title="GE Tire Hickory Inventory" description="Live GE Tire Hickory warehouse inventory feed."/>, icon:<Warehouse className={sz}/>, theme:"green", subtitle:"Live warehouse feed" },
+  "GE Tire Hickory Inventory": { component: () => <GETireHickory />, icon:<Warehouse className={sz}/>, theme:"green", subtitle:"Live warehouse feed" },
   "Inventory Sync":       { component: () => <InventorySync />,                    icon:<RefreshCw className={sz}/>,      theme:"cyan",   subtitle:"Real-time sync across all channels" },
   "Vendors":              { component: () => <Vendors />,                          icon:<Building2 className={sz}/>,      theme:"orange", subtitle:"Supplier profiles, ratings and contacts" },
   "Marketplace Pricing":  { component: () => <MarketplacePricing />,               icon:<DollarSign className={sz}/>,     theme:"orange", subtitle:"Compare and manage marketplace prices" },
@@ -74,7 +78,7 @@ const PAGE_CONFIG: Record<string, PageConfig> = {
   "Price Experiment":     { component: () => <PriceExperiment />,                  icon:<FlaskConical className={sz}/>,   theme:"purple", subtitle:"A/B price testing and experiment tracking" },
   "Pricing Engine":       { component: () => <PricingEngine />,                    icon:<Gauge className={sz}/>,          theme:"orange", subtitle:"Competitor monitoring and dynamic pricing rules" },
   "Tire Search Wizard":   { component: () => <TireSearchWizard />,                 icon:<Search className={sz}/>,         theme:"cyan",   subtitle:"Find tires by size, vehicle or compatibility" },
-  "Tires Reverse Lookup": { component: () => <Placeholder title="Tires Reverse Lookup" description="Look up vehicles compatible with a tire size."/>, icon:<Search className={sz}/>, theme:"teal", subtitle:"Vehicle compatibility lookup" },
+  "Tires Reverse Lookup": { component: () => <TiresReverseLookup />, icon:<Search className={sz}/>, theme:"teal", subtitle:"Vehicle compatibility lookup" },
   "Shipping Dashboard":   { component: () => <ShippingDashboard />,                icon:<Truck className={sz}/>,          theme:"blue",   subtitle:"Live tracking, freight calculator and carriers" },
   "Appointments":         { component: () => <AppointmentScheduler />,             icon:<Calendar className={sz}/>,       theme:"teal",   subtitle:"Tire installation scheduling and bay management" },
   "TPMS Management":      { component: () => <TPMSManagement />,                   icon:<Gauge className={sz}/>,          theme:"green",  subtitle:"Tire pressure monitoring and sensor inventory" },
@@ -89,8 +93,8 @@ const PAGE_CONFIG: Record<string, PageConfig> = {
   "Audit Logs":           { component: () => <AuditLogs />,                        icon:<Shield className={sz}/>,         theme:"indigo", subtitle:"Who changed what — full activity history" },
   "Activity Monitor":     { component: () => <ActivityMonitor />,                  icon:<Activity className={sz}/>,       theme:"blue",   subtitle:"Live user sessions, feed and system performance" },
   "Error Logs":           { component: () => <ErrorLogs />,                        icon:<AlertTriangle className={sz}/>,  theme:"red",    subtitle:"System errors, debugging and resolution tracking" },
-  "Order Archive":        { component: () => <Placeholder title="Order Archive" description="Archived and completed orders history."/>, icon:<Archive className={sz}/>, theme:"indigo", subtitle:"Completed orders history" },
-  "Listing Mirror Sync":  { component: () => <Placeholder title="Listing Mirror Sync" description="Mirror listings across all platforms."/>, icon:<RefreshCw className={sz}/>, theme:"teal", subtitle:"Mirror listings across platforms" },
+  "Order Archive":        { component: () => <OrderArchive />, icon:<Archive className={sz}/>, theme:"indigo", subtitle:"Completed orders history" },
+  "Listing Mirror Sync":  { component: () => <ListingMirrorSync />, icon:<RefreshCw className={sz}/>, theme:"teal", subtitle:"Mirror listings across platforms" },
   "FTP Settings":         { component: () => <FTPSettings />,                      icon:<Server className={sz}/>,         theme:"indigo", subtitle:"Configure automated FTP data feed connections" },
 };
 
