@@ -37,9 +37,15 @@ import {
   GitMerge, Lock, Shield, Activity, AlertTriangle, Archive, Server,
 } from "lucide-react";
 
-// Pages that render their own full layout (no PageLayout header wrapper)
+// Pages that render their own heading — no PageLayout banner (avoids double headings)
 const SELF_STYLED = new Set([
-  "Dashboard", "Executive Dashboard", "POS", "VENDORS"
+  "Dashboard", "Executive Dashboard", "POS", "Vendors", "VENDORS",
+  "Orders", "Vehicle Fitment", "Marketplace Pricing", "Shopify Products",
+  "Price Experiment", "Pricing Engine", "Inventory Sync", "Tire Search Wizard",
+  "Shipping Dashboard", "Appointments", "TPMS Management", "Customer CRM",
+  "Reports", "Brand Analytics", "AI Features", "Alert Center",
+  "User Permissions", "Permission Matrix", "2FA & Security", "Audit Logs",
+  "Activity Monitor", "Error Logs", "FTP Settings",
 ]);
 
 type ColorTheme = "blue"|"purple"|"green"|"orange"|"pink"|"teal"|"red"|"indigo"|"cyan"|"violet";
