@@ -173,11 +173,7 @@ function AdvancedDialog({
 }) {
   const platform = PLATFORMS.find(p => p.key === openKey);
   if (!value || !platform) {
-    return (
-      <Dialog open={false} onOpenChange={(o) => !o && onClose()}>
-        <DialogContent />
-      </Dialog>
-    );
+    return null;
   }
   const set = <K extends keyof AdvancedSettings>(k: K, v: AdvancedSettings[K]) =>
     onChange({ ...value, [k]: v });

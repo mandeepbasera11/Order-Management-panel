@@ -10,7 +10,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -540,6 +540,7 @@ function FitmentDetailsDialog({
   return (
     <Dialog open={open} onOpenChange={o=>{ if(!o){ handleCancel(); onClose(); } }}>
       <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto p-0">
+        <DialogHeader className="sr-only"><DialogTitle>Fitment Details</DialogTitle><DialogDescription>Vehicle fitment details for this tire</DialogDescription></DialogHeader>
 
         {/* ── Sticky header ── */}
         <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border sticky top-0 bg-background z-10">
@@ -875,6 +876,7 @@ function SelectColumnsModal({
   return (
     <Dialog open={open} onOpenChange={o => !o && onClose()}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">
+        <DialogHeader className="sr-only"><DialogTitle>Select Table Columns</DialogTitle><DialogDescription>Choose which columns are visible in the tire table</DialogDescription></DialogHeader>
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-border sticky top-0 bg-background z-10">
           <div className="flex items-center gap-3">
@@ -1188,6 +1190,7 @@ function BulkImportDialog({
   return (
     <Dialog open={open} onOpenChange={v => { if (!v) handleClose(); }}>
       <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col gap-0 p-0 overflow-hidden">
+        <DialogHeader className="sr-only"><DialogTitle>Bulk Import Tires</DialogTitle><DialogDescription>Upload a CSV file to import tires</DialogDescription></DialogHeader>
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">

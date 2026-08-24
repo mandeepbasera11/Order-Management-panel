@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -632,6 +632,7 @@ export function UserPermissions() {
       ══════════════════════════════════════════════════════════════════════ */}
       <Dialog open={!!permUser} onOpenChange={o => !o && setPermUser(null)}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0">
+        <DialogHeader className="sr-only"><DialogTitle>User Permissions</DialogTitle><DialogDescription>Manage roles and permissions for this user</DialogDescription></DialogHeader>
           {/* Header */}
           <div className="sticky top-0 bg-background z-10 px-6 pt-5 pb-4 border-b border-border">
             <div className="flex items-center gap-3">
