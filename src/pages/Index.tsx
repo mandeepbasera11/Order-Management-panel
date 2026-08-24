@@ -40,7 +40,7 @@ import {
 // Pages that render their own heading — no PageLayout banner (avoids double headings)
 const SELF_STYLED = new Set([
   "Dashboard", "Executive Dashboard", "POS", "Vendors", "VENDORS",
-  "Orders", "Vehicle Fitment", "Marketplace Pricing", "Shopify Products",
+  "Orders", "Manage Tires", "Vehicle Fitment", "Marketplace Pricing", "Shopify Products",
   "Price Experiment", "Pricing Engine", "Inventory Sync", "Tire Search Wizard",
   "Shipping Dashboard", "Appointments", "TPMS Management", "Customer CRM",
   "Reports", "Brand Analytics", "AI Features", "Alert Center",
