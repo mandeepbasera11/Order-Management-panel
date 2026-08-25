@@ -1916,7 +1916,7 @@ export function Inventory() {
                         onClick={()=>{ setFitmentProduct(item); setFitmentOpen(true); }}>
                         <Eye className="w-4 h-4"/>
                       </Button>
-                      <Button variant="outline" size="icon" aria-label="View details" className="h-8 w-8"
+                      <Button variant="outline" size="icon" aria-label="Edit tire" className="h-8 w-8"
                         onClick={()=>{ setEditing(item); setEditForm({
                           sku: item.sku,
                           name: item.item_name || item.name,
