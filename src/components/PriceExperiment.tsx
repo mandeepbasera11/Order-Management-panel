@@ -215,7 +215,7 @@ export function PriceExperiment() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               className="pl-9"
-              placeholder="Search experiments or SKU..."
+              aria-label="Search experiments or SKU" placeholder="Search experiments or SKU..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />

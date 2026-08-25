@@ -478,7 +478,7 @@ export function BrandAnalytics() {
               <div className="relative flex-1 min-w-[180px]">
                 <Search className="absolute left-2.5 top-2.5 w-4 h-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search brand..."
+                  aria-label="Search brand" placeholder="Search brand..."
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   className="pl-8 h-9"

@@ -78,7 +78,7 @@ export function POS() {
           <h2 className="text-lg font-bold flex items-center gap-4"><ShoppingCart className="w-8 h-5"/>Point of Sale</h2>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"/>
-            <Input className="pl-9" placeholder="Search tires by name, SKU or category..." value={search} onChange={e=>setSearch(e.target.value)}/>
+            <Input className="pl-9" aria-label="Search tires by name, SKU or category" placeholder="Search tires by name, SKU or category..." value={search} onChange={e=>setSearch(e.target.value)}/>
           </div>
         </div>
         <div className="flex-1 overflow-auto p-4">

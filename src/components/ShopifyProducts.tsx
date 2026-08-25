@@ -218,7 +218,7 @@ export function ShopifyProducts() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               className="pl-9"
-              placeholder="Search SKU or product name..."
+              aria-label="Search SKU or product name" placeholder="Search SKU or product name..."
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             />
