@@ -315,7 +315,7 @@ export function ShopifyProducts() {
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">{row.lastSynced}</TableCell>
                     <TableCell className="text-right">
-                      <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => openEdit(row)}>
+                      <Button variant="outline" size="icon" aria-label="Edit product" className="h-8 w-8" onClick={() => openEdit(row)}>
                         <Pencil className="w-4 h-4" />
                       </Button>
                     </TableCell>

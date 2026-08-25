@@ -24,7 +24,7 @@ export function Navbar() {
 
       {/* User Actions */}
       <div className="flex items-center space-x-4">
-        <Button variant="ghost" size="icon" className="relative">
+        <Button variant="ghost" size="icon" aria-label="Notifications" className="relative">
           <Bell className="w-5 h-5" />
           <span className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full"></span>
         </Button>

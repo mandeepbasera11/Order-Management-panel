@@ -1359,10 +1359,10 @@ export function VehicleFitment() {
                   })}
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
-                      <Button size="icon" variant="outline" onClick={() => openEdit(v)}>
+                      <Button size="icon" aria-label="Edit vehicle fitment" variant="outline" onClick={() => openEdit(v)}>
                         <Pencil className="w-4 h-4" />
                       </Button>
-                      <Button size="icon" variant="destructive" onClick={() => remove(v.id)}>
+                      <Button size="icon" aria-label="Delete vehicle fitment" variant="destructive" onClick={() => remove(v.id)}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>

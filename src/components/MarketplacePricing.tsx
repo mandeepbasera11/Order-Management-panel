@@ -293,7 +293,7 @@ export function MarketplacePricing() {
                     );
                   })}
                   <TableCell className="text-right">
-                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => openEdit(row)}>
+                    <Button variant="outline" size="icon" aria-label="Edit marketplace price" className="h-8 w-8" onClick={() => openEdit(row)}>
                       <Pencil className="w-4 h-4" />
                     </Button>
                   </TableCell>

@@ -140,7 +140,7 @@ export function AlertCenter() {
                 </div>
                 <div className="flex gap-1 shrink-0">
                   {!a.read && <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={()=>markRead(a.id)}>Mark Read</Button>}
-                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={()=>dismiss(a.id)}><X className="w-3.5 h-3.5"/></Button>
+                  <Button size="icon" aria-label="Dismiss alert" variant="ghost" className="h-7 w-7" onClick={()=>dismiss(a.id)}><X className="w-3.5 h-3.5"/></Button>
                 </div>
               </div>
             </Card>

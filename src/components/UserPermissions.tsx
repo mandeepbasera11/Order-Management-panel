@@ -450,11 +450,11 @@ export function UserPermissions() {
                             ? <Lock   className="w-3.5 h-3.5" />
                             : <Unlock className="w-3.5 h-3.5" />}
                         </Button>
-                        <Button size="icon" variant="outline" className="h-8 w-8"
+                        <Button size="icon" aria-label="Edit user" variant="outline" className="h-8 w-8"
                           onClick={() => setEditUser({...u})}>
                           <Pencil className="w-3.5 h-3.5" />
                         </Button>
-                        <Button size="icon" variant="destructive" className="h-8 w-8"
+                        <Button size="icon" aria-label="Delete user" variant="destructive" className="h-8 w-8"
                           onClick={() => setDeleteId(u.id)}>
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>

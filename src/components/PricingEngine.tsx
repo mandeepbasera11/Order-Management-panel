@@ -197,7 +197,7 @@ export function PricingEngine() {
                     <Badge className={r.active?"bg-green-100 text-green-700":"bg-gray-100 text-gray-600"}>
                       {r.active?"Active":"Inactive"}
                     </Badge>
-                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => deleteRule(r.id)}>
+                    <Button size="icon" aria-label="Delete pricing rule" variant="ghost" className="h-8 w-8" onClick={() => deleteRule(r.id)}>
                       <Trash2 className="w-4 h-4"/>
                     </Button>
                   </div>

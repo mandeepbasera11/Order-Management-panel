@@ -133,10 +133,10 @@ export function POS() {
                 <p className="text-xs text-muted-foreground">${item.price} × {item.qty} = <strong>${(item.price*item.qty).toFixed(2)}</strong></p>
               </div>
               <div className="flex items-center gap-1 shrink-0">
-                <Button size="icon" variant="outline" className="h-6 w-6" onClick={()=>updateQty(item.id,item.qty-1)}><Minus className="w-3 h-3"/></Button>
+                <Button size="icon" aria-label="Decrease quantity" variant="outline" className="h-6 w-6" onClick={()=>updateQty(item.id,item.qty-1)}><Minus className="w-3 h-3"/></Button>
                 <span className="w-6 text-center text-sm font-bold">{item.qty}</span>
-                <Button size="icon" variant="outline" className="h-6 w-6" onClick={()=>updateQty(item.id,item.qty+1)}><Plus className="w-3 h-3"/></Button>
-                <Button size="icon" variant="ghost" className="h-6 w-6 text-red-500" onClick={()=>setCart(c=>c.filter(x=>x.id!==item.id))}><Trash2 className="w-3 h-3"/></Button>
+                <Button size="icon" aria-label="Increase quantity" variant="outline" className="h-6 w-6" onClick={()=>updateQty(item.id,item.qty+1)}><Plus className="w-3 h-3"/></Button>
+                <Button size="icon" aria-label="Remove item from cart" variant="ghost" className="h-6 w-6 text-red-500" onClick={()=>setCart(c=>c.filter(x=>x.id!==item.id))}><Trash2 className="w-3 h-3"/></Button>
               </div>
             </div>
           ))}

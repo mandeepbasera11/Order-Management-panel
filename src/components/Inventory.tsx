@@ -1916,7 +1916,7 @@ export function Inventory() {
                         onClick={()=>{ setFitmentProduct(item); setFitmentOpen(true); }}>
                         <Eye className="w-4 h-4"/>
                       </Button>
-                      <Button variant="outline" size="icon" className="h-8 w-8"
+                      <Button variant="outline" size="icon" aria-label="View details" className="h-8 w-8"
                         onClick={()=>{ setEditing(item); setEditForm({
                           sku: item.sku,
                           name: item.item_name || item.name,
@@ -1931,7 +1931,7 @@ export function Inventory() {
                         }); }}>
                         <Pencil className="w-4 h-4"/>
                       </Button>
-                      <Button variant="destructive" size="icon" className="h-8 w-8" onClick={()=>handleDelete(item.id)}>
+                      <Button variant="destructive" size="icon" aria-label="Delete tire" className="h-8 w-8" onClick={()=>handleDelete(item.id)}>
                         <Trash2 className="w-4 h-4"/>
                       </Button>
                     </div>

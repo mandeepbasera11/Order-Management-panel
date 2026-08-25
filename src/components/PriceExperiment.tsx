@@ -295,30 +295,30 @@ export function PriceExperiment() {
                     <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1">
                         {exp.status === "draft" && (
-                          <Button size="icon" variant="outline" className="h-8 w-8"
+                          <Button size="icon" aria-label="Start experiment" variant="outline" className="h-8 w-8"
                             onClick={() => changeStatus(exp.id, "running")}>
                             <PlayCircle className="w-4 h-4 text-green-600" />
                           </Button>
                         )}
                         {exp.status === "running" && (
-                          <Button size="icon" variant="outline" className="h-8 w-8"
+                          <Button size="icon" aria-label="Pause experiment" variant="outline" className="h-8 w-8"
                             onClick={() => changeStatus(exp.id, "paused")}>
                             <StopCircle className="w-4 h-4 text-yellow-600" />
                           </Button>
                         )}
                         {exp.status === "paused" && (
-                          <Button size="icon" variant="outline" className="h-8 w-8"
+                          <Button size="icon" aria-label="Resume experiment" variant="outline" className="h-8 w-8"
                             onClick={() => changeStatus(exp.id, "running")}>
                             <PlayCircle className="w-4 h-4 text-green-600" />
                           </Button>
                         )}
                         {(exp.status === "running" || exp.status === "paused") && (
-                          <Button size="icon" variant="outline" className="h-8 w-8"
+                          <Button size="icon" aria-label="Complete experiment" variant="outline" className="h-8 w-8"
                             onClick={() => changeStatus(exp.id, "completed")}>
                             <CheckCircle2 className="w-4 h-4 text-blue-600" />
                           </Button>
                         )}
-                        <Button size="icon" variant="destructive" className="h-8 w-8"
+                        <Button size="icon" aria-label="Delete experiment" variant="destructive" className="h-8 w-8"
                           onClick={() => deleteExperiment(exp.id)}>
                           <Trash2 className="w-4 h-4" />
                         </Button>
