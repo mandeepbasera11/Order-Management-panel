@@ -119,7 +119,7 @@ export function ErrorLogs() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"/>
-            <Input className="pl-9" placeholder="Search code, message, module..." value={search} onChange={e=>setSearch(e.target.value)}/>
+            <Input className="pl-9" aria-label="Search code, message, module" placeholder="Search code, message, module..." value={search} onChange={e=>setSearch(e.target.value)}/>
           </div>
           <Select value={levelFilter} onValueChange={setLevelFilter}>
             <SelectTrigger><SelectValue placeholder="All Levels"/></SelectTrigger>

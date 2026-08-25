@@ -114,7 +114,7 @@ export function Vendors() {
         <Card className="p-4">
           <div className="relative max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"/>
-            <Input className="pl-9" placeholder="Search vendors..." value={search} onChange={e=>setSearch(e.target.value)}/>
+            <Input className="pl-9" aria-label="Search vendors" placeholder="Search vendors..." value={search} onChange={e=>setSearch(e.target.value)}/>
           </div>
         </Card>
 
@@ -161,8 +161,8 @@ export function Vendors() {
                   </TableCell>
                   <TableCell onClick={e=>e.stopPropagation()}>
                     <div className="flex gap-1">
-                      <Button size="icon" variant="outline" className="h-7 w-7" onClick={()=>openEdit(v)}><Pencil className="w-3.5 h-3.5"/></Button>
-                      <Button size="icon" variant="destructive" className="h-7 w-7" onClick={()=>deleteVendor(v.id)}><Trash2 className="w-3.5 h-3.5"/></Button>
+                      <Button size="icon" aria-label="Edit vendor" variant="outline" className="h-7 w-7" onClick={()=>openEdit(v)}><Pencil className="w-3.5 h-3.5"/></Button>
+                      <Button size="icon" aria-label="Delete vendor" variant="destructive" className="h-7 w-7" onClick={()=>deleteVendor(v.id)}><Trash2 className="w-3.5 h-3.5"/></Button>
                     </div>
                   </TableCell>
                 </TableRow>

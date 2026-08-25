@@ -122,7 +122,7 @@ export function ShippingDashboard() {
             <div className="flex gap-3 flex-wrap">
               <div className="relative flex-1 min-w-48">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"/>
-                <Input className="pl-9" placeholder="Search order, tracking, customer..." value={search} onChange={e => setSearch(e.target.value)}/>
+                <Input className="pl-9" aria-label="Search order, tracking, customer" placeholder="Search order, tracking, customer..." value={search} onChange={e => setSearch(e.target.value)}/>
               </div>
               <Select value={carrier} onValueChange={setCarrier}>
                 <SelectTrigger className="w-36"><SelectValue placeholder="All Carriers"/></SelectTrigger>

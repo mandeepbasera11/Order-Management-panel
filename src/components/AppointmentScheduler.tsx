@@ -175,7 +175,7 @@ export function AppointmentScheduler() {
                           {a.status==="Scheduled"  && <Button size="sm" variant="outline" className="text-xs h-7" onClick={()=>updateStatus(a.id,"Confirmed")}>Confirm</Button>}
                           {a.status==="Confirmed"  && <Button size="sm" className="text-xs h-7" onClick={()=>updateStatus(a.id,"In Progress")}>Start</Button>}
                           {a.status==="In Progress"&& <Button size="sm" className="text-xs h-7 bg-green-600 hover:bg-green-700" onClick={()=>updateStatus(a.id,"Completed")}>Complete</Button>}
-                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={()=>{setEditAppt(a);setForm({customer:a.customer,phone:a.phone,email:a.email,vehicle:a.vehicle,service:a.service,tires:a.tires,date:a.date,time:a.time,bay:a.bay,tech:a.tech,notes:a.notes,duration:a.duration});setOpen(true);}}>
+                          <Button size="icon" aria-label="Edit appointment" variant="ghost" className="h-7 w-7" onClick={()=>{setEditAppt(a);setForm({customer:a.customer,phone:a.phone,email:a.email,vehicle:a.vehicle,service:a.service,tires:a.tires,date:a.date,time:a.time,bay:a.bay,tech:a.tech,notes:a.notes,duration:a.duration});setOpen(true);}}>
                             <Pencil className="w-3.5 h-3.5"/>
                           </Button>
                         </div>

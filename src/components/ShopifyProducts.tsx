@@ -198,6 +198,9 @@ export function ShopifyProducts() {
           { label: "Out of Sync", value: stats.outOfSync, icon: XCircle,      color: "text-red-500",          bg: "bg-red-50" },
         ].map((s) => (
           <Card key={s.label} className="p-5 cursor-pointer hover:shadow-md transition-shadow"
+            role="button" tabIndex={0}
+            aria-label={`Filter by ${s.label}`}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setStatusFilter(s.label.toLowerCase().replace(" ", "_") as SyncStatus | "all"); } }}
             onClick={() => setStatusFilter(s.label.toLowerCase().replace(" ", "_") as SyncStatus | "all")}>
             <div className="flex items-center gap-3">
               <div className={`p-2 rounded-lg ${s.bg}`}>
@@ -218,7 +221,7 @@ export function ShopifyProducts() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               className="pl-9"
-              placeholder="Search SKU or product name..."
+              aria-label="Search SKU or product name" placeholder="Search SKU or product name..."
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             />
@@ -315,7 +318,7 @@ export function ShopifyProducts() {
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">{row.lastSynced}</TableCell>
                     <TableCell className="text-right">
-                      <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => openEdit(row)}>
+                      <Button variant="outline" size="icon" aria-label="Edit product" className="h-8 w-8" onClick={() => openEdit(row)}>
                         <Pencil className="w-4 h-4" />
                       </Button>
                     </TableCell>

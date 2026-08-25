@@ -198,7 +198,7 @@ export function InventorySync() {
 
           <Card className="p-4">
             <div className="mb-3">
-              <Input placeholder="Search SKU or product name..." value={search} onChange={e=>setSearch(e.target.value)}
+              <Input aria-label="Search SKU or product name" placeholder="Search SKU or product name..." value={search} onChange={e=>setSearch(e.target.value)}
                 className="max-w-xs"/>
             </div>
             <div className="overflow-x-auto">

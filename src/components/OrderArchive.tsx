@@ -73,7 +73,7 @@ export function OrderArchive() {
       <Card className="p-4">
         <div className="relative mb-4 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"/>
-          <Input className="pl-9" placeholder="Search archived orders..." value={q} onChange={e=>setQ(e.target.value)}/>
+          <Input className="pl-9" aria-label="Search archived orders" placeholder="Search archived orders..." value={q} onChange={e=>setQ(e.target.value)}/>
         </div>
         <Table>
           <TableHeader>

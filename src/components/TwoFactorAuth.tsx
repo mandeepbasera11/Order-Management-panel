@@ -201,7 +201,7 @@ export function TwoFactorAuth() {
                   {BACKUP_CODES.map(code => (
                     <div key={code} className="flex items-center justify-between bg-muted rounded px-3 py-2">
                       <span className="font-mono text-sm">{codesRevealed ? code : "••••-••••"}</span>
-                      {codesRevealed && <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => copyCode(code)}><Copy className="w-3 h-3"/></Button>}
+                      {codesRevealed && <Button size="icon" aria-label="Copy backup code" variant="ghost" className="h-6 w-6" onClick={() => copyCode(code)}><Copy className="w-3 h-3"/></Button>}
                     </div>
                   ))}
                 </div>

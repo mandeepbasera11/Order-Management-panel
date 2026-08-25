@@ -203,7 +203,7 @@ export function MarketplacePricing() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               className="pl-9"
-              placeholder="Search SKU or tire name..."
+              aria-label="Search SKU or tire name" placeholder="Search SKU or tire name..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -293,7 +293,7 @@ export function MarketplacePricing() {
                     );
                   })}
                   <TableCell className="text-right">
-                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => openEdit(row)}>
+                    <Button variant="outline" size="icon" aria-label="Edit marketplace price" className="h-8 w-8" onClick={() => openEdit(row)}>
                       <Pencil className="w-4 h-4" />
                     </Button>
                   </TableCell>

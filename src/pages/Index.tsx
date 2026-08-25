@@ -109,7 +109,7 @@ export default function Index() {
   // Self-styled pages — no colorful header wrapper
   if (SELF_STYLED.has(key)) {
     return (
-      <div className="flex h-screen overflow-hidden bg-background">
+      <div className="flex h-dvh overflow-hidden bg-background">
         <Sidebar active={active} onNavigate={navigate}/>
         <main className="flex-1 overflow-auto flex flex-col">
           {config.component(navigate)}
@@ -120,7 +120,7 @@ export default function Index() {
 
   // All other pages — wrapped in colorful PageLayout header
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex h-dvh overflow-hidden bg-background">
       <Sidebar active={active} onNavigate={navigate}/>
       <main className="flex-1 overflow-auto flex flex-col">
         <PageLayout

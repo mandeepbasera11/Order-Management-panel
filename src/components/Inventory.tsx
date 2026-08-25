@@ -1827,7 +1827,7 @@ export function Inventory() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"/>
-            <Input className="pl-9" placeholder="Search SKU, brand, model, size..." value={search}
+            <Input className="pl-9" aria-label="Search SKU, brand, model, size" placeholder="Search SKU, brand, model, size..." value={search}
               onChange={e=>{setSearch(e.target.value);setPage(1);}}/>
           </div>
           <Select value={categoryFilter} onValueChange={v=>{setCategoryFilter(v);setPage(1);}}>
@@ -1916,7 +1916,7 @@ export function Inventory() {
                         onClick={()=>{ setFitmentProduct(item); setFitmentOpen(true); }}>
                         <Eye className="w-4 h-4"/>
                       </Button>
-                      <Button variant="outline" size="icon" className="h-8 w-8"
+                      <Button variant="outline" size="icon" aria-label="Edit tire" className="h-8 w-8"
                         onClick={()=>{ setEditing(item); setEditForm({
                           sku: item.sku,
                           name: item.item_name || item.name,
@@ -1931,7 +1931,7 @@ export function Inventory() {
                         }); }}>
                         <Pencil className="w-4 h-4"/>
                       </Button>
-                      <Button variant="destructive" size="icon" className="h-8 w-8" onClick={()=>handleDelete(item.id)}>
+                      <Button variant="destructive" size="icon" aria-label="Delete tire" className="h-8 w-8" onClick={()=>handleDelete(item.id)}>
                         <Trash2 className="w-4 h-4"/>
                       </Button>
                     </div>

@@ -1175,7 +1175,7 @@ export function VehicleFitment() {
             <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               className="pl-9"
-              placeholder="Search year, make, model..."
+              aria-label="Search year, make, model" placeholder="Search year, make, model..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -1359,10 +1359,10 @@ export function VehicleFitment() {
                   })}
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
-                      <Button size="icon" variant="outline" onClick={() => openEdit(v)}>
+                      <Button size="icon" aria-label="Edit vehicle fitment" variant="outline" onClick={() => openEdit(v)}>
                         <Pencil className="w-4 h-4" />
                       </Button>
-                      <Button size="icon" variant="destructive" onClick={() => remove(v.id)}>
+                      <Button size="icon" aria-label="Delete vehicle fitment" variant="destructive" onClick={() => remove(v.id)}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>

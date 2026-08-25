@@ -106,7 +106,7 @@ export function CustomerCRM() {
       <Card className="p-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"/>
-          <Input className="pl-9" placeholder="Search by name, email or phone..." value={search} onChange={e => setSearch(e.target.value)}/>
+          <Input className="pl-9" aria-label="Search by name, email or phone" placeholder="Search by name, email or phone..." value={search} onChange={e => setSearch(e.target.value)}/>
         </div>
       </Card>
 

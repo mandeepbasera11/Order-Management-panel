@@ -764,7 +764,7 @@ export function Orders() {
           {/* Main search */}
           <div className="relative flex-1 min-w-56">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"/>
-            <Input className="pl-9 h-9" placeholder="Search by order ID, order #, customer, product..." value={search} onChange={e=>setSearch(e.target.value)}/>
+            <Input className="pl-9 h-9" aria-label="Search by order ID, order #, customer, product" placeholder="Search by order ID, order #, customer, product..." value={search} onChange={e=>setSearch(e.target.value)}/>
           </div>
           {/* SKU search */}
           <div className="relative">

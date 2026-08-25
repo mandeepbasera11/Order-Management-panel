@@ -682,6 +682,9 @@ export function ExecutiveDashboard({ onNavigate }: ExecutiveDashboardProps) {
             {ACTIVITY_FEED.map(a=>(
               <div key={a.id}
                 className="flex items-start gap-3 p-3 hover:bg-muted/20 transition-colors cursor-pointer group"
+                role="button" tabIndex={0}
+                aria-label={`Open ${a.navPage}`}
+                onKeyDown={(e)=>{ if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goTo(a.navPage); } }}
                 onClick={()=>goTo(a.navPage)}>
                 <span className="text-lg shrink-0 mt-0.5">{a.icon}</span>
                 <div className="flex-1 min-w-0">

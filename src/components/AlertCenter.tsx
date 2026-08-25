@@ -140,7 +140,7 @@ export function AlertCenter() {
                 </div>
                 <div className="flex gap-1 shrink-0">
                   {!a.read && <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={()=>markRead(a.id)}>Mark Read</Button>}
-                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={()=>dismiss(a.id)}><X className="w-3.5 h-3.5"/></Button>
+                  <Button size="icon" aria-label="Dismiss alert" variant="ghost" className="h-7 w-7" onClick={()=>dismiss(a.id)}><X className="w-3.5 h-3.5"/></Button>
                 </div>
               </div>
             </Card>
@@ -160,6 +160,9 @@ export function AlertCenter() {
           <div className="space-y-3">
             {messages.map(m=>(
               <Card key={m.id} className={`p-4 transition-all ${!m.read?"border-l-4 border-l-blue-500":"opacity-70"}`}
+                role="button" tabIndex={0}
+                aria-label="Mark message as read"
+                onKeyDown={(e)=>{ if (e.key === "Enter" || e.key === " ") { e.preventDefault(); markMsgRead(m.id); } }}
                 onClick={()=>markMsgRead(m.id)}>
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">

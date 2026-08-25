@@ -78,13 +78,16 @@ export function POS() {
           <h2 className="text-lg font-bold flex items-center gap-4"><ShoppingCart className="w-8 h-5"/>Point of Sale</h2>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"/>
-            <Input className="pl-9" placeholder="Search tires by name, SKU or category..." value={search} onChange={e=>setSearch(e.target.value)}/>
+            <Input className="pl-9" aria-label="Search tires by name, SKU or category" placeholder="Search tires by name, SKU or category..." value={search} onChange={e=>setSearch(e.target.value)}/>
           </div>
         </div>
         <div className="flex-1 overflow-auto p-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {filtered.map(p => (
               <Card key={p.id} className={`p-4 cursor-pointer hover:border-primary transition-all hover:shadow-sm ${p.stock===0?"opacity-50 cursor-not-allowed":""}`}
+                role="button" tabIndex={p.stock > 0 ? 0 : -1}
+                aria-label={`Add ${p.name ?? "tire"} to cart`}
+                onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && p.stock > 0) { e.preventDefault(); addToCart(p); } }}
                 onClick={() => p.stock > 0 && addToCart(p)}>
                 <div className="flex items-start justify-between mb-2">
                   <Badge variant="outline" className="text-xs">{p.category}</Badge>
@@ -133,10 +136,10 @@ export function POS() {
                 <p className="text-xs text-muted-foreground">${item.price} × {item.qty} = <strong>${(item.price*item.qty).toFixed(2)}</strong></p>
               </div>
               <div className="flex items-center gap-1 shrink-0">
-                <Button size="icon" variant="outline" className="h-6 w-6" onClick={()=>updateQty(item.id,item.qty-1)}><Minus className="w-3 h-3"/></Button>
+                <Button size="icon" aria-label="Decrease quantity" variant="outline" className="h-6 w-6" onClick={()=>updateQty(item.id,item.qty-1)}><Minus className="w-3 h-3"/></Button>
                 <span className="w-6 text-center text-sm font-bold">{item.qty}</span>
-                <Button size="icon" variant="outline" className="h-6 w-6" onClick={()=>updateQty(item.id,item.qty+1)}><Plus className="w-3 h-3"/></Button>
-                <Button size="icon" variant="ghost" className="h-6 w-6 text-red-500" onClick={()=>setCart(c=>c.filter(x=>x.id!==item.id))}><Trash2 className="w-3 h-3"/></Button>
+                <Button size="icon" aria-label="Increase quantity" variant="outline" className="h-6 w-6" onClick={()=>updateQty(item.id,item.qty+1)}><Plus className="w-3 h-3"/></Button>
+                <Button size="icon" aria-label="Remove item from cart" variant="ghost" className="h-6 w-6 text-red-500" onClick={()=>setCart(c=>c.filter(x=>x.id!==item.id))}><Trash2 className="w-3 h-3"/></Button>
               </div>
             </div>
           ))}
