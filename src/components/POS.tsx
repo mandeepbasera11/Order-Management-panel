@@ -85,6 +85,9 @@ export function POS() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {filtered.map(p => (
               <Card key={p.id} className={`p-4 cursor-pointer hover:border-primary transition-all hover:shadow-sm ${p.stock===0?"opacity-50 cursor-not-allowed":""}`}
+                role="button" tabIndex={p.stock > 0 ? 0 : -1}
+                aria-label={`Add ${p.name ?? "tire"} to cart`}
+                onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && p.stock > 0) { e.preventDefault(); addToCart(p); } }}
                 onClick={() => p.stock > 0 && addToCart(p)}>
                 <div className="flex items-start justify-between mb-2">
                   <Badge variant="outline" className="text-xs">{p.category}</Badge>

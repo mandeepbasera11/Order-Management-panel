@@ -198,6 +198,9 @@ export function ShopifyProducts() {
           { label: "Out of Sync", value: stats.outOfSync, icon: XCircle,      color: "text-red-500",          bg: "bg-red-50" },
         ].map((s) => (
           <Card key={s.label} className="p-5 cursor-pointer hover:shadow-md transition-shadow"
+            role="button" tabIndex={0}
+            aria-label={`Filter by ${s.label}`}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setStatusFilter(s.label.toLowerCase().replace(" ", "_") as SyncStatus | "all"); } }}
             onClick={() => setStatusFilter(s.label.toLowerCase().replace(" ", "_") as SyncStatus | "all")}>
             <div className="flex items-center gap-3">
               <div className={`p-2 rounded-lg ${s.bg}`}>
