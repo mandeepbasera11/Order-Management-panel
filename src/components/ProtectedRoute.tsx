@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 export function ProtectedRoute({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading...</div>;
+    return <div className="min-h-dvh flex items-center justify-center text-muted-foreground">Loading...</div>;
   }
   if (!user) return <Navigate to="/auth" replace />;
   return <>{children}</>;

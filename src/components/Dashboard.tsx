@@ -294,7 +294,7 @@ export function OperationsDashboard() {
   }, [orderFilter]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-50 to-blue-50/20 font-sans">
+    <div className="min-h-dvh bg-gradient-to-br from-slate-50 via-slate-50 to-blue-50/20 font-sans">
       <div className="max-w-screen-2xl mx-auto p-5 space-y-1">
 
         {/* ── Header ── */}
