@@ -119,6 +119,8 @@ export function Sidebar({ active, onNavigate }: SidebarProps) {
           </div>
         )}
         <button onClick={() => setCollapsed(!collapsed)}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-expanded={!collapsed}
           className="p-1 rounded hover:bg-muted transition-colors ml-auto shrink-0">
           {collapsed
             ? <ChevronRight className="w-4 h-4 text-muted-foreground"/>
@@ -134,6 +136,7 @@ export function Sidebar({ active, onNavigate }: SidebarProps) {
             <div key={group.label}>
               {!collapsed && (
                 <button onClick={() => toggleGroup(group.label)}
+                  aria-expanded={isOpen}
                   className="w-full flex items-center justify-between px-2 py-1 text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors mt-2">
                   {group.label}
                   {isOpen ? <ChevronUp className="w-3 h-3"/> : <ChevronDown className="w-3 h-3"/>}
@@ -145,6 +148,8 @@ export function Sidebar({ active, onNavigate }: SidebarProps) {
                     <li key={item.name}>
                       <button
                         onClick={() => onNavigate(item.name)}
+                        aria-current={active === item.name ? "page" : undefined}
+                        aria-label={collapsed ? item.name : undefined}
                         title={collapsed ? item.name : undefined}
                         className={cn(
                           "w-full flex items-center px-2 py-1.5 text-sm rounded-md transition-all",
