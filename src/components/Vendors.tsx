@@ -98,10 +98,10 @@ export function Vendors() {
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {[
-            { label:"Active Vendors",  value:activeVendors,               color:"text-green-600" },
+            { label:"Active Vendors",  value:activeVendors,               color:"text-green-700" },
             { label:"Total Vendors",   value:vendors.length,              color:"text-blue-600"  },
             { label:"Total Volume",    value:`$${(totalVolume/1000).toFixed(0)}K`, color:"text-purple-600"},
-            { label:"Avg Rating",      value:`${avgRating}★`,             color:"text-yellow-600"},
+            { label:"Avg Rating",      value:`${avgRating}★`,             color:"text-yellow-700"},
           ].map(s=>(
             <Card key={s.label} className="p-4 text-center">
               <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
@@ -190,7 +190,7 @@ export function Vendors() {
                   <div><span className="text-muted-foreground">Lead Time: </span><strong>{selected.leadTime}</strong></div>
                   <div><span className="text-muted-foreground">Min Order: </span><strong>{selected.minOrder} units</strong></div>
                   <div><span className="text-muted-foreground">Payment: </span><strong>{selected.paymentTerms}</strong></div>
-                  <div><span className="text-muted-foreground">Rating: </span><strong className="text-yellow-600">{selected.rating}★</strong></div>
+                  <div><span className="text-muted-foreground">Rating: </span><strong className="text-yellow-700">{selected.rating}★</strong></div>
                   <div><span className="text-muted-foreground">Total Orders: </span><strong>{selected.totalOrders}</strong></div>
                   <div><span className="text-muted-foreground">Total Volume: </span><strong>${selected.totalVolume.toLocaleString()}</strong></div>
                 </div>
@@ -208,16 +208,16 @@ export function Vendors() {
             <DialogHeader><DialogTitle>{editing?"Edit Vendor":"Add Vendor"}</DialogTitle></DialogHeader>
             <div className="space-y-3 py-2">
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5 col-span-2"><Label>Vendor Name *</Label><Input value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/></div>
-                <div className="space-y-1.5"><Label>Contact Name</Label><Input value={form.contact} onChange={e=>setForm({...form,contact:e.target.value})}/></div>
-                <div className="space-y-1.5"><Label>Email *</Label><Input type="email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})}/></div>
-                <div className="space-y-1.5"><Label>Phone</Label><Input value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})}/></div>
-                <div className="space-y-1.5"><Label>Website</Label><Input value={form.website} onChange={e=>setForm({...form,website:e.target.value})}/></div>
-                <div className="space-y-1.5 col-span-2"><Label>Location</Label><Input value={form.location} onChange={e=>setForm({...form,location:e.target.value})} placeholder="City, State"/></div>
-                <div className="space-y-1.5 col-span-2"><Label>Categories (comma separated)</Label><Input value={form.categories} onChange={e=>setForm({...form,categories:e.target.value})} placeholder="MM, LT, HP"/></div>
-                <div className="space-y-1.5"><Label>Lead Time</Label><Input value={form.leadTime} onChange={e=>setForm({...form,leadTime:e.target.value})} placeholder="2-3 days"/></div>
-                <div className="space-y-1.5"><Label>Min Order (units)</Label><Input type="number" value={form.minOrder} onChange={e=>setForm({...form,minOrder:e.target.value})}/></div>
-                <div className="space-y-1.5 col-span-2"><Label>Payment Terms</Label><Input value={form.paymentTerms} onChange={e=>setForm({...form,paymentTerms:e.target.value})} placeholder="Net 30"/></div>
+                <div className="space-y-1.5 col-span-2"><Label htmlFor="vendors-vendor-name">Vendor Name *</Label><Input id="vendors-vendor-name" value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/></div>
+                <div className="space-y-1.5"><Label htmlFor="vendors-contact-name">Contact Name</Label><Input id="vendors-contact-name" value={form.contact} onChange={e=>setForm({...form,contact:e.target.value})}/></div>
+                <div className="space-y-1.5"><Label htmlFor="vendors-email">Email *</Label><Input id="vendors-email" type="email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})}/></div>
+                <div className="space-y-1.5"><Label htmlFor="vendors-phone">Phone</Label><Input id="vendors-phone" value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})}/></div>
+                <div className="space-y-1.5"><Label htmlFor="vendors-website">Website</Label><Input id="vendors-website" value={form.website} onChange={e=>setForm({...form,website:e.target.value})}/></div>
+                <div className="space-y-1.5 col-span-2"><Label htmlFor="vendors-location">Location</Label><Input id="vendors-location" value={form.location} onChange={e=>setForm({...form,location:e.target.value})} placeholder="City, State"/></div>
+                <div className="space-y-1.5 col-span-2"><Label htmlFor="vendors-categories-comma-separated">Categories (comma separated)</Label><Input id="vendors-categories-comma-separated" value={form.categories} onChange={e=>setForm({...form,categories:e.target.value})} placeholder="MM, LT, HP"/></div>
+                <div className="space-y-1.5"><Label htmlFor="vendors-lead-time">Lead Time</Label><Input id="vendors-lead-time" value={form.leadTime} onChange={e=>setForm({...form,leadTime:e.target.value})} placeholder="2-3 days"/></div>
+                <div className="space-y-1.5"><Label htmlFor="vendors-min-order-units">Min Order (units)</Label><Input id="vendors-min-order-units" type="number" value={form.minOrder} onChange={e=>setForm({...form,minOrder:e.target.value})}/></div>
+                <div className="space-y-1.5 col-span-2"><Label htmlFor="vendors-payment-terms">Payment Terms</Label><Input id="vendors-payment-terms" value={form.paymentTerms} onChange={e=>setForm({...form,paymentTerms:e.target.value})} placeholder="Net 30"/></div>
               </div>
             </div>
             <DialogFooter>

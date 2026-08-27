@@ -55,10 +55,10 @@ export function TwoFactorAuth() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label:"2FA Enabled",    value:enabled2FA, color:"text-green-600" },
+          { label:"2FA Enabled",    value:enabled2FA, color:"text-green-700" },
           { label:"Not Configured", value:notSetup,   color:"text-red-600" },
           { label:"Total Users",    value:USERS_2FA.length, color:"text-blue-600" },
-          { label:"Security Score", value:"72%",      color:"text-orange-600" },
+          { label:"Security Score", value:"72%",      color:"text-orange-700" },
         ].map(s => (
           <Card key={s.label} className="p-4 text-center">
             <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
@@ -109,7 +109,7 @@ export function TwoFactorAuth() {
           <Separator/>
           <div className="space-y-2 text-sm">
             <p className="font-medium text-muted-foreground">Supported Methods</p>
-            <div className="flex items-center gap-2"><Smartphone className="w-4 h-4 text-green-600"/><span>Authenticator App (TOTP)</span><CheckCircle2 className="w-3.5 h-3.5 text-green-500 ml-auto"/></div>
+            <div className="flex items-center gap-2"><Smartphone className="w-4 h-4 text-green-700"/><span>Authenticator App (TOTP)</span><CheckCircle2 className="w-3.5 h-3.5 text-green-500 ml-auto"/></div>
             <div className="flex items-center gap-2"><span className="text-base">📱</span><span>SMS One-Time Code</span><CheckCircle2 className="w-3.5 h-3.5 text-green-500 ml-auto"/></div>
             <div className="flex items-center gap-2"><Key className="w-4 h-4 text-muted-foreground"/><span>Backup Codes</span><CheckCircle2 className="w-3.5 h-3.5 text-green-500 ml-auto"/></div>
           </div>

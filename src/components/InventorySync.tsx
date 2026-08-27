@@ -16,10 +16,10 @@ type SyncStatus = "Synced" | "Pending" | "Error" | "Out of Sync";
 type Channel = { name: string; color: string; icon: string };
 
 const CHANNELS: Channel[] = [
-  { name: "Shopify",  color: "text-green-600",  icon: "🛍️" },
-  { name: "Amazon",   color: "text-orange-600", icon: "📦" },
+  { name: "Shopify",  color: "text-green-700",  icon: "🛍️" },
+  { name: "Amazon",   color: "text-orange-700", icon: "📦" },
   { name: "eBay",     color: "text-blue-600",   icon: "🔵" },
-  { name: "Walmart",  color: "text-yellow-600", icon: "🟡" },
+  { name: "Walmart",  color: "text-yellow-700", icon: "🟡" },
 ];
 
 const STATUS_COLORS: Record<SyncStatus, string> = {
@@ -132,8 +132,8 @@ export function InventorySync() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label:"Fully Synced",  value:fullySynced, color:"text-green-600" },
-          { label:"Out of Sync",   value:outOfSync,   color:"text-orange-600" },
+          { label:"Fully Synced",  value:fullySynced, color:"text-green-700" },
+          { label:"Out of Sync",   value:outOfSync,   color:"text-orange-700" },
           { label:"Sync Errors",   value:syncErrors,  color:"text-red-600" },
           { label:"Total SKUs",    value:items.length,color:"text-blue-600" },
         ].map(s => (
@@ -177,12 +177,12 @@ export function InventorySync() {
                       <span className="text-xl">{ch.icon}</span>
                       <span className={`font-bold ${ch.color}`}>{ch.name}</span>
                     </div>
-                    {errors > 0 && <AlertTriangle className="w-4 h-4 text-red-500"/>}
+                    {errors > 0 && <AlertTriangle className="w-4 h-4 text-red-600"/>}
                     {errors === 0 && <CheckCircle2 className="w-4 h-4 text-green-500"/>}
                   </div>
                   <div className="text-xs space-y-1 text-muted-foreground">
-                    <div className="flex justify-between"><span>Synced</span><span className="text-green-600 font-bold">{synced}</span></div>
-                    <div className="flex justify-between"><span>Pending</span><span className="text-yellow-600 font-bold">{pending}</span></div>
+                    <div className="flex justify-between"><span>Synced</span><span className="text-green-700 font-bold">{synced}</span></div>
+                    <div className="flex justify-between"><span>Pending</span><span className="text-yellow-700 font-bold">{pending}</span></div>
                     <div className="flex justify-between"><span>Errors</span><span className="text-red-600 font-bold">{errors}</span></div>
                   </div>
                   <Button size="sm" className="w-full text-xs" variant="outline"
@@ -366,13 +366,13 @@ export function InventorySync() {
             <h3 className="font-semibold mb-3">Generate Barcode / QR Code</h3>
             <div className="flex gap-3 flex-wrap items-end">
               <div className="space-y-1.5 flex-1 min-w-48">
-                <Label>SKU</Label>
-                <Input placeholder="e.g. GE-Michelin-123"/>
+                <Label htmlFor="inventorysync-sku">SKU</Label>
+                <Input id="inventorysync-sku" placeholder="e.g. GE-Michelin-123"/>
               </div>
               <div className="space-y-1.5">
                 <Label>Type</Label>
                 <Select defaultValue="barcode">
-                  <SelectTrigger className="w-36"><SelectValue/></SelectTrigger>
+                  <SelectTrigger aria-label="Type" className="w-36"><SelectValue/></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="barcode">Barcode (128)</SelectItem>
                     <SelectItem value="qr">QR Code</SelectItem>
@@ -400,25 +400,25 @@ export function InventorySync() {
               <div className="space-y-1.5">
                 <Label>From Warehouse</Label>
                 <Select value={transfer.from} onValueChange={v => setTransfer({...transfer,from:v})}>
-                  <SelectTrigger><SelectValue/></SelectTrigger>
+                  <SelectTrigger aria-label="From Warehouse"><SelectValue/></SelectTrigger>
                   <SelectContent>{WAREHOUSES.map(w=><SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
                 <Label>To Warehouse</Label>
                 <Select value={transfer.to} onValueChange={v => setTransfer({...transfer,to:v})}>
-                  <SelectTrigger><SelectValue/></SelectTrigger>
+                  <SelectTrigger aria-label="To Warehouse"><SelectValue/></SelectTrigger>
                   <SelectContent>{WAREHOUSES.map(w=><SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>SKU</Label>
-              <Input placeholder="e.g. GE-Michelin-123" value={transfer.sku} onChange={e=>setTransfer({...transfer,sku:e.target.value})}/>
+              <Label htmlFor="inventorysync-sku-1">SKU</Label>
+              <Input id="inventorysync-sku-1" placeholder="e.g. GE-Michelin-123" value={transfer.sku} onChange={e=>setTransfer({...transfer,sku:e.target.value})}/>
             </div>
             <div className="space-y-1.5">
-              <Label>Quantity</Label>
-              <Input type="number" placeholder="e.g. 10" value={transfer.qty} onChange={e=>setTransfer({...transfer,qty:e.target.value})}/>
+              <Label htmlFor="inventorysync-quantity">Quantity</Label>
+              <Input id="inventorysync-quantity" type="number" placeholder="e.g. 10" value={transfer.qty} onChange={e=>setTransfer({...transfer,qty:e.target.value})}/>
             </div>
           </div>
           <DialogFooter>

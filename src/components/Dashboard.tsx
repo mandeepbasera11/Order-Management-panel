@@ -154,7 +154,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-2 mb-3 mt-6 first:mt-0">
       <div className="h-px flex-1 bg-slate-100" />
-      <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 whitespace-nowrap">{children}</p>
+      <p className="text-xs font-semibold uppercase tracking-widest text-slate-500 whitespace-nowrap">{children}</p>
       <div className="h-px flex-1 bg-slate-100" />
     </div>
   );
@@ -174,7 +174,7 @@ function CardHeader({ icon: Icon, title, badge, badgeStatus = "info" }: {
   return (
     <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
       <h3 className="text-xs font-semibold text-slate-700 flex items-center gap-2">
-        <Icon className="w-3.5 h-3.5 text-slate-400" />
+        <Icon className="w-3.5 h-3.5 text-slate-500" />
         {title}
       </h3>
       {badge && <Pill status={badgeStatus}>{badge}</Pill>}
@@ -301,7 +301,7 @@ export function OperationsDashboard() {
         <div className="flex items-start justify-between pb-4 border-b border-slate-100">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">Operations dashboard</h1>
-            <p className="text-sm text-slate-400 mt-0.5">Real-time operations, inventory &amp; fulfillment monitoring</p>
+            <p className="text-sm text-slate-500 mt-0.5">Real-time operations, inventory &amp; fulfillment monitoring</p>
           </div>
           <div className="flex items-center gap-2">
             <Popover>
@@ -320,7 +320,7 @@ export function OperationsDashboard() {
               <PopoverContent align="end" className="w-80 p-0">
                 <div className="px-3 py-2 border-b border-slate-100 flex items-center justify-between">
                   <p className="text-xs font-semibold text-slate-700">Notifications</p>
-                  <span className="text-[10px] text-slate-400">{alerts.length} active</span>
+                  <span className="text-[10px] text-slate-500">{alerts.length} active</span>
                 </div>
                 <div className="max-h-80 overflow-auto divide-y divide-slate-50">
                   {alerts.map((a, i) => (
@@ -346,7 +346,7 @@ export function OperationsDashboard() {
                 >
                   <Activity className="w-3.5 h-3.5 text-emerald-500" />
                   {rangeLabel}
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
                 </button>
               </PopoverTrigger>
               <PopoverContent align="end" className="w-auto p-0">
@@ -395,7 +395,7 @@ export function OperationsDashboard() {
                 </div>
               </div>
               <p className="text-xl font-bold text-slate-800 pl-2 mb-1">{k.value}</p>
-              <div className={`flex items-center gap-1 text-xs pl-2 ${k.positive === true ? "text-emerald-600" : k.positive === false ? "text-red-500" : "text-slate-400"}`}>
+              <div className={`flex items-center gap-1 text-xs pl-2 ${k.positive === true ? "text-emerald-600" : k.positive === false ? "text-red-600" : "text-slate-500"}`}>
                 {k.positive === true  && <TrendingUp className="w-3 h-3" />}
                 {k.positive === false && <TrendingDown className="w-3 h-3" />}
                 {k.change}
@@ -420,7 +420,7 @@ export function OperationsDashboard() {
                 </div>
               </div>
               <p className="text-xl font-bold text-slate-800 pl-2 mb-1">{k.value}</p>
-              <div className={`flex items-center gap-1 text-xs pl-2 ${k.positive === true ? "text-emerald-600" : k.positive === false ? "text-red-500" : "text-slate-400"}`}>
+              <div className={`flex items-center gap-1 text-xs pl-2 ${k.positive === true ? "text-emerald-600" : k.positive === false ? "text-red-600" : "text-slate-500"}`}>
                 {k.positive === true  && <TrendingUp className="w-3 h-3" />}
                 {k.positive === false && <TrendingDown className="w-3 h-3" />}
                 {k.change}
@@ -518,7 +518,7 @@ export function OperationsDashboard() {
               {inventoryHealth.map(item => (
                 <div key={item.label} className="flex items-center justify-between px-4 py-3">
                   <div className="flex items-center gap-2">
-                    <item.icon className={`w-3.5 h-3.5 ${item.status === "danger" ? "text-red-400" : item.status === "warning" ? "text-amber-400" : item.status === "success" ? "text-emerald-400" : "text-slate-400"}`} />
+                    <item.icon className={`w-3.5 h-3.5 ${item.status === "danger" ? "text-red-400" : item.status === "warning" ? "text-amber-400" : item.status === "success" ? "text-emerald-400" : "text-slate-500"}`} />
                     <span className="text-xs text-slate-600">{item.label}</span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -556,11 +556,11 @@ export function OperationsDashboard() {
               {marketplaces.map(m => (
                 <div key={m.name} className="flex items-center justify-between px-4 py-3">
                   <div className="flex items-center gap-2">
-                    <Store className="w-3.5 h-3.5 text-slate-400" />
+                    <Store className="w-3.5 h-3.5 text-slate-500" />
                     <span className="text-xs text-slate-700 font-medium">{m.name}</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-xs text-slate-400">Last sync: {m.lastSync}</span>
+                    <span className="text-xs text-slate-500">Last sync: {m.lastSync}</span>
                     <Pill status={syncColors[m.status]}>
                       <span className={`w-1.5 h-1.5 rounded-full ${m.status === "synced" ? "bg-emerald-500" : m.status === "delayed" ? "bg-amber-500" : "bg-red-500"}`} />
                       {syncLabels[m.status]}
@@ -608,7 +608,7 @@ export function OperationsDashboard() {
         <CardShell>
           <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
             <h3 className="text-xs font-semibold text-slate-700 flex items-center gap-2">
-              <ShoppingCart className="w-3.5 h-3.5 text-slate-400" />Recent orders
+              <ShoppingCart className="w-3.5 h-3.5 text-slate-500" />Recent orders
             </h3>
             <button className="text-xs text-blue-600 hover:underline flex items-center gap-1">
               View all <ArrowRight className="w-3 h-3" />
@@ -631,13 +631,13 @@ export function OperationsDashboard() {
               <thead>
                 <tr className="border-b border-slate-100">
                   {["Order ID","Customer","Product","Vendor","Status","Shipment","Total"].map(h => (
-                    <th key={h} className="text-left px-4 py-2.5 text-slate-400 font-semibold whitespace-nowrap">{h}</th>
+                    <th key={h} className="text-left px-4 py-2.5 text-slate-500 font-semibold whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {filteredOrders.length === 0 ? (
-                  <tr><td colSpan={7} className="text-center py-8 text-slate-400 text-xs">No orders match this filter</td></tr>
+                  <tr><td colSpan={7} className="text-center py-8 text-slate-500 text-xs">No orders match this filter</td></tr>
                 ) : filteredOrders.map(o => (
                   <tr key={o.id} className="hover:bg-slate-50/60 transition-colors">
                     <td className="px-4 py-3 font-mono font-semibold text-slate-700">{o.id}</td>
@@ -662,7 +662,7 @@ export function OperationsDashboard() {
             <div className="divide-y divide-slate-50">
               {errorCenter.map(e => (
                 <div key={e.label} className="flex items-center gap-3 px-4 py-3">
-                  <e.icon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <e.icon className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                   <span className="text-xs text-slate-600 w-36">{e.label}</span>
                   <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                     <div className="h-full rounded-full" style={{ width: `${Math.max(e.pct, 1)}%`, background: e.color }} />
@@ -679,7 +679,7 @@ export function OperationsDashboard() {
               {systemHealth.map(s => (
                 <div key={s.label} className="flex items-center justify-between px-4 py-3">
                   <div className="flex items-center gap-2">
-                    <s.icon className="w-3.5 h-3.5 text-slate-400" />
+                    <s.icon className="w-3.5 h-3.5 text-slate-500" />
                     <span className="text-xs text-slate-600">{s.label}</span>
                   </div>
                   <Pill status={systemPills[s.status]}>

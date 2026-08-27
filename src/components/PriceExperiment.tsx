@@ -190,10 +190,10 @@ export function PriceExperiment() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "Running Now",        value: stats.running,          icon: PlayCircle,   color: "text-green-600",  bg: "bg-green-50" },
+          { label: "Running Now",        value: stats.running,          icon: PlayCircle,   color: "text-green-700",  bg: "bg-green-50" },
           { label: "Completed",          value: stats.completed,        icon: CheckCircle2, color: "text-blue-600",   bg: "bg-blue-50" },
           { label: "Total Experiments",  value: experiments.length,     icon: FlaskConical, color: "text-purple-600", bg: "bg-purple-50" },
-          { label: "Avg Uplift",         value: `${stats.avgUplift}%`,  icon: TrendingUp,   color: "text-orange-600", bg: "bg-orange-50" },
+          { label: "Avg Uplift",         value: `${stats.avgUplift}%`,  icon: TrendingUp,   color: "text-orange-700", bg: "bg-orange-50" },
         ].map((s) => (
           <Card key={s.label} className="p-5">
             <div className="flex items-center gap-3">
@@ -277,15 +277,15 @@ export function PriceExperiment() {
                     <TableCell className="text-right font-medium">${exp.priceB.toFixed(2)}</TableCell>
                     <TableCell className="text-right">{exp.conversionsA}</TableCell>
                     <TableCell className="text-right">{exp.conversionsB}</TableCell>
-                    <TableCell className={`text-right font-medium ${aWins ? "text-green-600" : "text-muted-foreground"}`}>
+                    <TableCell className={`text-right font-medium ${aWins ? "text-green-700" : "text-muted-foreground"}`}>
                       ${exp.revenueA.toFixed(0)}
                     </TableCell>
-                    <TableCell className={`text-right font-medium ${!aWins ? "text-green-600" : "text-muted-foreground"}`}>
+                    <TableCell className={`text-right font-medium ${!aWins ? "text-green-700" : "text-muted-foreground"}`}>
                       ${exp.revenueB.toFixed(0)}
                     </TableCell>
                     <TableCell>
                       {exp.winner ? (
-                        <Badge className={exp.winner === "A" ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700"}>
+                        <Badge className={exp.winner === "A" ? "bg-green-700 hover:bg-green-800" : "bg-blue-600 hover:bg-blue-700"}>
                           Price {exp.winner} 🏆
                         </Badge>
                       ) : (
@@ -297,19 +297,19 @@ export function PriceExperiment() {
                         {exp.status === "draft" && (
                           <Button size="icon" aria-label="Start experiment" variant="outline" className="h-8 w-8"
                             onClick={() => changeStatus(exp.id, "running")}>
-                            <PlayCircle className="w-4 h-4 text-green-600" />
+                            <PlayCircle className="w-4 h-4 text-green-700" />
                           </Button>
                         )}
                         {exp.status === "running" && (
                           <Button size="icon" aria-label="Pause experiment" variant="outline" className="h-8 w-8"
                             onClick={() => changeStatus(exp.id, "paused")}>
-                            <StopCircle className="w-4 h-4 text-yellow-600" />
+                            <StopCircle className="w-4 h-4 text-yellow-700" />
                           </Button>
                         )}
                         {exp.status === "paused" && (
                           <Button size="icon" aria-label="Resume experiment" variant="outline" className="h-8 w-8"
                             onClick={() => changeStatus(exp.id, "running")}>
-                            <PlayCircle className="w-4 h-4 text-green-600" />
+                            <PlayCircle className="w-4 h-4 text-green-700" />
                           </Button>
                         )}
                         {(exp.status === "running" || exp.status === "paused") && (
@@ -340,8 +340,8 @@ export function PriceExperiment() {
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1">
-              <Label>Experiment Name</Label>
-              <Input placeholder="e.g. Michelin Summer Pricing Test"
+              <Label htmlFor="priceexperiment-experiment-name">Experiment Name</Label>
+              <Input id="priceexperiment-experiment-name" placeholder="e.g. Michelin Summer Pricing Test"
                 value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
             </div>
             <div className="space-y-1">
@@ -350,7 +350,7 @@ export function PriceExperiment() {
                 const p = products.find((x) => x.id === v);
                 setForm((f) => ({ ...f, productId: v, priceA: p ? String((p.price * 0.95).toFixed(2)) : "", priceB: p ? String((p.price * 1.10).toFixed(2)) : "" }));
               }}>
-                <SelectTrigger><SelectValue placeholder="Choose a tire SKU" /></SelectTrigger>
+                <SelectTrigger aria-label="Select Product (SKU)"><SelectValue placeholder="Choose a tire SKU" /></SelectTrigger>
                 <SelectContent className="max-h-64">
                   {products.map((p) => (
                     <SelectItem key={p.id} value={p.id}>
@@ -367,14 +367,14 @@ export function PriceExperiment() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
-                <Label>Price A (Control)</Label>
-                <Input type="number" step="0.01" placeholder="e.g. 95.00"
+                <Label htmlFor="priceexperiment-price-a-control">Price A (Control)</Label>
+                <Input id="priceexperiment-price-a-control" type="number" step="0.01" placeholder="e.g. 95.00"
                   value={form.priceA} onChange={(e) => setForm((f) => ({ ...f, priceA: e.target.value }))} />
                 <p className="text-xs text-muted-foreground">Usually lower / current price</p>
               </div>
               <div className="space-y-1">
-                <Label>Price B (Test)</Label>
-                <Input type="number" step="0.01" placeholder="e.g. 110.00"
+                <Label htmlFor="priceexperiment-price-b-test">Price B (Test)</Label>
+                <Input id="priceexperiment-price-b-test" type="number" step="0.01" placeholder="e.g. 110.00"
                   value={form.priceB} onChange={(e) => setForm((f) => ({ ...f, priceB: e.target.value }))} />
                 <p className="text-xs text-muted-foreground">The new price to test</p>
               </div>
@@ -413,7 +413,7 @@ export function PriceExperiment() {
                     <div key={variant} className={`rounded-xl border p-4 space-y-2 ${isWinner ? "border-green-400 bg-green-50" : "border-border bg-card"}`}>
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-lg">Price {variant}</span>
-                        {isWinner && <Badge className="bg-green-600">Winner 🏆</Badge>}
+                        {isWinner && <Badge className="bg-green-700">Winner 🏆</Badge>}
                       </div>
                       <p className="text-2xl font-bold">${price.toFixed(2)}</p>
                       <div className="text-sm text-muted-foreground">

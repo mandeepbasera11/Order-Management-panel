@@ -163,7 +163,7 @@ export function TireSearchWizard() {
                         <span className="font-mono text-xs">{t.sku}</span>
                         <span>Load: <strong>{t.load}</strong></span>
                         <span>Speed: <strong>{t.speed}</strong></span>
-                        <span className={t.stock<10?"text-red-500":"text-green-600"}>Stock: <strong>{t.stock}</strong></span>
+                        <span className={t.stock<10?"text-red-600":"text-green-700"}>Stock: <strong>{t.stock}</strong></span>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
@@ -185,14 +185,14 @@ export function TireSearchWizard() {
               <div className="space-y-1.5">
                 <Label>Make</Label>
                 <Select value={make} onValueChange={v=>{ setMake(v); setModel(""); }}>
-                  <SelectTrigger><SelectValue placeholder="Select Make"/></SelectTrigger>
+                  <SelectTrigger aria-label="Make"><SelectValue placeholder="Select Make"/></SelectTrigger>
                   <SelectContent>{makes.map(m=><SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
                 <Label>Model</Label>
                 <Select value={model} onValueChange={setModel} disabled={!make}>
-                  <SelectTrigger><SelectValue placeholder={make?"Select Model":"Select Make First"}/></SelectTrigger>
+                  <SelectTrigger aria-label="Model"><SelectValue placeholder={make?"Select Model":"Select Make First"}/></SelectTrigger>
                   <SelectContent>{models.map(m=><SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
                 </Select>
               </div>

@@ -96,9 +96,9 @@ export function ImportStatus() {
         {[
           { label: "Total Imports", value: stats.total, icon: FileText, color: "text-foreground", bg: "bg-muted/50" },
           { label: "Running", value: stats.running, icon: Loader2, color: "text-blue-600", bg: "bg-blue-50" },
-          { label: "Completed", value: stats.completed, icon: CheckCircle2, color: "text-green-600", bg: "bg-green-50" },
-          { label: "Failed", value: stats.failed, icon: XCircle, color: "text-red-500", bg: "bg-red-50" },
-          { label: "Rows Imported", value: stats.rowsImported.toLocaleString(), icon: CheckCircle2, color: "text-green-600", bg: "bg-green-50" },
+          { label: "Completed", value: stats.completed, icon: CheckCircle2, color: "text-green-700", bg: "bg-green-50" },
+          { label: "Failed", value: stats.failed, icon: XCircle, color: "text-red-600", bg: "bg-red-50" },
+          { label: "Rows Imported", value: stats.rowsImported.toLocaleString(), icon: CheckCircle2, color: "text-green-700", bg: "bg-green-50" },
         ].map((s) => (
           <Card key={s.label} className="p-5">
             <div className="flex items-center gap-3">
@@ -163,8 +163,8 @@ export function ImportStatus() {
                         <span className="text-xs text-muted-foreground w-10">{r.progress}%</span>
                       </div>
                     </TableCell>
-                    <TableCell className="text-right text-green-600 font-medium">{r.success_count.toLocaleString()}</TableCell>
-                    <TableCell className="text-right text-red-500 font-medium">{r.failed_count.toLocaleString()}</TableCell>
+                    <TableCell className="text-right text-green-700 font-medium">{r.success_count.toLocaleString()}</TableCell>
+                    <TableCell className="text-right text-red-600 font-medium">{r.failed_count.toLocaleString()}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{fmt(r.started_at)}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{fmt(r.completed_at)}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{duration(r.started_at, r.completed_at)}</TableCell>

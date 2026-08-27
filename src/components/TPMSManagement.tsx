@@ -35,8 +35,8 @@ const TPMS_SENSORS = [
 const getPressureStatus = (actual:number, recommended:number) => {
   const diff = actual - recommended;
   if (diff < -4) return { status:"Low",    color:"text-red-600",    bg:"bg-red-50"    };
-  if (diff > 4)  return { status:"High",   color:"text-orange-600", bg:"bg-orange-50" };
-  return           { status:"OK",     color:"text-green-600",  bg:"bg-green-50"  };
+  if (diff > 4)  return { status:"High",   color:"text-orange-700", bg:"bg-orange-50" };
+  return           { status:"OK",     color:"text-green-700",  bg:"bg-green-50"  };
 };
 
 export function TPMSManagement() {
@@ -72,7 +72,7 @@ export function TPMSManagement() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label:"Vehicles Checked", value:records.length, color:"text-blue-600" },
-          { label:"All OK",           value:records.filter(r=>r.sensorStatus==="OK").length, color:"text-green-600" },
+          { label:"All OK",           value:records.filter(r=>r.sensorStatus==="OK").length, color:"text-green-700" },
           { label:"Warnings",         value:warnings, color:"text-red-600" },
           { label:"Sensors in Stock", value:TPMS_SENSORS.reduce((s,x)=>s+x.stock,0), color:"text-purple-600" },
         ].map(s => (
@@ -186,26 +186,26 @@ export function TPMSManagement() {
           <DialogHeader><DialogTitle className="flex items-center gap-2"><Gauge className="w-5 h-5"/>Add TPMS Check</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label>Vehicle</Label>
-              <Input placeholder="e.g. 2021 Toyota RAV4" value={form.vehicle} onChange={e=>setForm({...form,vehicle:e.target.value})}/>
+              <Label htmlFor="tpmsmanagement-vehicle">Vehicle</Label>
+              <Input id="tpmsmanagement-vehicle" placeholder="e.g. 2021 Toyota RAV4" value={form.vehicle} onChange={e=>setForm({...form,vehicle:e.target.value})}/>
             </div>
             <div className="space-y-1.5">
-              <Label>Customer</Label>
-              <Input placeholder="Customer name" value={form.customer} onChange={e=>setForm({...form,customer:e.target.value})}/>
+              <Label htmlFor="tpmsmanagement-customer">Customer</Label>
+              <Input id="tpmsmanagement-customer" placeholder="Customer name" value={form.customer} onChange={e=>setForm({...form,customer:e.target.value})}/>
             </div>
             <div className="space-y-1.5">
-              <Label>VIN (optional)</Label>
-              <Input placeholder="17-character VIN" value={form.vin} onChange={e=>setForm({...form,vin:e.target.value})}/>
+              <Label htmlFor="tpmsmanagement-vin-optional">VIN (optional)</Label>
+              <Input id="tpmsmanagement-vin-optional" placeholder="17-character VIN" value={form.vin} onChange={e=>setForm({...form,vin:e.target.value})}/>
             </div>
             <div className="space-y-1.5">
-              <Label>Recommended PSI</Label>
-              <Input type="number" value={form.recommended} onChange={e=>setForm({...form,recommended:e.target.value})}/>
+              <Label htmlFor="tpmsmanagement-recommended-psi">Recommended PSI</Label>
+              <Input id="tpmsmanagement-recommended-psi" type="number" value={form.recommended} onChange={e=>setForm({...form,recommended:e.target.value})}/>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5"><Label>Front Left (PSI)</Label><Input type="number" value={form.fl} onChange={e=>setForm({...form,fl:e.target.value})}/></div>
-              <div className="space-y-1.5"><Label>Front Right (PSI)</Label><Input type="number" value={form.fr} onChange={e=>setForm({...form,fr:e.target.value})}/></div>
-              <div className="space-y-1.5"><Label>Rear Left (PSI)</Label><Input type="number" value={form.rl} onChange={e=>setForm({...form,rl:e.target.value})}/></div>
-              <div className="space-y-1.5"><Label>Rear Right (PSI)</Label><Input type="number" value={form.rr} onChange={e=>setForm({...form,rr:e.target.value})}/></div>
+              <div className="space-y-1.5"><Label htmlFor="tpmsmanagement-front-left-psi">Front Left (PSI)</Label><Input id="tpmsmanagement-front-left-psi" type="number" value={form.fl} onChange={e=>setForm({...form,fl:e.target.value})}/></div>
+              <div className="space-y-1.5"><Label htmlFor="tpmsmanagement-front-right-psi">Front Right (PSI)</Label><Input id="tpmsmanagement-front-right-psi" type="number" value={form.fr} onChange={e=>setForm({...form,fr:e.target.value})}/></div>
+              <div className="space-y-1.5"><Label htmlFor="tpmsmanagement-rear-left-psi">Rear Left (PSI)</Label><Input id="tpmsmanagement-rear-left-psi" type="number" value={form.rl} onChange={e=>setForm({...form,rl:e.target.value})}/></div>
+              <div className="space-y-1.5"><Label htmlFor="tpmsmanagement-rear-right-psi">Rear Right (PSI)</Label><Input id="tpmsmanagement-rear-right-psi" type="number" value={form.rr} onChange={e=>setForm({...form,rr:e.target.value})}/></div>
             </div>
           </div>
           <DialogFooter>
