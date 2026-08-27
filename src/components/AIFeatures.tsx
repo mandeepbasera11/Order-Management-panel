@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Sparkles, TrendingUp, Package, MessageSquare, Send, Bot, RefreshCw, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const FORECAST_DATA = [
   {month:"Jun",actual:null,forecast:520,lower:460,upper:580},
@@ -232,8 +233,8 @@ export function AIFeatures() {
             {/* Input */}
             <div className="p-4 border-t flex gap-2">
               <Input placeholder="Ask anything about orders, tires, inventory..." value={input}
-                onChange={e => setInput(e.target.value)} onKeyDown={e => e.key==="Enter"&&sendMessage()}/>
-              <Button onClick={sendMessage} disabled={loading || !input.trim()}>
+                onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key==="Enter") sendMessage(); }}/>
+              <Button onClick={() => sendMessage()} disabled={loading || !input.trim()} aria-label="Send message">
                 <Send className="w-4 h-4"/>
               </Button>
             </div>
