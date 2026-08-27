@@ -190,10 +190,10 @@ export function PriceExperiment() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "Running Now",        value: stats.running,          icon: PlayCircle,   color: "text-green-600",  bg: "bg-green-50" },
+          { label: "Running Now",        value: stats.running,          icon: PlayCircle,   color: "text-green-700",  bg: "bg-green-50" },
           { label: "Completed",          value: stats.completed,        icon: CheckCircle2, color: "text-blue-600",   bg: "bg-blue-50" },
           { label: "Total Experiments",  value: experiments.length,     icon: FlaskConical, color: "text-purple-600", bg: "bg-purple-50" },
-          { label: "Avg Uplift",         value: `${stats.avgUplift}%`,  icon: TrendingUp,   color: "text-orange-600", bg: "bg-orange-50" },
+          { label: "Avg Uplift",         value: `${stats.avgUplift}%`,  icon: TrendingUp,   color: "text-orange-700", bg: "bg-orange-50" },
         ].map((s) => (
           <Card key={s.label} className="p-5">
             <div className="flex items-center gap-3">
@@ -277,15 +277,15 @@ export function PriceExperiment() {
                     <TableCell className="text-right font-medium">${exp.priceB.toFixed(2)}</TableCell>
                     <TableCell className="text-right">{exp.conversionsA}</TableCell>
                     <TableCell className="text-right">{exp.conversionsB}</TableCell>
-                    <TableCell className={`text-right font-medium ${aWins ? "text-green-600" : "text-muted-foreground"}`}>
+                    <TableCell className={`text-right font-medium ${aWins ? "text-green-700" : "text-muted-foreground"}`}>
                       ${exp.revenueA.toFixed(0)}
                     </TableCell>
-                    <TableCell className={`text-right font-medium ${!aWins ? "text-green-600" : "text-muted-foreground"}`}>
+                    <TableCell className={`text-right font-medium ${!aWins ? "text-green-700" : "text-muted-foreground"}`}>
                       ${exp.revenueB.toFixed(0)}
                     </TableCell>
                     <TableCell>
                       {exp.winner ? (
-                        <Badge className={exp.winner === "A" ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700"}>
+                        <Badge className={exp.winner === "A" ? "bg-green-700 hover:bg-green-800" : "bg-blue-600 hover:bg-blue-700"}>
                           Price {exp.winner} 🏆
                         </Badge>
                       ) : (
@@ -297,19 +297,19 @@ export function PriceExperiment() {
                         {exp.status === "draft" && (
                           <Button size="icon" aria-label="Start experiment" variant="outline" className="h-8 w-8"
                             onClick={() => changeStatus(exp.id, "running")}>
-                            <PlayCircle className="w-4 h-4 text-green-600" />
+                            <PlayCircle className="w-4 h-4 text-green-700" />
                           </Button>
                         )}
                         {exp.status === "running" && (
                           <Button size="icon" aria-label="Pause experiment" variant="outline" className="h-8 w-8"
                             onClick={() => changeStatus(exp.id, "paused")}>
-                            <StopCircle className="w-4 h-4 text-yellow-600" />
+                            <StopCircle className="w-4 h-4 text-yellow-700" />
                           </Button>
                         )}
                         {exp.status === "paused" && (
                           <Button size="icon" aria-label="Resume experiment" variant="outline" className="h-8 w-8"
                             onClick={() => changeStatus(exp.id, "running")}>
-                            <PlayCircle className="w-4 h-4 text-green-600" />
+                            <PlayCircle className="w-4 h-4 text-green-700" />
                           </Button>
                         )}
                         {(exp.status === "running" || exp.status === "paused") && (
@@ -413,7 +413,7 @@ export function PriceExperiment() {
                     <div key={variant} className={`rounded-xl border p-4 space-y-2 ${isWinner ? "border-green-400 bg-green-50" : "border-border bg-card"}`}>
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-lg">Price {variant}</span>
-                        {isWinner && <Badge className="bg-green-600">Winner 🏆</Badge>}
+                        {isWinner && <Badge className="bg-green-700">Winner 🏆</Badge>}
                       </div>
                       <p className="text-2xl font-bold">${price.toFixed(2)}</p>
                       <div className="text-sm text-muted-foreground">

@@ -163,7 +163,7 @@ export function TireSearchWizard() {
                         <span className="font-mono text-xs">{t.sku}</span>
                         <span>Load: <strong>{t.load}</strong></span>
                         <span>Speed: <strong>{t.speed}</strong></span>
-                        <span className={t.stock<10?"text-red-500":"text-green-600"}>Stock: <strong>{t.stock}</strong></span>
+                        <span className={t.stock<10?"text-red-600":"text-green-700"}>Stock: <strong>{t.stock}</strong></span>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">

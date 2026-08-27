@@ -50,10 +50,10 @@ const slugify = (name: string) =>
   name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
 const STATUS_CONFIG: Record<SyncStatus, { label: string; icon: typeof CheckCircle2; color: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
-  synced:      { label: "Synced",      icon: CheckCircle2, color: "text-green-600",        variant: "default" },
-  pending:     { label: "Pending",     icon: AlertCircle,  color: "text-yellow-600",       variant: "secondary" },
+  synced:      { label: "Synced",      icon: CheckCircle2, color: "text-green-700",        variant: "default" },
+  pending:     { label: "Pending",     icon: AlertCircle,  color: "text-yellow-700",       variant: "secondary" },
   not_listed:  { label: "Not Listed",  icon: XCircle,      color: "text-muted-foreground", variant: "outline" },
-  out_of_sync: { label: "Out of Sync", icon: AlertCircle,  color: "text-red-500",          variant: "destructive" },
+  out_of_sync: { label: "Out of Sync", icon: AlertCircle,  color: "text-red-600",          variant: "destructive" },
 };
 
 export function ShopifyProducts() {
@@ -192,10 +192,10 @@ export function ShopifyProducts() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "Synced",      value: stats.synced,    icon: CheckCircle2, color: "text-green-600",        bg: "bg-green-50" },
-          { label: "Pending",     value: stats.pending,   icon: AlertCircle,  color: "text-yellow-600",       bg: "bg-yellow-50" },
+          { label: "Synced",      value: stats.synced,    icon: CheckCircle2, color: "text-green-700",        bg: "bg-green-50" },
+          { label: "Pending",     value: stats.pending,   icon: AlertCircle,  color: "text-yellow-700",       bg: "bg-yellow-50" },
           { label: "Not Listed",  value: stats.notListed, icon: Package,      color: "text-muted-foreground", bg: "bg-muted/50" },
-          { label: "Out of Sync", value: stats.outOfSync, icon: XCircle,      color: "text-red-500",          bg: "bg-red-50" },
+          { label: "Out of Sync", value: stats.outOfSync, icon: XCircle,      color: "text-red-600",          bg: "bg-red-50" },
         ].map((s) => (
           <Card key={s.label} className="p-5 cursor-pointer hover:shadow-md transition-shadow"
             role="button" tabIndex={0}

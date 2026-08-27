@@ -91,8 +91,8 @@ export function AppointmentScheduler() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label:"Total Booked",  value:appts.length, color:"text-blue-600" },
-          { label:"Upcoming",      value:scheduled,     color:"text-green-600" },
-          { label:"In Progress",   value:inProgress,    color:"text-yellow-600" },
+          { label:"Upcoming",      value:scheduled,     color:"text-green-700" },
+          { label:"In Progress",   value:inProgress,    color:"text-yellow-700" },
           { label:"Completed",     value:completed,     color:"text-gray-600" },
         ].map(s => (
           <Card key={s.label} className="p-4 text-center">
@@ -174,7 +174,7 @@ export function AppointmentScheduler() {
                         <div className="flex gap-1 flex-wrap">
                           {a.status==="Scheduled"  && <Button size="sm" variant="outline" className="text-xs h-7" onClick={()=>updateStatus(a.id,"Confirmed")}>Confirm</Button>}
                           {a.status==="Confirmed"  && <Button size="sm" className="text-xs h-7" onClick={()=>updateStatus(a.id,"In Progress")}>Start</Button>}
-                          {a.status==="In Progress"&& <Button size="sm" className="text-xs h-7 bg-green-600 hover:bg-green-700" onClick={()=>updateStatus(a.id,"Completed")}>Complete</Button>}
+                          {a.status==="In Progress"&& <Button size="sm" className="text-xs h-7 bg-green-700 hover:bg-green-800" onClick={()=>updateStatus(a.id,"Completed")}>Complete</Button>}
                           <Button size="icon" aria-label="Edit appointment" variant="ghost" className="h-7 w-7" onClick={()=>{setEditAppt(a);setForm({customer:a.customer,phone:a.phone,email:a.email,vehicle:a.vehicle,service:a.service,tires:a.tires,date:a.date,time:a.time,bay:a.bay,tech:a.tech,notes:a.notes,duration:a.duration});setOpen(true);}}>
                             <Pencil className="w-3.5 h-3.5"/>
                           </Button>

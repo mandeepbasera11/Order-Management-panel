@@ -8,7 +8,7 @@ const THEMES: Record<Theme, { grad: string; ring: string; icon: string }> = {
   blue:   { grad: "from-blue-500 to-cyan-500",       ring: "ring-blue-200",   icon: "bg-blue-50 text-blue-600" },
   purple: { grad: "from-purple-500 to-fuchsia-500",  ring: "ring-purple-200", icon: "bg-purple-50 text-purple-600" },
   green:  { grad: "from-emerald-500 to-green-500",   ring: "ring-emerald-200",icon: "bg-emerald-50 text-emerald-600" },
-  orange: { grad: "from-orange-500 to-amber-500",    ring: "ring-orange-200", icon: "bg-orange-50 text-orange-600" },
+  orange: { grad: "from-orange-500 to-amber-500",    ring: "ring-orange-200", icon: "bg-orange-50 text-orange-700" },
   pink:   { grad: "from-pink-500 to-rose-500",       ring: "ring-pink-200",   icon: "bg-pink-50 text-pink-600" },
   teal:   { grad: "from-teal-500 to-cyan-500",       ring: "ring-teal-200",   icon: "bg-teal-50 text-teal-600" },
   red:    { grad: "from-red-500 to-rose-500",        ring: "ring-red-200",    icon: "bg-red-50 text-red-600" },

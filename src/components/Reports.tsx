@@ -94,9 +94,9 @@ export function Reports() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           {label:"Total Revenue",   value:`$${(totalRevenue/1000).toFixed(0)}K`, sub:"Last 6 months",  Icon:DollarSign, color:"text-blue-600",   trend:"+12.4%"},
-          {label:"Gross Profit",    value:`$${(totalProfit/1000).toFixed(0)}K`,  sub:`${grossMargin}% margin`,Icon:TrendingUp,color:"text-green-600",trend:"+8.1%"},
+          {label:"Gross Profit",    value:`$${(totalProfit/1000).toFixed(0)}K`,  sub:`${grossMargin}% margin`,Icon:TrendingUp,color:"text-green-700",trend:"+8.1%"},
           {label:"Total Orders",    value:totalOrders,                           sub:"Last 6 months",  Icon:ShoppingCart,color:"text-purple-600",trend:"+15.3%"},
-          {label:"Daily Sales",     value:`$${(todaySales/1000).toFixed(0)}K`,   sub:"This week avg",  Icon:BarChart3,  color:"text-orange-600",trend:"+5.7%"},
+          {label:"Daily Sales",     value:`$${(todaySales/1000).toFixed(0)}K`,   sub:"This week avg",  Icon:BarChart3,  color:"text-orange-700",trend:"+5.7%"},
         ].map(k=>(
           <Card key={k.label} className="p-5">
             <div className="flex items-start justify-between">
@@ -105,7 +105,7 @@ export function Reports() {
             </div>
             <p className={`text-3xl font-bold mt-2 ${k.color}`}>{k.value}</p>
             <div className="flex items-center gap-2 mt-1">
-              <span className="text-xs text-green-600 font-medium">{k.trend}</span>
+              <span className="text-xs text-green-700 font-medium">{k.trend}</span>
               <span className="text-xs text-muted-foreground">{k.sub}</span>
             </div>
           </Card>
@@ -257,7 +257,7 @@ export function Reports() {
                     <TableCell><Badge variant="outline">{m.category}</Badge></TableCell>
                     <TableCell className="text-right">${m.costPrice}</TableCell>
                     <TableCell className="text-right font-semibold">${m.sellingPrice}</TableCell>
-                    <TableCell className="text-right text-orange-600">${m.fees}</TableCell>
+                    <TableCell className="text-right text-orange-700">${m.fees}</TableCell>
                     <TableCell className="text-right"><Badge className="bg-green-100 text-green-700">{m.margin}%</Badge></TableCell>
                   </TableRow>
                 ))}

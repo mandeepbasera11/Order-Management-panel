@@ -473,8 +473,8 @@ function FitmentDetailsDialog({
   // View row
   const Field = ({ label, value, red }: { label: string; value?: string | number | null; red?: boolean }) => (
     <div className="flex items-start justify-between py-2 border-b border-border last:border-0 gap-4">
-      <span className={`text-sm font-medium shrink-0 ${red?"text-red-500":"text-muted-foreground"}`}>{label}:</span>
-      <span className={`text-sm text-right break-all ${red?"text-red-500":"text-foreground"}`}>{value || "N/A"}</span>
+      <span className={`text-sm font-medium shrink-0 ${red?"text-red-600":"text-muted-foreground"}`}>{label}:</span>
+      <span className={`text-sm text-right break-all ${red?"text-red-600":"text-foreground"}`}>{value || "N/A"}</span>
     </div>
   );
 
@@ -485,7 +485,7 @@ function FitmentDetailsDialog({
     label: string; fieldKey: keyof Product; type?: string; red?: boolean;
   }) => (
     <div className="flex items-center justify-between py-1.5 border-b border-border last:border-0 gap-3">
-      <span className={`text-sm font-medium shrink-0 w-40 ${red?"text-red-500":"text-muted-foreground"}`}>{label}:</span>
+      <span className={`text-sm font-medium shrink-0 w-40 ${red?"text-red-600":"text-muted-foreground"}`}>{label}:</span>
       <Input
         type={type}
         className="h-7 text-sm text-right"
@@ -510,7 +510,7 @@ function FitmentDetailsDialog({
 
   const SectionTitle = ({ children, red }: { children: React.ReactNode; red?: boolean }) => (
     <div className="mb-3 mt-2">
-      <h3 className={`text-base font-bold ${red?"text-red-500":"text-foreground"}`}>{children}</h3>
+      <h3 className={`text-base font-bold ${red?"text-red-600":"text-foreground"}`}>{children}</h3>
       <Separator className="mt-1" />
     </div>
   );
@@ -733,13 +733,13 @@ function FitmentDetailsDialog({
             </div>
             <div className="rounded-lg border-2 border-green-200 bg-green-50 p-4 w-fit space-y-1">
               <div className="flex items-center gap-2 font-semibold text-sm">
-                <ShoppingCart className="w-4 h-4 text-green-600"/>Shopify
+                <ShoppingCart className="w-4 h-4 text-green-700"/>Shopify
               </div>
               <p className="text-sm text-muted-foreground">Not listed on Shopify</p>
               <p className="text-xs text-muted-foreground">Run sync to add this product</p>
             </div>
             <div className="flex justify-end mt-4">
-              <Button variant="outline" className="border-orange-400 text-orange-600 hover:bg-orange-50">
+              <Button variant="outline" className="border-orange-400 text-orange-700 hover:bg-orange-50">
                 <Flag className="w-4 h-4 mr-2"/> Flag Discrepancy
               </Button>
             </div>
@@ -1255,7 +1255,7 @@ function BulkImportDialog({
 
               {parseError && (
                 <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-lg p-3">
-                  <XCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5"/>
+                  <XCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5"/>
                   <div>
                     <p className="font-medium text-red-700 text-sm">Could not read file</p>
                     <p className="text-xs text-red-600 mt-0.5">{parseError}</p>
@@ -1266,7 +1266,7 @@ function BulkImportDialog({
               {stage === "pick" && (
                 <div className="grid grid-cols-3 gap-3">
                   {[
-                    { icon:<CheckCircle2 className="w-4 h-4 text-green-600"/>, text:"Every row validated before importing" },
+                    { icon:<CheckCircle2 className="w-4 h-4 text-green-700"/>, text:"Every row validated before importing" },
                     { icon:<Eye className="w-4 h-4 text-blue-600"/>,          text:"Preview what will be added vs updated" },
                     { icon:<X className="w-4 h-4 text-orange-500"/>,          text:"Error rows can be skipped automatically" },
                   ].map((tip, i) => (
@@ -1286,7 +1286,7 @@ function BulkImportDialog({
               {/* Diagnostic banner if nearly every row failed — likely a header mismatch */}
               {errorCount > 0 && errorCount >= parsedRows.length * 0.9 && (
                 <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-lg p-4">
-                  <AlertTriangle className="w-5 h-5 text-red-500 shrink-0 mt-0.5"/>
+                  <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5"/>
                   <div className="space-y-2">
                     <p className="text-sm font-semibold text-red-700">
                       Almost every row is missing SKU/name — this usually means the column headers didn't match
@@ -1298,7 +1298,7 @@ function BulkImportDialog({
                       {headerCols.slice(0, 30).map(h => (
                         <span key={h} className="text-xs font-mono bg-white border border-red-200 text-red-700 px-2 py-0.5 rounded">{h}</span>
                       ))}
-                      {headerCols.length > 30 && <span className="text-xs text-red-500">+{headerCols.length - 30} more</span>}
+                      {headerCols.length > 30 && <span className="text-xs text-red-600">+{headerCols.length - 30} more</span>}
                     </div>
                     <p className="text-xs text-red-600">
                       We look for a SKU column named one of: <strong>sku, ge_sku, item_sku, product_sku, part_number</strong> — and a name column named one of: <strong>name, item_name, product_name, title</strong>. If your file uses different names, rename the header row and re-upload, or check "Import all rows" below to keep them with auto-generated SKUs.
@@ -1311,7 +1311,7 @@ function BulkImportDialog({
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
                   { label:"Total rows",  value:parsedRows.length, color:"text-foreground",    bg:"" },
-                  { label:"✅ Valid",     value:validCount,        color:"text-green-600",     bg:"bg-green-50 border-green-200" },
+                  { label:"✅ Valid",     value:validCount,        color:"text-green-700",     bg:"bg-green-50 border-green-200" },
                   { label:"⚠️ Warnings",  value:warningCount,      color:"text-amber-600",     bg:"bg-amber-50 border-amber-200" },
                   { label:"❌ Errors",    value:errorCount,        color:"text-red-600",       bg:"bg-red-50 border-red-200" },
                 ].map(c => (
@@ -1447,14 +1447,14 @@ function BulkImportDialog({
             <div className="space-y-5">
               <div className="flex flex-col items-center gap-2 py-4">
                 <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
-                  <CheckCircle2 className="w-9 h-9 text-green-600"/>
+                  <CheckCircle2 className="w-9 h-9 text-green-700"/>
                 </div>
                 <p className="text-xl font-bold">Import complete!</p>
                 <p className="text-sm text-muted-foreground">Your tire catalog has been updated</p>
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div className="rounded-xl border border-green-200 bg-green-50 p-4 text-center">
-                  <p className="text-3xl font-bold text-green-600">{result.inserted.toLocaleString()}</p>
+                  <p className="text-3xl font-bold text-green-700">{result.inserted.toLocaleString()}</p>
                   <p className="text-xs text-green-700 mt-1">🆕 Inserted</p>
                 </div>
                 <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-center">

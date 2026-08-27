@@ -74,7 +74,7 @@ export function FTPSettings() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label:"Connected",    value:connected, color:"text-green-600" },
+          { label:"Connected",    value:connected, color:"text-green-700" },
           { label:"Errors",       value:errors,    color:"text-red-600"   },
           { label:"Active Feeds", value:enabled,   color:"text-blue-600"  },
         ].map(s=>(
@@ -92,7 +92,7 @@ export function FTPSettings() {
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="flex items-start gap-3">
                 <div className={`p-2 rounded-full ${feed.status==="Connected"?"bg-green-100":feed.status==="Error"?"bg-red-100":"bg-gray-100"}`}>
-                  {feed.status==="Connected" ? <CheckCircle2 className="w-4 h-4 text-green-600"/> : feed.status==="Error" ? <XCircle className="w-4 h-4 text-red-600"/> : <Clock className="w-4 h-4 text-gray-600"/>}
+                  {feed.status==="Connected" ? <CheckCircle2 className="w-4 h-4 text-green-700"/> : feed.status==="Error" ? <XCircle className="w-4 h-4 text-red-600"/> : <Clock className="w-4 h-4 text-gray-600"/>}
                 </div>
                 <div>
                   <div className="flex items-center gap-2">

@@ -85,13 +85,10 @@ export function POS() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {filtered.map(p => (
               <Card key={p.id} className={`p-4 cursor-pointer hover:border-primary transition-all hover:shadow-sm ${p.stock===0?"opacity-50 cursor-not-allowed":""}`}
-                role="button" tabIndex={p.stock > 0 ? 0 : -1}
-                aria-label={`Add ${p.name ?? "tire"} to cart`}
-                onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && p.stock > 0) { e.preventDefault(); addToCart(p); } }}
                 onClick={() => p.stock > 0 && addToCart(p)}>
                 <div className="flex items-start justify-between mb-2">
                   <Badge variant="outline" className="text-xs">{p.category}</Badge>
-                  <span className={`text-xs ${p.stock<5?"text-red-500 font-bold":"text-muted-foreground"}`}>
+                  <span className={`text-xs ${p.stock<5?"text-red-600 font-bold":"text-muted-foreground"}`}>
                     {p.stock===0?"Out of Stock":`${p.stock} left`}
                   </span>
                 </div>
@@ -99,7 +96,7 @@ export function POS() {
                 <p className="font-mono text-xs text-muted-foreground mb-2">{p.sku}</p>
                 <div className="flex items-center justify-between">
                   <p className="text-lg font-bold text-primary">${p.price}</p>
-                  <Button size="sm" className="h-7 text-xs" disabled={p.stock===0} onClick={e=>{e.stopPropagation();p.stock>0&&addToCart(p);}}>
+                  <Button size="sm" aria-label={`Add ${p.name} to cart`} className="h-7 text-xs" disabled={p.stock===0} onClick={e=>{e.stopPropagation();p.stock>0&&addToCart(p);}}>
                     <Plus className="w-3 h-3 mr-1"/>Add
                   </Button>
                 </div>
@@ -139,7 +136,7 @@ export function POS() {
                 <Button size="icon" aria-label="Decrease quantity" variant="outline" className="h-6 w-6" onClick={()=>updateQty(item.id,item.qty-1)}><Minus className="w-3 h-3"/></Button>
                 <span className="w-6 text-center text-sm font-bold">{item.qty}</span>
                 <Button size="icon" aria-label="Increase quantity" variant="outline" className="h-6 w-6" onClick={()=>updateQty(item.id,item.qty+1)}><Plus className="w-3 h-3"/></Button>
-                <Button size="icon" aria-label="Remove item from cart" variant="ghost" className="h-6 w-6 text-red-500" onClick={()=>setCart(c=>c.filter(x=>x.id!==item.id))}><Trash2 className="w-3 h-3"/></Button>
+                <Button size="icon" aria-label="Remove item from cart" variant="ghost" className="h-6 w-6 text-red-600" onClick={()=>setCart(c=>c.filter(x=>x.id!==item.id))}><Trash2 className="w-3 h-3"/></Button>
               </div>
             </div>
           ))}
@@ -153,7 +150,7 @@ export function POS() {
           </div>
           <div className="space-y-1 text-sm">
             <div className="flex justify-between text-muted-foreground"><span>Subtotal</span><span>${subtotal.toFixed(2)}</span></div>
-            {discountAmt>0 && <div className="flex justify-between text-green-600"><span>Discount</span><span>-${discountAmt.toFixed(2)}</span></div>}
+            {discountAmt>0 && <div className="flex justify-between text-green-700"><span>Discount</span><span>-${discountAmt.toFixed(2)}</span></div>}
             <div className="flex justify-between text-muted-foreground"><span>Tax (7.5%)</span><span>${tax.toFixed(2)}</span></div>
             <Separator/>
             <div className="flex justify-between font-bold text-lg"><span>Total</span><span>${total.toFixed(2)}</span></div>

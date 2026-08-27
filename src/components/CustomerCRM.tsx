@@ -91,8 +91,8 @@ export function CustomerCRM() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           {label:"Total Customers", value:customers.length,         color:"text-blue-600"},
-          {label:"Gold Tier",       value:goldCustomers,             color:"text-yellow-600"},
-          {label:"Total Revenue",   value:`$${totalRevenue.toLocaleString()}`, color:"text-green-600"},
+          {label:"Gold Tier",       value:goldCustomers,             color:"text-yellow-700"},
+          {label:"Total Revenue",   value:`$${totalRevenue.toLocaleString()}`, color:"text-green-700"},
           {label:"Avg Order Value", value:`$${totalOrders ? Math.round(totalRevenue/totalOrders).toLocaleString() : 0}`, color:"text-purple-600"},
         ].map(s => (
           <Card key={s.label} className="p-4 text-center">
@@ -197,7 +197,7 @@ export function CustomerCRM() {
                       </div>
                       <div className="space-y-3">
                         <div><p className="text-muted-foreground">Total Orders</p><p className="font-bold text-lg">{selected.totalOrders}</p></div>
-                        <div><p className="text-muted-foreground">Total Spent</p><p className="font-bold text-lg text-green-600">${selected.totalSpent.toLocaleString()}</p></div>
+                        <div><p className="text-muted-foreground">Total Spent</p><p className="font-bold text-lg text-green-700">${selected.totalSpent.toLocaleString()}</p></div>
                         <div><p className="text-muted-foreground">Credit Limit</p><p className="font-bold">${selected.creditLimit.toLocaleString()}</p></div>
                       </div>
                     </div>

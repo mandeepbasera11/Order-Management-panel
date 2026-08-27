@@ -83,7 +83,7 @@ export function ActivityMonitor() {
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 text-sm">
             <Switch checked={liveRefresh} onCheckedChange={setLiveRefresh}/>
-            <span className={liveRefresh?"text-green-600 font-medium":"text-muted-foreground"}>
+            <span className={liveRefresh?"text-green-700 font-medium":"text-muted-foreground"}>
               {liveRefresh?"Live Refresh ON":"Live Refresh OFF"}
             </span>
           </div>
@@ -96,10 +96,10 @@ export function ActivityMonitor() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label:"Active Sessions",  value:activeSessions,                     color:"text-green-600" },
+          { label:"Active Sessions",  value:activeSessions,                     color:"text-green-700" },
           { label:"Total Users",      value:totalUsers,                          color:"text-blue-600"  },
           { label:"Actions Today",    value:ACTIVITY_FEED.length,               color:"text-purple-600"},
-          { label:"System Load",      value:`${PERF_DATA[PERF_DATA.length-1].cpu}%`, color:"text-orange-600"},
+          { label:"System Load",      value:`${PERF_DATA[PERF_DATA.length-1].cpu}%`, color:"text-orange-700"},
         ].map(s=>(
           <Card key={s.label} className="p-4 text-center">
             <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
@@ -122,7 +122,7 @@ export function ActivityMonitor() {
               <h3 className="font-semibold">Active User Sessions</h3>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"/>
-                <span className="text-xs text-green-600 font-medium">{activeSessions} online now</span>
+                <span className="text-xs text-green-700 font-medium">{activeSessions} online now</span>
               </div>
             </div>
             <Table>
@@ -158,7 +158,7 @@ export function ActivityMonitor() {
                     <TableCell><Badge variant="secondary" className="text-xs">{s.page}</Badge></TableCell>
                     <TableCell className="text-xs text-muted-foreground">{s.started}</TableCell>
                     <TableCell>
-                      <span className={`inline-flex items-center gap-1 text-xs font-medium ${s.active?"text-green-600":"text-gray-400"}`}>
+                      <span className={`inline-flex items-center gap-1 text-xs font-medium ${s.active?"text-green-700":"text-gray-400"}`}>
                         <div className={`w-1.5 h-1.5 rounded-full ${s.active?"bg-green-500":"bg-gray-400"}`}/>
                         {s.active?"Online":"Offline"}
                       </span>
@@ -203,7 +203,7 @@ export function ActivityMonitor() {
         <TabsContent value="performance" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {[
-              { label:"CPU Usage",    value:`${PERF_DATA[PERF_DATA.length-1].cpu}%`,    color:"text-orange-600", status:PERF_DATA[PERF_DATA.length-1].cpu>70?"Warning":"Normal" },
+              { label:"CPU Usage",    value:`${PERF_DATA[PERF_DATA.length-1].cpu}%`,    color:"text-orange-700", status:PERF_DATA[PERF_DATA.length-1].cpu>70?"Warning":"Normal" },
               { label:"Memory Usage", value:`${PERF_DATA[PERF_DATA.length-1].memory}%`, color:"text-blue-600",   status:"Normal" },
               { label:"DB Queries/s", value:`${PERF_DATA[PERF_DATA.length-1].dbms}`,    color:"text-purple-600", status:"Normal" },
             ].map(m=>(

@@ -252,7 +252,7 @@ export function BrandAnalytics() {
           <p className="text-sm text-muted-foreground mt-1">
             {brandData.length} brands · {totalSkus.toLocaleString()} SKUs · {fmt.currency(totalValue)} inventory value
             {loading && <span className="ml-2 text-xs">(refreshing live data...)</span>}
-            {error && <span className="ml-2 text-xs text-red-500">(using cached data — {error})</span>}
+            {error && <span className="ml-2 text-xs text-red-600">(using cached data — {error})</span>}
           </p>
         </div>
         <div className="flex gap-2">
@@ -537,7 +537,7 @@ export function BrandAnalytics() {
                       <td className="px-4 py-2.5 text-right">{fmt.price(b.avgPrice)}</td>
                       <td className="px-4 py-2.5 text-right">{fmt.count(b.units)}</td>
                       <td className="px-4 py-2.5 text-right">
-                        <span className={b.inStockPct >= 70 ? "text-green-600" : b.inStockPct >= 50 ? "text-amber-600" : "text-red-600"}>
+                        <span className={b.inStockPct >= 70 ? "text-green-700" : b.inStockPct >= 50 ? "text-amber-600" : "text-red-600"}>
                           {b.inStockPct}%
                         </span>
                       </td>

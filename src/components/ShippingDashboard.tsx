@@ -28,7 +28,7 @@ const STATUS_COLORS: Record<string,string> = {
 };
 
 const CARRIER_COLORS: Record<string,string> = {
-  FedEx:"text-purple-700", UPS:"text-yellow-700", DHL:"text-yellow-600", USPS:"text-blue-700",
+  FedEx:"text-purple-700", UPS:"text-yellow-700", DHL:"text-yellow-700", USPS:"text-blue-700",
 };
 
 const FREIGHT_ZONES = [
@@ -84,7 +84,7 @@ export function ShippingDashboard() {
         {[
           {label:"Total Shipments", value:SHIPMENTS.length, color:"text-blue-600"},
           {label:"In Transit",      value:inTransit,         color:"text-indigo-600"},
-          {label:"Delivered",       value:delivered,          color:"text-green-600"},
+          {label:"Delivered",       value:delivered,          color:"text-green-700"},
           {label:"Exceptions",      value:exceptions.length,  color:"text-red-600"},
         ].map(s => (
           <Card key={s.label} className="p-4 text-center">
@@ -197,7 +197,7 @@ export function ShippingDashboard() {
             {freightResult && (
               <div className="rounded-lg bg-green-50 border border-green-200 p-4 space-y-2">
                 <p className="font-bold text-green-700 text-lg">Estimated Cost: {freightResult.ltl}</p>
-                <p className="text-sm text-green-600">Transit Time: {freightResult.transit}</p>
+                <p className="text-sm text-green-700">Transit Time: {freightResult.transit}</p>
                 <p className="text-xs text-muted-foreground">Minimum charge: {freightResult.min}</p>
               </div>
             )}

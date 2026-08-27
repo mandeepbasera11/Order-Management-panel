@@ -89,7 +89,7 @@ export function ErrorLogs() {
     <div className="flex-1 overflow-auto p-6 space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2"><AlertTriangle className="w-6 h-6 text-red-500"/>Error Logs</h1>
+          <h1 className="text-2xl font-bold flex items-center gap-2"><AlertTriangle className="w-6 h-6 text-red-600"/>Error Logs</h1>
           <p className="text-sm text-muted-foreground">System error tracking, debugging and resolution management</p>
         </div>
         <div className="flex gap-2">

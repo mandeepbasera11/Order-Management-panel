@@ -486,9 +486,9 @@ export function Orders() {
   const stats = [
     { label:"Total Orders",value: orders.length,                              color:"text-blue-600"   },
     { label:"New",         value: orders.filter(o=>o.status==="New Order").length, color:"text-indigo-600"},
-    { label:"In Transit",  value: orders.filter(o=>o.status==="Shipped").length,   color:"text-orange-600"},
-    { label:"Delivered",   value: orders.filter(o=>o.status==="Delivered").length, color:"text-green-600" },
-    { label:"Backorders",  value: backorders.length,                          color:"text-red-500"    },
+    { label:"In Transit",  value: orders.filter(o=>o.status==="Shipped").length,   color:"text-orange-700"},
+    { label:"Delivered",   value: orders.filter(o=>o.status==="Delivered").length, color:"text-green-700" },
+    { label:"Backorders",  value: backorders.length,                          color:"text-red-600"    },
     { label:"Returns",     value: returns.length,                             color:"text-gray-600"   },
   ];
 
@@ -690,7 +690,7 @@ export function Orders() {
             {visibleGaps.map((g,i) => (
               <div key={i} className="flex items-center gap-2 text-xs">
                 <span className="w-2 h-2 rounded-full bg-orange-500 shrink-0"/>
-                <span className="text-orange-600 font-medium">{g.from} to {g.to}</span>
+                <span className="text-orange-700 font-medium">{g.from} to {g.to}</span>
                 <button className="text-blue-600 underline hover:no-underline"
                   onClick={() => { setSyncStart(g.from); setSyncEnd(g.to); }}>Use</button>
               </div>
@@ -702,11 +702,11 @@ export function Orders() {
           <div className="flex gap-3 items-end mt-3">
             <div className="flex-1">
               <p className="text-xs font-semibold mb-1">START</p>
-              <Input type="date" className="h-8 text-xs" value={syncStart} onChange={e=>setSyncStart(e.target.value)}/>
+              <Input type="date" aria-label="Sync start date" className="h-8 text-xs" value={syncStart} onChange={e=>setSyncStart(e.target.value)}/>
             </div>
             <div className="flex-1">
               <p className="text-xs font-semibold mb-1">END</p>
-              <Input type="date" className="h-8 text-xs" value={syncEnd} onChange={e=>setSyncEnd(e.target.value)}/>
+              <Input type="date" aria-label="Sync end date" className="h-8 text-xs" value={syncEnd} onChange={e=>setSyncEnd(e.target.value)}/>
             </div>
             <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white h-8" onClick={runSync} disabled={syncRunning}>
               <RefreshCw className={`w-3.5 h-3.5 mr-1 ${syncRunning?"animate-spin":""}`}/>
@@ -836,7 +836,7 @@ export function Orders() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-10"><input type="checkbox" checked={allSel} onChange={toggleAll}/></TableHead>
+                    <TableHead className="w-10"><input type="checkbox" aria-label="Select all orders" checked={allSel} onChange={toggleAll}/></TableHead>
                     {col("orderId")          && <TableHead>Order ID</TableHead>}
                     {col("orderNumber")      && <TableHead>Order #</TableHead>}
                     {col("orderDate")        && <TableHead>Order Date</TableHead>}
@@ -890,7 +890,7 @@ export function Orders() {
                 <TableBody>
                   {filtered.map(o=>(
                     <TableRow key={o.id} className={o.backorder?"bg-red-50":""}>
-                      <TableCell><input type="checkbox" checked={selected.has(o.id)} onChange={()=>toggleSelect(o.id)}/></TableCell>
+                      <TableCell><input type="checkbox" aria-label="Select order" checked={selected.has(o.id)} onChange={()=>toggleSelect(o.id)}/></TableCell>
                       {col("orderId")          && <TableCell className="font-mono text-xs">{o.id.slice(0,8)}</TableCell>}
                       {col("orderNumber")      && <TableCell><div className="flex items-center gap-1"><span className="font-mono text-xs font-semibold">{o.orderNo}</span>{o.backorder&&<Badge variant="destructive" className="text-xs">BO</Badge>}{o.rma&&<Badge variant="secondary" className="text-xs">{o.rma}</Badge>}</div></TableCell>}
                       {col("orderDate")        && <TableCell className="text-xs text-muted-foreground">{o.created}</TableCell>}
@@ -984,7 +984,7 @@ export function Orders() {
                 <TableBody>
                   {returns.map(r=>(
                     <TableRow key={r.id}>
-                      <TableCell className="font-mono text-xs font-bold text-orange-600">{r.rma}</TableCell>
+                      <TableCell className="font-mono text-xs font-bold text-orange-700">{r.rma}</TableCell>
                       <TableCell className="font-mono text-xs">{r.orderNo}</TableCell>
                       <TableCell className="text-sm">{r.customer}</TableCell>
                       <TableCell className="text-sm">{r.reason}</TableCell>
@@ -1002,7 +1002,7 @@ export function Orders() {
         <TabsContent value="backorders" className="space-y-4">
           <Card>
             <div className="p-4 border-b flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-red-500"/>
+              <AlertTriangle className="w-4 h-4 text-red-600"/>
               <h3 className="font-semibold">Backorder Management</h3>
               <Badge variant="destructive">{backorders.length}</Badge>
             </div>
@@ -1083,7 +1083,7 @@ export function Orders() {
                 <div><p className="text-muted-foreground">Warehouse</p><p className="font-medium">{viewOrder.warehouse}</p></div>
                 <div><p className="text-muted-foreground">Carrier</p><p className="font-medium">{viewOrder.carrier||"—"}</p></div>
                 <div><p className="text-muted-foreground">Tracking</p><p className="font-mono text-xs">{viewOrder.trackingNo||"—"}</p></div>
-                {viewOrder.rma && <div><p className="text-muted-foreground">RMA</p><p className="font-bold text-orange-600">{viewOrder.rma}</p></div>}
+                {viewOrder.rma && <div><p className="text-muted-foreground">RMA</p><p className="font-bold text-orange-700">{viewOrder.rma}</p></div>}
               </div>
               <Separator/>
               <div>
@@ -1274,7 +1274,7 @@ export function Orders() {
               <Textarea rows={2} value={newOrder.notes} onChange={e=>setNewOrder({...newOrder, notes:e.target.value})}/>
             </div>
             <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={newOrder.backorder} onChange={e=>setNewOrder({...newOrder, backorder:e.target.checked})}/>
+              <input type="checkbox" aria-label="Select order" checked={newOrder.backorder} onChange={e=>setNewOrder({...newOrder, backorder:e.target.checked})}/>
               Mark as backorder
             </label>
           </div>

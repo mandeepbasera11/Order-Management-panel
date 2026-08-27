@@ -180,8 +180,8 @@ function KpiCard({ label, value, sub, Icon, color, trend, trendValue, restricted
       <p className={`text-2xl font-bold mt-2 ${color}`}>{value}</p>
       <div className="flex items-center gap-1.5 mt-1">
         {trend==="up"   && <TrendingUp   className="w-3.5 h-3.5 text-green-500"/>}
-        {trend==="down" && <TrendingDown className="w-3.5 h-3.5 text-red-500"/>}
-        <p className={`text-xs ${trend==="up"?"text-green-600":trend==="down"?"text-red-500":"text-muted-foreground"}`}>
+        {trend==="down" && <TrendingDown className="w-3.5 h-3.5 text-red-600"/>}
+        <p className={`text-xs ${trend==="up"?"text-green-700":trend==="down"?"text-red-600":"text-muted-foreground"}`}>
           {trendValue && <span className="font-medium">{trendValue} </span>}{sub}
         </p>
       </div>
@@ -313,7 +313,7 @@ export function ExecutiveDashboard({ onNavigate }: ExecutiveDashboardProps) {
         <div>
           <SectionHeader title="Revenue & Profitability"/>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-            <KpiCard label="Revenue Today"  value={fmt$(kpi.revenueToday)}  sub="vs yesterday"    Icon={DollarSign} color="text-green-600"   trend="up" trendValue="+9%"/>
+            <KpiCard label="Revenue Today"  value={fmt$(kpi.revenueToday)}  sub="vs yesterday"    Icon={DollarSign} color="text-green-700"   trend="up" trendValue="+9%"/>
             <KpiCard label="Revenue (Month)"value={fmt$(kpi.revenueMonth)}  sub="this month"      Icon={DollarSign} color="text-emerald-600" trend="up" trendValue="+12%"/>
             <KpiCard label="Gross Profit"   value={fmt$(kpi.grossProfit)}   sub={`${Math.round(kpi.grossProfit/kpi.revenueMonth*100)}% margin`} Icon={TrendingUp} color="text-lime-600" trend="up" trendValue="+3%"/>
             <KpiCard label="Net Profit"     value={fmt$(kpi.netProfit)}     sub="after all costs" Icon={Zap}        color="text-amber-600"   trend="up" trendValue="+5%" restricted={!isManager}/>
@@ -421,7 +421,7 @@ export function ExecutiveDashboard({ onNavigate }: ExecutiveDashboardProps) {
             <Separator className="my-3"/>
             <div className="flex justify-between text-sm font-semibold">
               <span>Total</span>
-              <span className="text-green-600">${WAREHOUSE_STOCK.reduce((s,w)=>s+w.value,0).toLocaleString()}</span>
+              <span className="text-green-700">${WAREHOUSE_STOCK.reduce((s,w)=>s+w.value,0).toLocaleString()}</span>
             </div>
           </Card>
         </div>
@@ -491,7 +491,7 @@ export function ExecutiveDashboard({ onNavigate }: ExecutiveDashboardProps) {
                         <span>Vol: <strong className="text-foreground">${(v.volume/1000).toFixed(0)}K</strong></span>
                         <span>Delivery: <strong className="text-foreground">{v.avgDelivery}</strong></span>
                         <span>Returns: <strong className="text-foreground">{v.returnRate}</strong></span>
-                        <span>On-time: <strong className="text-green-600">{v.onTime}</strong></span>
+                        <span>On-time: <strong className="text-green-700">{v.onTime}</strong></span>
                         <span className="flex items-center gap-0.5"><Star className="w-3 h-3 text-yellow-500 fill-yellow-500"/><strong className="text-foreground">{v.rating}</strong></span>
                       </div>
                     </div>
@@ -506,7 +506,7 @@ export function ExecutiveDashboard({ onNavigate }: ExecutiveDashboardProps) {
         <Card>
           <div className="p-4 border-b border-border flex items-center justify-between">
             <div>
-              <h3 className="font-bold text-sm flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-red-500"/>Low Stock Products</h3>
+              <h3 className="font-bold text-sm flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-red-600"/>Low Stock Products</h3>
               <p className="text-xs text-muted-foreground">Items below reorder point — immediate action required</p>
             </div>
             <Button size="sm" className="text-xs h-7" onClick={()=>toast.success("Purchase orders created!")}>
@@ -559,7 +559,7 @@ export function ExecutiveDashboard({ onNavigate }: ExecutiveDashboardProps) {
                 <div key={r.rma} className="p-3">
                   <div className="flex justify-between items-start">
                     <div>
-                      <p className="font-mono text-xs font-bold text-orange-600">{r.rma}</p>
+                      <p className="font-mono text-xs font-bold text-orange-700">{r.rma}</p>
                       <p className="text-xs text-muted-foreground">{r.customer}</p>
                       <p className="text-xs text-muted-foreground">{r.reason}</p>
                     </div>
@@ -572,7 +572,7 @@ export function ExecutiveDashboard({ onNavigate }: ExecutiveDashboardProps) {
               ))}
             </div>
             <div className="p-2 border-t">
-              <Button variant="ghost" size="sm" className="w-full text-xs text-orange-600 hover:text-orange-700" onClick={()=>goTo("Orders")}>
+              <Button variant="ghost" size="sm" className="w-full text-xs text-orange-700 hover:text-orange-700" onClick={()=>goTo("Orders")}>
                 View All Returns <ArrowRight className="w-3 h-3 ml-1"/>
               </Button>
             </div>
@@ -581,7 +581,7 @@ export function ExecutiveDashboard({ onNavigate }: ExecutiveDashboardProps) {
           {/* Failed Syncs */}
           <Card>
             <div className="p-4 border-b flex items-center justify-between">
-              <h3 className="font-bold text-sm flex items-center gap-2"><XCircle className="w-4 h-4 text-red-500"/>Failed Syncs</h3>
+              <h3 className="font-bold text-sm flex items-center gap-2"><XCircle className="w-4 h-4 text-red-600"/>Failed Syncs</h3>
               <Badge variant="destructive" className="text-xs">{FAILED_SYNCS.length}</Badge>
             </div>
             <div className="divide-y divide-border">
@@ -629,7 +629,7 @@ export function ExecutiveDashboard({ onNavigate }: ExecutiveDashboardProps) {
               ))}
             </div>
             <div className="p-2 border-t">
-              <Button variant="ghost" size="sm" className="w-full text-xs text-yellow-600 hover:text-yellow-700" onClick={()=>goTo("Shipping Dashboard")}>
+              <Button variant="ghost" size="sm" className="w-full text-xs text-yellow-700 hover:text-yellow-700" onClick={()=>goTo("Shipping Dashboard")}>
                 View Shipments <ArrowRight className="w-3 h-3 ml-1"/>
               </Button>
             </div>
@@ -638,7 +638,7 @@ export function ExecutiveDashboard({ onNavigate }: ExecutiveDashboardProps) {
           {/* Open Backorders */}
           <Card>
             <div className="p-4 border-b flex items-center justify-between">
-              <h3 className="font-bold text-sm flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-red-500"/>Open Backorders</h3>
+              <h3 className="font-bold text-sm flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-red-600"/>Open Backorders</h3>
               <Badge variant="destructive" className="text-xs">{OPEN_BACKORDERS.length}</Badge>
             </div>
             <div className="divide-y divide-border">
@@ -675,7 +675,7 @@ export function ExecutiveDashboard({ onNavigate }: ExecutiveDashboardProps) {
             </div>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"/>
-              <span className="text-xs text-green-600 font-medium">Live</span>
+              <span className="text-xs text-green-700 font-medium">Live</span>
             </div>
           </div>
           <div className="divide-y divide-border">

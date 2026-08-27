@@ -72,7 +72,7 @@ export function GETireHickory() {
         <Card className="p-4"><p className="text-xs text-muted-foreground uppercase">SKUs</p><p className="text-2xl font-bold mt-1">{totals.skus}</p></Card>
         <Card className="p-4"><p className="text-xs text-muted-foreground uppercase">Units</p><p className="text-2xl font-bold mt-1">{totals.units}</p></Card>
         <Card className="p-4"><p className="text-xs text-muted-foreground uppercase">Inventory Value</p><p className="text-2xl font-bold mt-1">${totals.value.toLocaleString(undefined,{maximumFractionDigits:0})}</p></Card>
-        <Card className="p-4"><p className="text-xs text-muted-foreground uppercase">Low Stock</p><p className="text-2xl font-bold mt-1 text-red-500">{totals.low}</p></Card>
+        <Card className="p-4"><p className="text-xs text-muted-foreground uppercase">Low Stock</p><p className="text-2xl font-bold mt-1 text-red-600">{totals.low}</p></Card>
       </div>
 
       <Card className="p-4">

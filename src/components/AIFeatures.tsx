@@ -88,9 +88,9 @@ export function AIFeatures() {
         <TabsContent value="forecast" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {[
-              {label:"Forecasted Jun Sales",value:"520 units",sub:"↑ 12% vs last Jun",color:"text-green-600"},
+              {label:"Forecasted Jun Sales",value:"520 units",sub:"↑ 12% vs last Jun",color:"text-green-700"},
               {label:"Peak Month (AI)",      value:"December",   sub:"890 units expected", color:"text-blue-600"},
-              {label:"Seasonal Alert",       value:"All-Season", sub:"Demand spike in Oct",color:"text-orange-600"},
+              {label:"Seasonal Alert",       value:"All-Season", sub:"Demand spike in Oct",color:"text-orange-700"},
             ].map(k => (
               <Card key={k.label} className="p-5">
                 <p className="text-sm text-muted-foreground">{k.label}</p>
@@ -162,7 +162,7 @@ export function AIFeatures() {
                       <p className="font-mono text-xs text-muted-foreground">{s.sku}</p>
                     </TableCell>
                     <TableCell>
-                      <span className={`font-bold ${s.currentStock < 5 ? "text-red-600":"text-orange-600"}`}>{s.currentStock}</span>
+                      <span className={`font-bold ${s.currentStock < 5 ? "text-red-600":"text-orange-700"}`}>{s.currentStock}</span>
                     </TableCell>
                     <TableCell className="font-semibold text-blue-600">{s.suggestedQty} units</TableCell>
                     <TableCell><Badge variant="outline">{s.vendor}</Badge></TableCell>

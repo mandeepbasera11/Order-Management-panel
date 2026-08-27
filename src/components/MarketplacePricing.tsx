@@ -285,7 +285,7 @@ export function MarketplacePricing() {
                       <TableCell key={m.key} className="text-right">
                         <div className="flex flex-col items-end">
                           <span className="font-medium">${mp.toFixed(2)}</span>
-                          <span className={`text-xs ${isAbove ? "text-green-600" : "text-red-500"}`}>
+                          <span className={`text-xs ${isAbove ? "text-green-700" : "text-red-600"}`}>
                             {isAbove ? "+" : ""}{diff.toFixed(1)}%
                           </span>
                         </div>

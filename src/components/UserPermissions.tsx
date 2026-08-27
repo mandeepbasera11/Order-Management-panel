@@ -180,7 +180,7 @@ const ROLE_COLORS: Record<Role, string> = {
 };
 
 const STATUS_CONFIG: Record<Status, { icon: React.ReactNode; cls: string }> = {
-  Active:   { icon: <CheckCircle2 className="w-3.5 h-3.5" />, cls: "text-green-600" },
+  Active:   { icon: <CheckCircle2 className="w-3.5 h-3.5" />, cls: "text-green-700" },
   Inactive: { icon: <XCircle      className="w-3.5 h-3.5" />, cls: "text-gray-400"  },
   Pending:  { icon: <Clock        className="w-3.5 h-3.5" />, cls: "text-amber-500" },
 };
@@ -305,8 +305,8 @@ export function UserPermissions() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label:"Total Users",    value: users.length,  sub:"All staff accounts",   Icon: Users,      cls:"text-blue-600"   },
-          { label:"Active",         value: totalActive,   sub:"Currently active",     Icon: ShieldCheck,cls:"text-green-600"  },
-          { label:"Admins",         value: totalAdmin,    sub:"Full access users",    Icon: Shield,     cls:"text-red-500"    },
+          { label:"Active",         value: totalActive,   sub:"Currently active",     Icon: ShieldCheck,cls:"text-green-700"  },
+          { label:"Admins",         value: totalAdmin,    sub:"Full access users",    Icon: Shield,     cls:"text-red-600"    },
           { label:"Pending",        value: totalPending,  sub:"Awaiting first login",  Icon: Clock,      cls:"text-amber-500"  },
         ].map(s => (
           <Card key={s.label} className="p-5">

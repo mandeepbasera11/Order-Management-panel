@@ -98,10 +98,10 @@ export function Vendors() {
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {[
-            { label:"Active Vendors",  value:activeVendors,               color:"text-green-600" },
+            { label:"Active Vendors",  value:activeVendors,               color:"text-green-700" },
             { label:"Total Vendors",   value:vendors.length,              color:"text-blue-600"  },
             { label:"Total Volume",    value:`$${(totalVolume/1000).toFixed(0)}K`, color:"text-purple-600"},
-            { label:"Avg Rating",      value:`${avgRating}★`,             color:"text-yellow-600"},
+            { label:"Avg Rating",      value:`${avgRating}★`,             color:"text-yellow-700"},
           ].map(s=>(
             <Card key={s.label} className="p-4 text-center">
               <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
@@ -190,7 +190,7 @@ export function Vendors() {
                   <div><span className="text-muted-foreground">Lead Time: </span><strong>{selected.leadTime}</strong></div>
                   <div><span className="text-muted-foreground">Min Order: </span><strong>{selected.minOrder} units</strong></div>
                   <div><span className="text-muted-foreground">Payment: </span><strong>{selected.paymentTerms}</strong></div>
-                  <div><span className="text-muted-foreground">Rating: </span><strong className="text-yellow-600">{selected.rating}★</strong></div>
+                  <div><span className="text-muted-foreground">Rating: </span><strong className="text-yellow-700">{selected.rating}★</strong></div>
                   <div><span className="text-muted-foreground">Total Orders: </span><strong>{selected.totalOrders}</strong></div>
                   <div><span className="text-muted-foreground">Total Volume: </span><strong>${selected.totalVolume.toLocaleString()}</strong></div>
                 </div>

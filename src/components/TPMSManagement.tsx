@@ -35,8 +35,8 @@ const TPMS_SENSORS = [
 const getPressureStatus = (actual:number, recommended:number) => {
   const diff = actual - recommended;
   if (diff < -4) return { status:"Low",    color:"text-red-600",    bg:"bg-red-50"    };
-  if (diff > 4)  return { status:"High",   color:"text-orange-600", bg:"bg-orange-50" };
-  return           { status:"OK",     color:"text-green-600",  bg:"bg-green-50"  };
+  if (diff > 4)  return { status:"High",   color:"text-orange-700", bg:"bg-orange-50" };
+  return           { status:"OK",     color:"text-green-700",  bg:"bg-green-50"  };
 };
 
 export function TPMSManagement() {
@@ -72,7 +72,7 @@ export function TPMSManagement() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { label:"Vehicles Checked", value:records.length, color:"text-blue-600" },
-          { label:"All OK",           value:records.filter(r=>r.sensorStatus==="OK").length, color:"text-green-600" },
+          { label:"All OK",           value:records.filter(r=>r.sensorStatus==="OK").length, color:"text-green-700" },
           { label:"Warnings",         value:warnings, color:"text-red-600" },
           { label:"Sensors in Stock", value:TPMS_SENSORS.reduce((s,x)=>s+x.stock,0), color:"text-purple-600" },
         ].map(s => (

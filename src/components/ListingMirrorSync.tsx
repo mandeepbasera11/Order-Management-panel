@@ -61,8 +61,8 @@ export function ListingMirrorSync() {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="p-4"><p className="text-xs text-muted-foreground uppercase">Total Listings</p><p className="text-2xl font-bold mt-1">{totalListings.toLocaleString()}</p></Card>
-        <Card className="p-4"><p className="text-xs text-muted-foreground uppercase">In Sync</p><p className="text-2xl font-bold mt-1 text-green-600">{totalSynced.toLocaleString()}</p><Progress value={pct} className="mt-2 h-1.5"/></Card>
-        <Card className="p-4"><p className="text-xs text-muted-foreground uppercase">Errors</p><p className="text-2xl font-bold mt-1 text-red-500">{totalErrors}</p></Card>
+        <Card className="p-4"><p className="text-xs text-muted-foreground uppercase">In Sync</p><p className="text-2xl font-bold mt-1 text-green-700">{totalSynced.toLocaleString()}</p><Progress value={pct} className="mt-2 h-1.5"/></Card>
+        <Card className="p-4"><p className="text-xs text-muted-foreground uppercase">Errors</p><p className="text-2xl font-bold mt-1 text-red-600">{totalErrors}</p></Card>
       </div>
       <div className="space-y-3">
         {channels.map(c => (

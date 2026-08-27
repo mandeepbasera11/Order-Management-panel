@@ -131,15 +131,15 @@ export function PricingEngine() {
                         <TableCell className="font-medium text-sm">{p.name}</TableCell>
                         <TableCell className="text-right font-bold">${p.ourPrice}</TableCell>
                         <TableCell className="text-right">
-                          <span className={p.amazon < p.ourPrice ? "text-red-500 font-bold" : ""}>${p.amazon}</span>
-                          {p.amazon < p.ourPrice && <TrendingDown className="w-3 h-3 inline ml-1 text-red-500"/>}
+                          <span className={p.amazon < p.ourPrice ? "text-red-600 font-bold" : ""}>${p.amazon}</span>
+                          {p.amazon < p.ourPrice && <TrendingDown className="w-3 h-3 inline ml-1 text-red-600"/>}
                         </TableCell>
                         <TableCell className="text-right">
-                          <span className={p.walmart < p.ourPrice ? "text-red-500 font-bold" : ""}>${p.walmart}</span>
+                          <span className={p.walmart < p.ourPrice ? "text-red-600 font-bold" : ""}>${p.walmart}</span>
                         </TableCell>
                         <TableCell className="text-right">
-                          <span className={p.ebay < p.ourPrice ? "text-red-500 font-bold" : ""}>${p.ebay}</span>
-                          {p.ebay < p.ourPrice && <TrendingDown className="w-3 h-3 inline ml-1 text-red-500"/>}
+                          <span className={p.ebay < p.ourPrice ? "text-red-600 font-bold" : ""}>${p.ebay}</span>
+                          {p.ebay < p.ourPrice && <TrendingDown className="w-3 h-3 inline ml-1 text-red-600"/>}
                         </TableCell>
                         <TableCell className="text-right">
                           <Badge className={position==="Lowest"?"bg-green-100 text-green-700":position==="Competitive"?"bg-blue-100 text-blue-700":"bg-red-100 text-red-700"}>
@@ -232,7 +232,7 @@ export function PricingEngine() {
                       <TableCell className="font-medium text-sm">{p.name}</TableCell>
                       <TableCell className="text-right">${p.costPrice}</TableCell>
                       <TableCell className="text-right font-bold">${p.ourPrice}</TableCell>
-                      <TableCell className="text-right text-orange-600">${fees}</TableCell>
+                      <TableCell className="text-right text-orange-700">${fees}</TableCell>
                       <TableCell className="text-right text-green-700 font-semibold">${profit.toFixed(2)}</TableCell>
                       <TableCell className="text-right">
                         <Badge className={parseFloat(margin)>=20?"bg-green-100 text-green-700":"bg-red-100 text-red-700"}>
