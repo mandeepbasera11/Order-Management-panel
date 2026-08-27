@@ -113,7 +113,7 @@ export function AppointmentScheduler() {
             <div className="flex flex-wrap gap-3">
               <div className="space-y-1">
                 <Label className="text-xs">Date</Label>
-                <Input type="date" value={dateFilter} onChange={e=>setDateFilter(e.target.value)} className="w-44"/>
+                <Input type="date" aria-label="Filter by date" value={dateFilter} onChange={e=>setDateFilter(e.target.value)} className="w-44"/>
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Status</Label>
