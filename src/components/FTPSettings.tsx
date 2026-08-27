@@ -131,21 +131,21 @@ export function FTPSettings() {
       <Card className="p-5">
         <h3 className="font-semibold mb-4">Add New FTP Feed</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="space-y-1.5"><Label>Feed Name *</Label><Input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="e.g. Brand X Product Feed"/></div>
+          <div className="space-y-1.5"><Label htmlFor="ftpsettings-feed-name">Feed Name *</Label><Input id="ftpsettings-feed-name" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="e.g. Brand X Product Feed"/></div>
           <div className="space-y-1.5"><Label>Direction</Label>
             <Select value={form.direction} onValueChange={v=>setForm({...form,direction:v as any})}>
-              <SelectTrigger><SelectValue/></SelectTrigger>
+              <SelectTrigger aria-label="Direction"><SelectValue/></SelectTrigger>
               <SelectContent><SelectItem value="import">Import (Download)</SelectItem><SelectItem value="export">Export (Upload)</SelectItem></SelectContent>
             </Select>
           </div>
-          <div className="space-y-1.5"><Label>Host *</Label><Input value={form.host} onChange={e=>setForm({...form,host:e.target.value})} placeholder="ftp.example.com"/></div>
-          <div className="space-y-1.5"><Label>Port</Label><Input type="number" value={form.port} onChange={e=>setForm({...form,port:e.target.value})}/></div>
-          <div className="space-y-1.5"><Label>Username</Label><Input value={form.username} onChange={e=>setForm({...form,username:e.target.value})}/></div>
-          <div className="space-y-1.5"><Label>Password</Label><Input type="password" value={form.password} onChange={e=>setForm({...form,password:e.target.value})}/></div>
-          <div className="space-y-1.5"><Label>Remote Path</Label><Input value={form.path} onChange={e=>setForm({...form,path:e.target.value})} placeholder="/feeds/"/></div>
+          <div className="space-y-1.5"><Label htmlFor="ftpsettings-host">Host *</Label><Input id="ftpsettings-host" value={form.host} onChange={e=>setForm({...form,host:e.target.value})} placeholder="ftp.example.com"/></div>
+          <div className="space-y-1.5"><Label htmlFor="ftpsettings-port">Port</Label><Input id="ftpsettings-port" type="number" value={form.port} onChange={e=>setForm({...form,port:e.target.value})}/></div>
+          <div className="space-y-1.5"><Label htmlFor="ftpsettings-username">Username</Label><Input id="ftpsettings-username" value={form.username} onChange={e=>setForm({...form,username:e.target.value})}/></div>
+          <div className="space-y-1.5"><Label htmlFor="ftpsettings-password">Password</Label><Input id="ftpsettings-password" type="password" value={form.password} onChange={e=>setForm({...form,password:e.target.value})}/></div>
+          <div className="space-y-1.5"><Label htmlFor="ftpsettings-remote-path">Remote Path</Label><Input id="ftpsettings-remote-path" value={form.path} onChange={e=>setForm({...form,path:e.target.value})} placeholder="/feeds/"/></div>
           <div className="space-y-1.5"><Label>Schedule</Label>
             <Select value={form.schedule} onValueChange={v=>setForm({...form,schedule:v})}>
-              <SelectTrigger><SelectValue/></SelectTrigger>
+              <SelectTrigger aria-label="Schedule"><SelectValue/></SelectTrigger>
               <SelectContent>
                 {["Hourly","Every 6 hours","Every 12 hours","Daily 2:00 AM","Daily 6:00 AM","Weekly"].map(s=><SelectItem key={s} value={s}>{s}</SelectItem>)}
               </SelectContent>

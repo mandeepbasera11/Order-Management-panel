@@ -185,14 +185,14 @@ export function TireSearchWizard() {
               <div className="space-y-1.5">
                 <Label>Make</Label>
                 <Select value={make} onValueChange={v=>{ setMake(v); setModel(""); }}>
-                  <SelectTrigger><SelectValue placeholder="Select Make"/></SelectTrigger>
+                  <SelectTrigger aria-label="Make"><SelectValue placeholder="Select Make"/></SelectTrigger>
                   <SelectContent>{makes.map(m=><SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
                 <Label>Model</Label>
                 <Select value={model} onValueChange={setModel} disabled={!make}>
-                  <SelectTrigger><SelectValue placeholder={make?"Select Model":"Select Make First"}/></SelectTrigger>
+                  <SelectTrigger aria-label="Model"><SelectValue placeholder={make?"Select Model":"Select Make First"}/></SelectTrigger>
                   <SelectContent>{models.map(m=><SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
                 </Select>
               </div>

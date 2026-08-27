@@ -231,60 +231,60 @@ export function AppointmentScheduler() {
           <div className="space-y-4 py-2">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5 col-span-2">
-                <Label>Customer Name *</Label>
-                <Input value={form.customer} onChange={e=>setForm({...form,customer:e.target.value})} placeholder="Full name"/>
+                <Label htmlFor="appointmentscheduler-customer-name">Customer Name *</Label>
+                <Input id="appointmentscheduler-customer-name" value={form.customer} onChange={e=>setForm({...form,customer:e.target.value})} placeholder="Full name"/>
               </div>
               <div className="space-y-1.5">
-                <Label>Phone</Label>
-                <Input value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} placeholder="(555) 000-0000"/>
+                <Label htmlFor="appointmentscheduler-phone">Phone</Label>
+                <Input id="appointmentscheduler-phone" value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} placeholder="(555) 000-0000"/>
               </div>
               <div className="space-y-1.5">
-                <Label>Email</Label>
-                <Input value={form.email} onChange={e=>setForm({...form,email:e.target.value})} placeholder="email@example.com"/>
+                <Label htmlFor="appointmentscheduler-email">Email</Label>
+                <Input id="appointmentscheduler-email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})} placeholder="email@example.com"/>
               </div>
               <div className="space-y-1.5 col-span-2">
-                <Label>Vehicle</Label>
-                <Input value={form.vehicle} onChange={e=>setForm({...form,vehicle:e.target.value})} placeholder="e.g. 2021 Toyota RAV4"/>
+                <Label htmlFor="appointmentscheduler-vehicle">Vehicle</Label>
+                <Input id="appointmentscheduler-vehicle" value={form.vehicle} onChange={e=>setForm({...form,vehicle:e.target.value})} placeholder="e.g. 2021 Toyota RAV4"/>
               </div>
               <div className="space-y-1.5 col-span-2">
                 <Label>Service</Label>
                 <Select value={form.service} onValueChange={v=>setForm({...form,service:v})}>
-                  <SelectTrigger><SelectValue placeholder="Select service"/></SelectTrigger>
+                  <SelectTrigger aria-label="Service"><SelectValue placeholder="Select service"/></SelectTrigger>
                   <SelectContent>{SERVICES.map(s=><SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5 col-span-2">
-                <Label>Tires (if purchasing)</Label>
-                <Input value={form.tires} onChange={e=>setForm({...form,tires:e.target.value})} placeholder="e.g. Michelin Defender 225/65R17"/>
+                <Label htmlFor="appointmentscheduler-tires-if-purchasing">Tires (if purchasing)</Label>
+                <Input id="appointmentscheduler-tires-if-purchasing" value={form.tires} onChange={e=>setForm({...form,tires:e.target.value})} placeholder="e.g. Michelin Defender 225/65R17"/>
               </div>
               <div className="space-y-1.5">
-                <Label>Date *</Label>
-                <Input type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})}/>
+                <Label htmlFor="appointmentscheduler-date">Date *</Label>
+                <Input id="appointmentscheduler-date" type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})}/>
               </div>
               <div className="space-y-1.5">
                 <Label>Time *</Label>
                 <Select value={form.time} onValueChange={v=>setForm({...form,time:v})}>
-                  <SelectTrigger><SelectValue/></SelectTrigger>
+                  <SelectTrigger aria-label="Time *"><SelectValue/></SelectTrigger>
                   <SelectContent>{TIMES.map(t=><SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
                 <Label>Bay</Label>
                 <Select value={form.bay} onValueChange={v=>setForm({...form,bay:v})}>
-                  <SelectTrigger><SelectValue/></SelectTrigger>
+                  <SelectTrigger aria-label="Bay"><SelectValue/></SelectTrigger>
                   <SelectContent>{BAYS.map(b=><SelectItem key={b} value={b}>{b}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
                 <Label>Technician</Label>
                 <Select value={form.tech} onValueChange={v=>setForm({...form,tech:v})}>
-                  <SelectTrigger><SelectValue/></SelectTrigger>
+                  <SelectTrigger aria-label="Technician"><SelectValue/></SelectTrigger>
                   <SelectContent>{TECHS.map(t=><SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5 col-span-2">
-                <Label>Notes</Label>
-                <Input value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} placeholder="Any special notes..."/>
+                <Label htmlFor="appointmentscheduler-notes">Notes</Label>
+                <Input id="appointmentscheduler-notes" value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} placeholder="Any special notes..."/>
               </div>
             </div>
           </div>

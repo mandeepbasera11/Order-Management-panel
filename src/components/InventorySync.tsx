@@ -366,13 +366,13 @@ export function InventorySync() {
             <h3 className="font-semibold mb-3">Generate Barcode / QR Code</h3>
             <div className="flex gap-3 flex-wrap items-end">
               <div className="space-y-1.5 flex-1 min-w-48">
-                <Label>SKU</Label>
-                <Input placeholder="e.g. GE-Michelin-123"/>
+                <Label htmlFor="inventorysync-sku">SKU</Label>
+                <Input id="inventorysync-sku" placeholder="e.g. GE-Michelin-123"/>
               </div>
               <div className="space-y-1.5">
                 <Label>Type</Label>
                 <Select defaultValue="barcode">
-                  <SelectTrigger className="w-36"><SelectValue/></SelectTrigger>
+                  <SelectTrigger aria-label="Type" className="w-36"><SelectValue/></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="barcode">Barcode (128)</SelectItem>
                     <SelectItem value="qr">QR Code</SelectItem>
@@ -400,25 +400,25 @@ export function InventorySync() {
               <div className="space-y-1.5">
                 <Label>From Warehouse</Label>
                 <Select value={transfer.from} onValueChange={v => setTransfer({...transfer,from:v})}>
-                  <SelectTrigger><SelectValue/></SelectTrigger>
+                  <SelectTrigger aria-label="From Warehouse"><SelectValue/></SelectTrigger>
                   <SelectContent>{WAREHOUSES.map(w=><SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
                 <Label>To Warehouse</Label>
                 <Select value={transfer.to} onValueChange={v => setTransfer({...transfer,to:v})}>
-                  <SelectTrigger><SelectValue/></SelectTrigger>
+                  <SelectTrigger aria-label="To Warehouse"><SelectValue/></SelectTrigger>
                   <SelectContent>{WAREHOUSES.map(w=><SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>SKU</Label>
-              <Input placeholder="e.g. GE-Michelin-123" value={transfer.sku} onChange={e=>setTransfer({...transfer,sku:e.target.value})}/>
+              <Label htmlFor="inventorysync-sku-1">SKU</Label>
+              <Input id="inventorysync-sku-1" placeholder="e.g. GE-Michelin-123" value={transfer.sku} onChange={e=>setTransfer({...transfer,sku:e.target.value})}/>
             </div>
             <div className="space-y-1.5">
-              <Label>Quantity</Label>
-              <Input type="number" placeholder="e.g. 10" value={transfer.qty} onChange={e=>setTransfer({...transfer,qty:e.target.value})}/>
+              <Label htmlFor="inventorysync-quantity">Quantity</Label>
+              <Input id="inventorysync-quantity" type="number" placeholder="e.g. 10" value={transfer.qty} onChange={e=>setTransfer({...transfer,qty:e.target.value})}/>
             </div>
           </div>
           <DialogFooter>

@@ -481,30 +481,30 @@ export function UserPermissions() {
           <div className="space-y-4 py-2">
             <div className="grid grid-cols-1 gap-3">
               <div className="space-y-1.5">
-                <Label>Full Name *</Label>
-                <Input value={form.name} placeholder="e.g. John Smith"
+                <Label htmlFor="userpermissions-full-name">Full Name *</Label>
+                <Input id="userpermissions-full-name" value={form.name} placeholder="e.g. John Smith"
                   onChange={e => setForm({...form, name:e.target.value})} />
               </div>
               <div className="space-y-1.5">
-                <Label>Email Address *</Label>
+                <Label htmlFor="userpermissions-email-address">Email Address *</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"/>
-                  <Input className="pl-9" type="email" value={form.email} placeholder="john@dmtire.com"
+                  <Input id="userpermissions-email-address" className="pl-9" type="email" value={form.email} placeholder="john@dmtire.com"
                     onChange={e => setForm({...form, email:e.target.value})} />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label>Phone</Label>
+                <Label htmlFor="userpermissions-phone">Phone</Label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"/>
-                  <Input className="pl-9" value={form.phone} placeholder="(555) 000-0000"
+                  <Input id="userpermissions-phone" className="pl-9" value={form.phone} placeholder="(555) 000-0000"
                     onChange={e => setForm({...form, phone:e.target.value})} />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label>Temporary Password</Label>
+                <Label htmlFor="userpermissions-temporary-password">Temporary Password</Label>
                 <div className="relative">
-                  <Input type={showPass ? "text" : "password"} value={password}
+                  <Input id="userpermissions-temporary-password" type={showPass ? "text" : "password"} value={password}
                     placeholder="Set a temporary password"
                     onChange={e => setPassword(e.target.value)} />
                   <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
@@ -517,7 +517,7 @@ export function UserPermissions() {
                 <div className="space-y-1.5">
                   <Label>Role</Label>
                   <Select value={form.role} onValueChange={v => setForm({...form, role:v as Role})}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger aria-label="Role"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {(["Admin","Manager","Staff","Viewer","Custom"] as Role[]).map(r =>
                         <SelectItem key={r} value={r}>{r}</SelectItem>
@@ -528,7 +528,7 @@ export function UserPermissions() {
                 <div className="space-y-1.5">
                   <Label>Status</Label>
                   <Select value={form.status} onValueChange={v => setForm({...form, status:v as Status})}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger aria-label="Status"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {(["Active","Inactive","Pending"] as Status[]).map(s =>
                         <SelectItem key={s} value={s}>{s}</SelectItem>
@@ -572,23 +572,23 @@ export function UserPermissions() {
           {editUser && (
             <div className="space-y-4 py-2">
               <div className="space-y-1.5">
-                <Label>Full Name</Label>
-                <Input value={editUser.name}
+                <Label htmlFor="userpermissions-full-name-1">Full Name</Label>
+                <Input id="userpermissions-full-name-1" value={editUser.name}
                   onChange={e => setEditUser({...editUser, name:e.target.value})} />
               </div>
               <div className="space-y-1.5">
-                <Label>Email Address</Label>
+                <Label htmlFor="userpermissions-email-address-1">Email Address</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"/>
-                  <Input className="pl-9" type="email" value={editUser.email}
+                  <Input id="userpermissions-email-address-1" className="pl-9" type="email" value={editUser.email}
                     onChange={e => setEditUser({...editUser, email:e.target.value})} />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label>Phone</Label>
+                <Label htmlFor="userpermissions-phone-1">Phone</Label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"/>
-                  <Input className="pl-9" value={editUser.phone}
+                  <Input id="userpermissions-phone-1" className="pl-9" value={editUser.phone}
                     onChange={e => setEditUser({...editUser, phone:e.target.value})} />
                 </div>
               </div>
@@ -597,7 +597,7 @@ export function UserPermissions() {
                   <Label>Role</Label>
                   <Select value={editUser.role}
                     onValueChange={v => setEditUser({...editUser, role:v as Role})}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger aria-label="Role"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {(["Admin","Manager","Staff","Viewer","Custom"] as Role[]).map(r =>
                         <SelectItem key={r} value={r}>{r}</SelectItem>
@@ -609,7 +609,7 @@ export function UserPermissions() {
                   <Label>Status</Label>
                   <Select value={editUser.status}
                     onValueChange={v => setEditUser({...editUser, status:v as Status})}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger aria-label="Status"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {(["Active","Inactive","Pending"] as Status[]).map(s =>
                         <SelectItem key={s} value={s}>{s}</SelectItem>

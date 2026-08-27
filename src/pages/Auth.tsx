@@ -74,12 +74,12 @@ export default function Auth() {
             <TabsContent value="signin">
               <form onSubmit={signIn} className="space-y-4 mt-4">
                 <div className="space-y-2">
-                  <Label>Email</Label>
-                  <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                  <Label htmlFor="auth-email">Email</Label>
+                  <Input id="auth-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
                 </div>
                 <div className="space-y-2">
-                  <Label>Password</Label>
-                  <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                  <Label htmlFor="auth-password">Password</Label>
+                  <Input id="auth-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? "Signing in..." : "Sign in"}
@@ -89,16 +89,16 @@ export default function Auth() {
             <TabsContent value="signup">
               <form onSubmit={signUp} className="space-y-4 mt-4">
                 <div className="space-y-2">
-                  <Label>Display name</Label>
-                  <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
+                  <Label htmlFor="auth-display-name">Display name</Label>
+                  <Input id="auth-display-name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Email</Label>
-                  <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                  <Label htmlFor="auth-email-1">Email</Label>
+                  <Input id="auth-email-1" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
                 </div>
                 <div className="space-y-2">
-                  <Label>Password</Label>
-                  <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
+                  <Label htmlFor="auth-password-1">Password</Label>
+                  <Input id="auth-password-1" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? "Creating..." : "Create account"}

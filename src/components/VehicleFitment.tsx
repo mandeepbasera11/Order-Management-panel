@@ -1398,7 +1398,7 @@ export function VehicleFitment() {
                 value={String(form.year)}
                 onValueChange={(v) => setForm((f) => ({ ...f, year: Number(v) }))}
               >
-                <SelectTrigger><SelectValue placeholder="Select Year" /></SelectTrigger>
+                <SelectTrigger aria-label="Year *"><SelectValue placeholder="Select Year" /></SelectTrigger>
                 <SelectContent className="max-h-64">
                   {ALL_YEARS.map((y) => (
                     <SelectItem key={y} value={String(y)}>{y}</SelectItem>
@@ -1411,7 +1411,7 @@ export function VehicleFitment() {
             <div className="space-y-2">
               <Label>Make *</Label>
               <Select value={form.make} onValueChange={handleFormMakeChange}>
-                <SelectTrigger><SelectValue placeholder="Select Make" /></SelectTrigger>
+                <SelectTrigger aria-label="Make *"><SelectValue placeholder="Select Make" /></SelectTrigger>
                 <SelectContent className="max-h-64">
                   {ALL_MAKES.map((m) => (
                     <SelectItem key={m} value={m}>{m}</SelectItem>
@@ -1425,7 +1425,7 @@ export function VehicleFitment() {
               <Label>Model *</Label>
               {formModels.length > 0 ? (
                 <Select value={form.model} onValueChange={handleFormModelChange}>
-                  <SelectTrigger><SelectValue placeholder="Select Model" /></SelectTrigger>
+                  <SelectTrigger aria-label="Model *"><SelectValue placeholder="Select Model" /></SelectTrigger>
                   <SelectContent className="max-h-64">
                     {formModels.map((m) => (
                       <SelectItem key={m} value={m}>{m}</SelectItem>
@@ -1449,7 +1449,7 @@ export function VehicleFitment() {
                   value={form.submodel || "__none"}
                   onValueChange={(v) => setForm((f) => ({ ...f, submodel: v === "__none" ? "" : v }))}
                 >
-                  <SelectTrigger><SelectValue placeholder="Select Submodel" /></SelectTrigger>
+                  <SelectTrigger aria-label="Submodel / Trim"><SelectValue placeholder="Select Submodel" /></SelectTrigger>
                   <SelectContent className="max-h-64">
                     <SelectItem value="__none">None</SelectItem>
                     {formSubmodels.map((s) => (
@@ -1468,8 +1468,8 @@ export function VehicleFitment() {
 
             {/* FG FMK */}
             <div className="space-y-2">
-              <Label>FG FMK</Label>
-              <Input
+              <Label htmlFor="vehiclefitment-fg-fmk">FG FMK</Label>
+              <Input id="vehiclefitment-fg-fmk"
                 value={form.fg_fmk ?? ""}
                 placeholder="e.g. P215/55R17"
                 onChange={(e) => setForm((f) => ({ ...f, fg_fmk: e.target.value }))}
@@ -1483,7 +1483,7 @@ export function VehicleFitment() {
                 value={form.region ?? "United States"}
                 onValueChange={(v) => setForm((f) => ({ ...f, region: v }))}
               >
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger aria-label="Region"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {["United States", "Canada", "Mexico", "Europe", "Asia", "Australia", "Other"].map((r) => (
                     <SelectItem key={r} value={r}>{r}</SelectItem>
@@ -1499,7 +1499,7 @@ export function VehicleFitment() {
                 value={form.drive_type || "__unknown"}
                 onValueChange={(v) => setForm((f) => ({ ...f, drive_type: v === "__unknown" ? "" : v }))}
               >
-                <SelectTrigger><SelectValue placeholder="Select Drive Type" /></SelectTrigger>
+                <SelectTrigger aria-label="Drive Type"><SelectValue placeholder="Select Drive Type" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__unknown">Unknown</SelectItem>
                   <SelectItem value="FWD">FWD — Front-Wheel Drive</SelectItem>
@@ -1518,7 +1518,7 @@ export function VehicleFitment() {
                 value={form.body_type || "__unknown"}
                 onValueChange={(v) => setForm((f) => ({ ...f, body_type: v === "__unknown" ? "" : v }))}
               >
-                <SelectTrigger><SelectValue placeholder="Select Body Type" /></SelectTrigger>
+                <SelectTrigger aria-label="Body Type"><SelectValue placeholder="Select Body Type" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__unknown">Unknown</SelectItem>
                   <SelectItem value="Sedan">Sedan</SelectItem>

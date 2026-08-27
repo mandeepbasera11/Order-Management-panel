@@ -350,13 +350,13 @@ export function ShopifyProducts() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <Label>Shopify Price ($)</Label>
-                  <Input type="number" step="0.01" value={editForm.price}
+                  <Label htmlFor="shopifyproducts-shopify-price">Shopify Price ($)</Label>
+                  <Input id="shopifyproducts-shopify-price" type="number" step="0.01" value={editForm.price}
                     onChange={(e) => setEditForm((f) => ({ ...f, price: e.target.value }))} />
                 </div>
                 <div className="space-y-1">
-                  <Label>Shopify Stock</Label>
-                  <Input type="number" value={editForm.stock}
+                  <Label htmlFor="shopifyproducts-shopify-stock">Shopify Stock</Label>
+                  <Input id="shopifyproducts-shopify-stock" type="number" value={editForm.stock}
                     onChange={(e) => setEditForm((f) => ({ ...f, stock: e.target.value }))} />
                 </div>
               </div>

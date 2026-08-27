@@ -340,8 +340,8 @@ export function PriceExperiment() {
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1">
-              <Label>Experiment Name</Label>
-              <Input placeholder="e.g. Michelin Summer Pricing Test"
+              <Label htmlFor="priceexperiment-experiment-name">Experiment Name</Label>
+              <Input id="priceexperiment-experiment-name" placeholder="e.g. Michelin Summer Pricing Test"
                 value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
             </div>
             <div className="space-y-1">
@@ -350,7 +350,7 @@ export function PriceExperiment() {
                 const p = products.find((x) => x.id === v);
                 setForm((f) => ({ ...f, productId: v, priceA: p ? String((p.price * 0.95).toFixed(2)) : "", priceB: p ? String((p.price * 1.10).toFixed(2)) : "" }));
               }}>
-                <SelectTrigger><SelectValue placeholder="Choose a tire SKU" /></SelectTrigger>
+                <SelectTrigger aria-label="Select Product (SKU)"><SelectValue placeholder="Choose a tire SKU" /></SelectTrigger>
                 <SelectContent className="max-h-64">
                   {products.map((p) => (
                     <SelectItem key={p.id} value={p.id}>
@@ -367,14 +367,14 @@ export function PriceExperiment() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
-                <Label>Price A (Control)</Label>
-                <Input type="number" step="0.01" placeholder="e.g. 95.00"
+                <Label htmlFor="priceexperiment-price-a-control">Price A (Control)</Label>
+                <Input id="priceexperiment-price-a-control" type="number" step="0.01" placeholder="e.g. 95.00"
                   value={form.priceA} onChange={(e) => setForm((f) => ({ ...f, priceA: e.target.value }))} />
                 <p className="text-xs text-muted-foreground">Usually lower / current price</p>
               </div>
               <div className="space-y-1">
-                <Label>Price B (Test)</Label>
-                <Input type="number" step="0.01" placeholder="e.g. 110.00"
+                <Label htmlFor="priceexperiment-price-b-test">Price B (Test)</Label>
+                <Input id="priceexperiment-price-b-test" type="number" step="0.01" placeholder="e.g. 110.00"
                   value={form.priceB} onChange={(e) => setForm((f) => ({ ...f, priceB: e.target.value }))} />
                 <p className="text-xs text-muted-foreground">The new price to test</p>
               </div>

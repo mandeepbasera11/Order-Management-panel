@@ -264,32 +264,32 @@ export function CustomerCRM() {
           <DialogHeader><DialogTitle className="flex items-center gap-2"><User className="w-5 h-5"/>Add Customer</DialogTitle></DialogHeader>
           <div className="space-y-3 py-1">
             <div className="space-y-1.5">
-              <Label>Full Name *</Label>
-              <Input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Jane Cooper"/>
+              <Label htmlFor="customercrm-full-name">Full Name *</Label>
+              <Input id="customercrm-full-name" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Jane Cooper"/>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>Email</Label>
-                <Input type="email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})} placeholder="jane@example.com"/>
+                <Label htmlFor="customercrm-email">Email</Label>
+                <Input id="customercrm-email" type="email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})} placeholder="jane@example.com"/>
               </div>
               <div className="space-y-1.5">
-                <Label>Phone</Label>
-                <Input value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} placeholder="(555) 000-0000"/>
+                <Label htmlFor="customercrm-phone">Phone</Label>
+                <Input id="customercrm-phone" value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} placeholder="(555) 000-0000"/>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>Credit Limit ($)</Label>
-                <Input type="number" min="0" value={form.creditLimit} onChange={e=>setForm({...form,creditLimit:e.target.value})} placeholder="2000"/>
+                <Label htmlFor="customercrm-credit-limit">Credit Limit ($)</Label>
+                <Input id="customercrm-credit-limit" type="number" min="0" value={form.creditLimit} onChange={e=>setForm({...form,creditLimit:e.target.value})} placeholder="2000"/>
               </div>
               <div className="space-y-1.5">
-                <Label>Preferred Brand</Label>
-                <Input value={form.preferredBrand} onChange={e=>setForm({...form,preferredBrand:e.target.value})} placeholder="Michelin"/>
+                <Label htmlFor="customercrm-preferred-brand">Preferred Brand</Label>
+                <Input id="customercrm-preferred-brand" value={form.preferredBrand} onChange={e=>setForm({...form,preferredBrand:e.target.value})} placeholder="Michelin"/>
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>Notes</Label>
-              <Input value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} placeholder="Fleet customer, prefers rush orders"/>
+              <Label htmlFor="customercrm-notes">Notes</Label>
+              <Input id="customercrm-notes" value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} placeholder="Fleet customer, prefers rush orders"/>
             </div>
           </div>
           <div className="flex justify-end gap-2">

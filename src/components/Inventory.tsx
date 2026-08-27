@@ -1746,49 +1746,49 @@ export function Inventory() {
               <DialogHeader><DialogTitle>Add Tire</DialogTitle></DialogHeader>
               <div className="grid grid-cols-2 gap-4 py-2">
                 <div className="grid gap-2">
-                  <Label>GE SKU *</Label>
-                  <Input value={form.sku} onChange={e=>setForm({...form,sku:e.target.value})} placeholder="GE-Ironman-91202-1"/>
+                  <Label htmlFor="inventory-ge-sku">GE SKU *</Label>
+                  <Input id="inventory-ge-sku" value={form.sku} onChange={e=>setForm({...form,sku:e.target.value})} placeholder="GE-Ironman-91202-1"/>
                 </div>
                 <div className="grid gap-2">
-                  <Label>Item Name *</Label>
-                  <Input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Ironman All Country AT 265/70..."/>
+                  <Label htmlFor="inventory-item-name">Item Name *</Label>
+                  <Input id="inventory-item-name" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Ironman All Country AT 265/70..."/>
                 </div>
                 <div className="grid gap-2">
-                  <Label>Brand</Label>
-                  <Input value={form.brand} onChange={e=>setForm({...form,brand:e.target.value})} placeholder="Ironman"/>
+                  <Label htmlFor="inventory-brand">Brand</Label>
+                  <Input id="inventory-brand" value={form.brand} onChange={e=>setForm({...form,brand:e.target.value})} placeholder="Ironman"/>
                 </div>
                 <div className="grid gap-2">
-                  <Label>Size *</Label>
-                  <Input value={form.size} onChange={e=>setForm({...form,size:e.target.value})} placeholder="265/70R17"/>
+                  <Label htmlFor="inventory-size">Size *</Label>
+                  <Input id="inventory-size" value={form.size} onChange={e=>setForm({...form,size:e.target.value})} placeholder="265/70R17"/>
                 </div>
                 <div className="grid gap-2">
-                  <Label>Manufacturer Code</Label>
-                  <Input value={form.manufacturer_product_code} onChange={e=>setForm({...form,manufacturer_product_code:e.target.value})} placeholder="3672478"/>
+                  <Label htmlFor="inventory-manufacturer-code">Manufacturer Code</Label>
+                  <Input id="inventory-manufacturer-code" value={form.manufacturer_product_code} onChange={e=>setForm({...form,manufacturer_product_code:e.target.value})} placeholder="3672478"/>
                 </div>
                 <div className="grid gap-2">
-                  <Label>Tire Load</Label>
-                  <Input value={form.tire_load} onChange={e=>setForm({...form,tire_load:e.target.value})} placeholder="91/92/94/95/99/101/102 etc"/>
+                  <Label htmlFor="inventory-tire-load">Tire Load</Label>
+                  <Input id="inventory-tire-load" value={form.tire_load} onChange={e=>setForm({...form,tire_load:e.target.value})} placeholder="91/92/94/95/99/101/102 etc"/>
                 </div>
                 <div className="grid gap-2">
-                  <Label>Tire Speed</Label>
-                  <Input value={form.tire_speed} onChange={e=>setForm({...form,tire_speed:e.target.value})} placeholder="H/T/Y etc"/>
+                  <Label htmlFor="inventory-tire-speed">Tire Speed</Label>
+                  <Input id="inventory-tire-speed" value={form.tire_speed} onChange={e=>setForm({...form,tire_speed:e.target.value})} placeholder="H/T/Y etc"/>
                 </div>
                 <div className="grid gap-2">
                   <Label>Category</Label>
                   <Select value={form.category} onValueChange={v=>setForm({...form,category:v})}>
-                    <SelectTrigger><SelectValue placeholder="Select category"/></SelectTrigger>
+                    <SelectTrigger aria-label="Category"><SelectValue placeholder="Select category"/></SelectTrigger>
                     <SelectContent>
                       {["MM","LT","HP","UHP","MC","OTR","HPLT"].map(c=><SelectItem key={c} value={c}>{c}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="grid gap-2">
-                  <Label>Price</Label>
-                  <Input type="number" step="0.01" value={form.price} onChange={e=>setForm({...form,price:e.target.value})}/>
+                  <Label htmlFor="inventory-price">Price</Label>
+                  <Input id="inventory-price" type="number" step="0.01" value={form.price} onChange={e=>setForm({...form,price:e.target.value})}/>
                 </div>
                 <div className="grid gap-2">
-                  <Label>Stock</Label>
-                  <Input type="number" value={form.stock} onChange={e=>setForm({...form,stock:e.target.value})}/>
+                  <Label htmlFor="inventory-stock">Stock</Label>
+                  <Input id="inventory-stock" type="number" value={form.stock} onChange={e=>setForm({...form,stock:e.target.value})}/>
                 </div>
               </div>
               <DialogFooter>
@@ -1977,21 +1977,21 @@ export function Inventory() {
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>Edit Tire</DialogTitle></DialogHeader>
           <div className="grid grid-cols-2 gap-4 py-2">
-            <div className="grid gap-2"><Label>GE SKU</Label><Input value={editForm.sku} onChange={e=>setEditForm({...editForm,sku:e.target.value})}/></div>
-            <div className="grid gap-2"><Label>Item Name</Label><Input value={editForm.name} onChange={e=>setEditForm({...editForm,name:e.target.value})}/></div>
-            <div className="grid gap-2"><Label>Brand</Label><Input value={editForm.brand} onChange={e=>setEditForm({...editForm,brand:e.target.value})}/></div>
-            <div className="grid gap-2"><Label>Size</Label><Input value={editForm.size} onChange={e=>setEditForm({...editForm,size:e.target.value})}/></div>
-            <div className="grid gap-2"><Label>Manufacturer Code</Label><Input value={editForm.manufacturer_product_code} onChange={e=>setEditForm({...editForm,manufacturer_product_code:e.target.value})}/></div>
-            <div className="grid gap-2"><Label>Tire Load</Label><Input value={editForm.tire_load} onChange={e=>setEditForm({...editForm,tire_load:e.target.value})}/></div>
-            <div className="grid gap-2"><Label>Tire Speed</Label><Input value={editForm.tire_speed} onChange={e=>setEditForm({...editForm,tire_speed:e.target.value})}/></div>
+            <div className="grid gap-2"><Label htmlFor="inventory-ge-sku-1">GE SKU</Label><Input id="inventory-ge-sku-1" value={editForm.sku} onChange={e=>setEditForm({...editForm,sku:e.target.value})}/></div>
+            <div className="grid gap-2"><Label htmlFor="inventory-item-name-1">Item Name</Label><Input id="inventory-item-name-1" value={editForm.name} onChange={e=>setEditForm({...editForm,name:e.target.value})}/></div>
+            <div className="grid gap-2"><Label htmlFor="inventory-brand-1">Brand</Label><Input id="inventory-brand-1" value={editForm.brand} onChange={e=>setEditForm({...editForm,brand:e.target.value})}/></div>
+            <div className="grid gap-2"><Label htmlFor="inventory-size-1">Size</Label><Input id="inventory-size-1" value={editForm.size} onChange={e=>setEditForm({...editForm,size:e.target.value})}/></div>
+            <div className="grid gap-2"><Label htmlFor="inventory-manufacturer-code-1">Manufacturer Code</Label><Input id="inventory-manufacturer-code-1" value={editForm.manufacturer_product_code} onChange={e=>setEditForm({...editForm,manufacturer_product_code:e.target.value})}/></div>
+            <div className="grid gap-2"><Label htmlFor="inventory-tire-load-1">Tire Load</Label><Input id="inventory-tire-load-1" value={editForm.tire_load} onChange={e=>setEditForm({...editForm,tire_load:e.target.value})}/></div>
+            <div className="grid gap-2"><Label htmlFor="inventory-tire-speed-1">Tire Speed</Label><Input id="inventory-tire-speed-1" value={editForm.tire_speed} onChange={e=>setEditForm({...editForm,tire_speed:e.target.value})}/></div>
             <div className="grid gap-2"><Label>Category</Label>
               <Select value={editForm.category} onValueChange={v=>setEditForm({...editForm,category:v})}>
-                <SelectTrigger><SelectValue/></SelectTrigger>
+                <SelectTrigger aria-label="Category"><SelectValue/></SelectTrigger>
                 <SelectContent>{["MM","LT","HP","UHP","MC","OTR","HPLT"].map(c=><SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div className="grid gap-2"><Label>Price</Label><Input type="number" step="0.01" value={editForm.price} onChange={e=>setEditForm({...editForm,price:e.target.value})}/></div>
-            <div className="grid gap-2"><Label>Stock</Label><Input type="number" value={editForm.stock} onChange={e=>setEditForm({...editForm,stock:e.target.value})}/></div>
+            <div className="grid gap-2"><Label htmlFor="inventory-price-1">Price</Label><Input id="inventory-price-1" type="number" step="0.01" value={editForm.price} onChange={e=>setEditForm({...editForm,price:e.target.value})}/></div>
+            <div className="grid gap-2"><Label htmlFor="inventory-stock-1">Stock</Label><Input id="inventory-stock-1" type="number" value={editForm.stock} onChange={e=>setEditForm({...editForm,stock:e.target.value})}/></div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={()=>setEditing(null)}>Cancel</Button>
@@ -2006,10 +2006,10 @@ export function Inventory() {
           <DialogHeader><DialogTitle>Bulk Edit {selected.size} Tire{selected.size===1?"":"s"}</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-2">
             <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2"><Label>Price</Label><Input type="number" step="0.01" placeholder="Leave blank to skip" value={bulkForm.price} onChange={e=>setBulkForm({...bulkForm,price:e.target.value})}/></div>
-              <div className="grid gap-2"><Label>Stock</Label><Input type="number" placeholder="Leave blank to skip" value={bulkForm.stock} onChange={e=>setBulkForm({...bulkForm,stock:e.target.value})}/></div>
+              <div className="grid gap-2"><Label htmlFor="inventory-price-2">Price</Label><Input id="inventory-price-2" type="number" step="0.01" placeholder="Leave blank to skip" value={bulkForm.price} onChange={e=>setBulkForm({...bulkForm,price:e.target.value})}/></div>
+              <div className="grid gap-2"><Label htmlFor="inventory-stock-2">Stock</Label><Input id="inventory-stock-2" type="number" placeholder="Leave blank to skip" value={bulkForm.stock} onChange={e=>setBulkForm({...bulkForm,stock:e.target.value})}/></div>
             </div>
-            <div className="grid gap-2"><Label>Category</Label><Input placeholder="Leave blank to skip" value={bulkForm.category} onChange={e=>setBulkForm({...bulkForm,category:e.target.value})}/></div>
+            <div className="grid gap-2"><Label htmlFor="inventory-category-2">Category</Label><Input id="inventory-category-2" placeholder="Leave blank to skip" value={bulkForm.category} onChange={e=>setBulkForm({...bulkForm,category:e.target.value})}/></div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={()=>setBulkOpen(false)}>Cancel</Button>

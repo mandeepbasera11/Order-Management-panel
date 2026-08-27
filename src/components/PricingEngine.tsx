@@ -254,14 +254,14 @@ export function PricingEngine() {
           <DialogHeader><DialogTitle className="flex items-center gap-2"><DollarSign className="w-5 h-5"/>New Pricing Rule</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label>Rule Name</Label>
-              <Input placeholder="e.g. Beat Amazon by $3" value={newRule.name||""} onChange={e=>setNewRule({...newRule,name:e.target.value})}/>
+              <Label htmlFor="pricingengine-rule-name">Rule Name</Label>
+              <Input id="pricingengine-rule-name" placeholder="e.g. Beat Amazon by $3" value={newRule.name||""} onChange={e=>setNewRule({...newRule,name:e.target.value})}/>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Rule Type</Label>
                 <Select value={newRule.type} onValueChange={v=>setNewRule({...newRule,type:v as any})}>
-                  <SelectTrigger><SelectValue/></SelectTrigger>
+                  <SelectTrigger aria-label="Rule Type"><SelectValue/></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="margin">Minimum Margin %</SelectItem>
                     <SelectItem value="competitor">Beat Competitor by $</SelectItem>
@@ -270,23 +270,23 @@ export function PricingEngine() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>Value</Label>
-                <Input type="number" placeholder="e.g. 20" value={newRule.value||""} onChange={e=>setNewRule({...newRule,value:e.target.value})}/>
+                <Label htmlFor="pricingengine-value">Value</Label>
+                <Input id="pricingengine-value" type="number" placeholder="e.g. 20" value={newRule.value||""} onChange={e=>setNewRule({...newRule,value:e.target.value})}/>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>Category</Label>
                 <Select value={newRule.category} onValueChange={v=>setNewRule({...newRule,category:v})}>
-                  <SelectTrigger><SelectValue/></SelectTrigger>
+                  <SelectTrigger aria-label="Category"><SelectValue/></SelectTrigger>
                   <SelectContent>
                     {["All","MM","LT","HP","UHP","MC"].map(c=><SelectItem key={c} value={c}>{c}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>Min Margin % (floor)</Label>
-                <Input type="number" value={newRule.minMargin||15} onChange={e=>setNewRule({...newRule,minMargin:Number(e.target.value)})}/>
+                <Label htmlFor="pricingengine-min-margin-floor">Min Margin % (floor)</Label>
+                <Input id="pricingengine-min-margin-floor" type="number" value={newRule.minMargin||15} onChange={e=>setNewRule({...newRule,minMargin:Number(e.target.value)})}/>
               </div>
             </div>
           </div>

@@ -1122,7 +1122,7 @@ export function Orders() {
                 <div>
                   <Label>Status</Label>
                   <Select value={editOrder.status} onValueChange={v=>setEditOrder({...editOrder, status:v as OrderStatus})}>
-                    <SelectTrigger><SelectValue/></SelectTrigger>
+                    <SelectTrigger aria-label="Status"><SelectValue/></SelectTrigger>
                     <SelectContent>
                       {ALL_STATUSES.map(s=>(
                         <SelectItem key={s} value={s}>
@@ -1135,36 +1135,36 @@ export function Orders() {
                 <div>
                   <Label>Channel</Label>
                   <Select value={editOrder.channel} onValueChange={v=>setEditOrder({...editOrder, channel:v})}>
-                    <SelectTrigger><SelectValue/></SelectTrigger>
+                    <SelectTrigger aria-label="Channel"><SelectValue/></SelectTrigger>
                     <SelectContent>
                       {CHANNELS.map(c=><SelectItem key={c} value={c}>{c}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label>Customer</Label>
-                  <Input value={editOrder.customer} onChange={e=>setEditOrder({...editOrder, customer:e.target.value})}/>
+                  <Label htmlFor="orders-customer">Customer</Label>
+                  <Input id="orders-customer" value={editOrder.customer} onChange={e=>setEditOrder({...editOrder, customer:e.target.value})}/>
                 </div>
                 <div>
-                  <Label>Email</Label>
-                  <Input value={editOrder.email} onChange={e=>setEditOrder({...editOrder, email:e.target.value})}/>
+                  <Label htmlFor="orders-email">Email</Label>
+                  <Input id="orders-email" value={editOrder.email} onChange={e=>setEditOrder({...editOrder, email:e.target.value})}/>
                 </div>
                 <div>
-                  <Label>Warehouse</Label>
-                  <Input value={editOrder.warehouse} onChange={e=>setEditOrder({...editOrder, warehouse:e.target.value})}/>
+                  <Label htmlFor="orders-warehouse">Warehouse</Label>
+                  <Input id="orders-warehouse" value={editOrder.warehouse} onChange={e=>setEditOrder({...editOrder, warehouse:e.target.value})}/>
                 </div>
                 <div>
-                  <Label>Carrier</Label>
-                  <Input value={editOrder.carrier} onChange={e=>setEditOrder({...editOrder, carrier:e.target.value})}/>
+                  <Label htmlFor="orders-carrier">Carrier</Label>
+                  <Input id="orders-carrier" value={editOrder.carrier} onChange={e=>setEditOrder({...editOrder, carrier:e.target.value})}/>
                 </div>
                 <div>
-                  <Label>Tracking Number</Label>
-                  <Input value={editOrder.trackingNo} onChange={e=>setEditOrder({...editOrder, trackingNo:e.target.value})}/>
+                  <Label htmlFor="orders-tracking-number">Tracking Number</Label>
+                  <Input id="orders-tracking-number" value={editOrder.trackingNo} onChange={e=>setEditOrder({...editOrder, trackingNo:e.target.value})}/>
                 </div>
               </div>
               <div>
-                <Label>Notes</Label>
-                <Textarea rows={4} value={editOrder.notes} onChange={e=>setEditOrder({...editOrder, notes:e.target.value})}/>
+                <Label htmlFor="orders-notes">Notes</Label>
+                <Textarea id="orders-notes" rows={4} value={editOrder.notes} onChange={e=>setEditOrder({...editOrder, notes:e.target.value})}/>
               </div>
             </div>
           )}
@@ -1188,7 +1188,7 @@ export function Orders() {
               <div className="space-y-1.5">
                 <Label>Return Reason</Label>
                 <Select value={returnReason} onValueChange={setReturnReason}>
-                  <SelectTrigger><SelectValue placeholder="Select reason"/></SelectTrigger>
+                  <SelectTrigger aria-label="Return Reason"><SelectValue placeholder="Select reason"/></SelectTrigger>
                   <SelectContent>
                     {["Defective product","Wrong item shipped","Customer changed mind","Warranty claim","Damaged in transit","Other"].map(r=><SelectItem key={r} value={r}>{r}</SelectItem>)}
                   </SelectContent>
@@ -1211,45 +1211,45 @@ export function Orders() {
           <div className="space-y-4 py-2">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>Order # *</Label>
-                <Input value={newOrder.order_no} onChange={e=>setNewOrder({...newOrder, order_no:e.target.value})} placeholder="ORD-1001"/>
+                <Label htmlFor="orders-order">Order # *</Label>
+                <Input id="orders-order" value={newOrder.order_no} onChange={e=>setNewOrder({...newOrder, order_no:e.target.value})} placeholder="ORD-1001"/>
               </div>
               <div className="space-y-1.5">
                 <Label>Channel</Label>
                 <Select value={newOrder.channel} onValueChange={v=>setNewOrder({...newOrder, channel:v})}>
-                  <SelectTrigger><SelectValue/></SelectTrigger>
+                  <SelectTrigger aria-label="Channel"><SelectValue/></SelectTrigger>
                   <SelectContent>{CHANNELS.map(c=><SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>Customer *</Label>
-                <Input value={newOrder.customer} onChange={e=>setNewOrder({...newOrder, customer:e.target.value})}/>
+                <Label htmlFor="orders-customer-1">Customer *</Label>
+                <Input id="orders-customer-1" value={newOrder.customer} onChange={e=>setNewOrder({...newOrder, customer:e.target.value})}/>
               </div>
               <div className="space-y-1.5">
-                <Label>Email</Label>
-                <Input type="email" value={newOrder.email} onChange={e=>setNewOrder({...newOrder, email:e.target.value})}/>
+                <Label htmlFor="orders-email-1">Email</Label>
+                <Input id="orders-email-1" type="email" value={newOrder.email} onChange={e=>setNewOrder({...newOrder, email:e.target.value})}/>
               </div>
               <div className="space-y-1.5">
-                <Label>Phone</Label>
-                <Input value={newOrder.phone} onChange={e=>setNewOrder({...newOrder, phone:e.target.value})}/>
+                <Label htmlFor="orders-phone">Phone</Label>
+                <Input id="orders-phone" value={newOrder.phone} onChange={e=>setNewOrder({...newOrder, phone:e.target.value})}/>
               </div>
               <div className="space-y-1.5">
-                <Label>Warehouse</Label>
-                <Input value={newOrder.warehouse} onChange={e=>setNewOrder({...newOrder, warehouse:e.target.value})}/>
+                <Label htmlFor="orders-warehouse-1">Warehouse</Label>
+                <Input id="orders-warehouse-1" value={newOrder.warehouse} onChange={e=>setNewOrder({...newOrder, warehouse:e.target.value})}/>
               </div>
               <div className="space-y-1.5">
-                <Label>Carrier</Label>
-                <Input value={newOrder.carrier} onChange={e=>setNewOrder({...newOrder, carrier:e.target.value})}/>
+                <Label htmlFor="orders-carrier-1">Carrier</Label>
+                <Input id="orders-carrier-1" value={newOrder.carrier} onChange={e=>setNewOrder({...newOrder, carrier:e.target.value})}/>
               </div>
               <div className="space-y-1.5">
-                <Label>Tracking #</Label>
-                <Input value={newOrder.tracking_no} onChange={e=>setNewOrder({...newOrder, tracking_no:e.target.value})}/>
+                <Label htmlFor="orders-tracking">Tracking #</Label>
+                <Input id="orders-tracking" value={newOrder.tracking_no} onChange={e=>setNewOrder({...newOrder, tracking_no:e.target.value})}/>
               </div>
             </div>
             <Separator/>
             <div>
               <div className="flex items-center justify-between mb-2">
-                <Label>Items</Label>
+                <Label htmlFor="orders-items">Items</Label>
                 <Button size="sm" variant="outline" onClick={()=>setNewOrder({...newOrder, items:[...newOrder.items,{...emptyItem}]})}>
                   <Plus className="w-3 h-3 mr-1"/>Add Item
                 </Button>
@@ -1257,7 +1257,7 @@ export function Orders() {
               <div className="space-y-2">
                 {newOrder.items.map((it,i)=>(
                   <div key={i} className="grid grid-cols-12 gap-2 items-center">
-                    <Input className="col-span-3" placeholder="SKU" value={it.sku} onChange={e=>{ const items=[...newOrder.items]; items[i]={...it,sku:e.target.value}; setNewOrder({...newOrder,items}); }}/>
+                    <Input id="orders-items" className="col-span-3" placeholder="SKU" value={it.sku} onChange={e=>{ const items=[...newOrder.items]; items[i]={...it,sku:e.target.value}; setNewOrder({...newOrder,items}); }}/>
                     <Input className="col-span-5" placeholder="Name" value={it.name} onChange={e=>{ const items=[...newOrder.items]; items[i]={...it,name:e.target.value}; setNewOrder({...newOrder,items}); }}/>
                     <Input className="col-span-1" type="number" min="1" value={it.qty} onChange={e=>{ const items=[...newOrder.items]; items[i]={...it,qty:Number(e.target.value)}; setNewOrder({...newOrder,items}); }}/>
                     <Input className="col-span-2" type="number" step="0.01" placeholder="Price" value={it.price} onChange={e=>{ const items=[...newOrder.items]; items[i]={...it,price:Number(e.target.value)}; setNewOrder({...newOrder,items}); }}/>
@@ -1270,8 +1270,8 @@ export function Orders() {
               <div className="flex justify-end mt-3 font-semibold text-sm">Total: ${newTotal.toFixed(2)}</div>
             </div>
             <div className="space-y-1.5">
-              <Label>Notes</Label>
-              <Textarea rows={2} value={newOrder.notes} onChange={e=>setNewOrder({...newOrder, notes:e.target.value})}/>
+              <Label htmlFor="orders-notes-1">Notes</Label>
+              <Textarea id="orders-notes-1" rows={2} value={newOrder.notes} onChange={e=>setNewOrder({...newOrder, notes:e.target.value})}/>
             </div>
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" aria-label="Select order" checked={newOrder.backorder} onChange={e=>setNewOrder({...newOrder, backorder:e.target.checked})}/>
