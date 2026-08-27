@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Sparkles, TrendingUp, Package, MessageSquare, Send, Bot, RefreshCw, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 const FORECAST_DATA = [
   {month:"Jun",actual:null,forecast:520,lower:460,upper:580},
@@ -28,42 +29,35 @@ const PURCHASE_SUGGESTIONS = [
 
 type Message = { role:"user"|"assistant"; text:string };
 
-const AI_RESPONSES: Record<string, string> = {
-  default: "I can help with order status, product recommendations, return guidance, and more. What do you need?",
-  order: "I found your order. It's currently in **Shipping** status. Your FedEx tracking number is 7489234790234. Expected delivery is June 2, 2026.",
-  recommend: "Based on your Toyota RAV4 2021, I recommend **Michelin CrossClimate2 225/65R17** ($165/tire) — excellent all-season performance. Also consider **Goodyear Assurance WeatherReady** ($142/tire) as a budget option.",
-  return: "To start a return: 1) Go to Orders, 2) Find your order, 3) Click the return icon, 4) Select your reason. An RMA number will be generated automatically. Returns are accepted within 30 days.",
-  stock: "Current low stock alerts: Michelin Defender 225/65R17 (8 units), BFGoodrich KO2 265/70R17 (3 units). I recommend reordering these today based on your 30-day forecast.",
-  price: "Average margin across your catalog is 21.4%. Your highest-margin category is UHP at 25.3%. I suggest reviewing MM tires which have the lowest margin at 15%.",
-};
-
-function getAIResponse(msg: string): string {
-  const lower = msg.toLowerCase();
-  if (lower.includes("order") || lower.includes("track") || lower.includes("status")) return AI_RESPONSES.order;
-  if (lower.includes("recommend") || lower.includes("suggest") || lower.includes("tire for")) return AI_RESPONSES.recommend;
-  if (lower.includes("return") || lower.includes("refund") || lower.includes("warranty")) return AI_RESPONSES.return;
-  if (lower.includes("stock") || lower.includes("inventory") || lower.includes("low")) return AI_RESPONSES.stock;
-  if (lower.includes("price") || lower.includes("margin") || lower.includes("profit")) return AI_RESPONSES.price;
-  return AI_RESPONSES.default;
-}
-
 export function AIFeatures() {
   const [messages, setMessages] = useState<Message[]>([
-    { role:"assistant", text:"Hi! I'm your AI assistant for DmTire Hub. I can help with order lookups, product recommendations, inventory insights, return guidance, and more. How can I help you today?" }
+    { role:"assistant", text:"Hi! I'm your AI assistant for DmTire Hub. Ask me anything about your products — specs, sizes, load & speed ratings, pricing, margins, stock levels, comparisons or recommendations." }
   ]);
   const [input, setInput]       = useState("");
   const [loading, setLoading]   = useState(false);
 
-  const sendMessage = () => {
-    if (!input.trim()) return;
-    const userMsg = input.trim();
-    setMessages(m => [...m, { role:"user", text:userMsg }]);
+  const sendMessage = async (preset?: string) => {
+    const userMsg = (preset ?? input).trim();
+    if (!userMsg || loading) return;
+    const history = [...messages, { role:"user" as const, text:userMsg }];
+    setMessages(history);
     setInput(""); setLoading(true);
-    setTimeout(() => {
-      setMessages(m => [...m, { role:"assistant", text:getAIResponse(userMsg) }]);
+    try {
+      const { data, error } = await supabase.functions.invoke("product-assistant", {
+        body: { messages: history.map(m => ({ role: m.role, content: m.text })) },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setMessages(m => [...m, { role:"assistant", text: data.reply as string }]);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Something went wrong.";
+      toast.error(msg);
+      setMessages(m => [...m, { role:"assistant", text:`Sorry — I couldn't answer that. ${msg}` }]);
+    } finally {
       setLoading(false);
-    }, 800);
+    }
   };
+
 
   return (
     <div className="flex-1 overflow-auto p-6 space-y-5">
@@ -239,8 +233,8 @@ export function AIFeatures() {
             {/* Input */}
             <div className="p-4 border-t flex gap-2">
               <Input placeholder="Ask anything about orders, tires, inventory..." value={input}
-                onChange={e => setInput(e.target.value)} onKeyDown={e => e.key==="Enter"&&sendMessage()}/>
-              <Button onClick={sendMessage} disabled={loading || !input.trim()}>
+                onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key==="Enter") sendMessage(); }}/>
+              <Button onClick={() => sendMessage()} disabled={loading || !input.trim()} aria-label="Send message">
                 <Send className="w-4 h-4"/>
               </Button>
             </div>
