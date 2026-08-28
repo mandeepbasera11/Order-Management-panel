@@ -222,9 +222,9 @@ export function AIFeatures() {
 
             {/* Quick prompts */}
             <div className="px-4 pb-2 flex flex-wrap gap-1.5">
-              {["Order status","Recommend tires","Check inventory","Return guidance","Price insights"].map(p => (
-                <Button key={p} variant="outline" size="sm" className="text-xs h-7 rounded-full"
-                  onClick={() => { setInput(p); }}>
+              {["What tires do we stock in 225/65R17?","Compare our Michelin vs BFGoodrich models","Which products are low on stock?","Best margin products right now","Explain the load index on our top SKU"].map(p => (
+                <Button key={p} variant="outline" size="sm" className="text-xs h-7 rounded-full" disabled={loading}
+                  onClick={() => sendMessage(p)}>
                   {p}
                 </Button>
               ))}
