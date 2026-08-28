@@ -759,6 +759,13 @@ export type Database = {
       }
     }
     Functions: {
+      catalog_duplicate_skus: {
+        Args: { _limit?: number }
+        Returns: {
+          occurrences: number
+          sku: string
+        }[]
+      }
       claim_first_admin: { Args: never; Returns: boolean }
       has_role: {
         Args: {
