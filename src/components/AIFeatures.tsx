@@ -203,8 +203,8 @@ export function AIFeatures() {
                   )}
                   <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${
                     m.role==="user"
-                      ? "bg-primary text-primary-foreground rounded-br-sm"
-                      : "bg-muted rounded-bl-sm"
+                      ? "bg-primary text-primary-foreground rounded-br-sm whitespace-pre-wrap"
+                      : "bg-muted rounded-bl-sm whitespace-pre-wrap"
                   }`}>
                     {m.text}
                   </div>
