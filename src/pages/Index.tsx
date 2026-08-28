@@ -33,11 +33,12 @@ import { GETireHickory } from "@/components/GETireHickory";
 import { TiresReverseLookup } from "@/components/TiresReverseLookup";
 import { OrderArchive } from "@/components/OrderArchive";
 import { ListingMirrorSync } from "@/components/ListingMirrorSync";
+import { CatalogHealth } from "@/components/CatalogHealth";
 import {
   LayoutDashboard, TrendingUp, ShoppingBag, CreditCard, Package, Car,
   Warehouse, RefreshCw, Building2, DollarSign, Store, FlaskConical, Gauge,
   Search, Truck, Calendar, Users, BarChart3, Sparkles, Bell, ShieldCheck,
-  GitMerge, Lock, Shield, Activity, AlertTriangle, Archive, Server,
+  GitMerge, Lock, Shield, Activity, AlertTriangle, Archive, Server, HeartPulse,
 } from "lucide-react";
 
 // Pages that render their own heading — no PageLayout banner (avoids double headings)
@@ -46,7 +47,7 @@ const SELF_STYLED = new Set([
   "Orders", "Manage Tires", "Vehicle Fitment", "Marketplace Pricing", "Shopify Products",
   "Price Experiment", "Pricing Engine", "Inventory Sync", "Tire Search Wizard",
   "Shipping Dashboard", "Appointments", "TPMS Management", "Customer CRM",
-  "Reports", "Brand Analytics", "AI Features", "Alert Center",
+  "Reports", "Brand Analytics", "AI Features", "Catalog Health", "Alert Center",
   "User Permissions", "Permission Matrix", "2FA & Security", "Audit Logs",
   "Activity Monitor", "Error Logs", "FTP Settings",
   "GE Tire Hickory Inventory", "Tires Reverse Lookup", "Order Archive", "Listing Mirror Sync",
@@ -86,6 +87,7 @@ const PAGE_CONFIG: Record<string, PageConfig> = {
   "Reports":              { component: () => <Reports />,                          icon:<BarChart3 className={sz}/>,      theme:"violet", subtitle:"Sales, inventory, vendor and profitability analytics" },
   "Brand Analytics":      { component: () => <BrandAnalytics />,                   icon:<BarChart3 className={sz}/>,      theme:"violet", subtitle:"Per-brand SKU, pricing and stock analytics" },
   "AI Features":          { component: () => <AIFeatures />,                       icon:<Sparkles className={sz}/>,       theme:"purple", subtitle:"Demand forecasting, AI suggestions and chat assistant" },
+  "Catalog Health":       { component: () => <CatalogHealth />,                   icon:<HeartPulse className={sz}/>,     theme:"pink",   subtitle:"Data quality score, missing fields and duplicate SKUs" },
   "Alert Center":         { component: () => <AlertCenter />,                      icon:<Bell className={sz}/>,           theme:"orange", subtitle:"Smart alerts and internal team messaging" },
   "User Permissions":     { component: () => <UserPermissions />,                  icon:<ShieldCheck className={sz}/>,    theme:"red",    subtitle:"Staff roles, permissions and access control" },
   "Permission Matrix":    { component: () => <PermissionMatrix />,                 icon:<GitMerge className={sz}/>,       theme:"red",    subtitle:"View / Create / Edit / Delete / Export per module" },

@@ -3,7 +3,7 @@ import {
   DollarSign, Store, FlaskConical, Search, BarChart3, ShieldCheck, Archive,
   RefreshCw, Server, Bell, Shield, Truck, Users, Sparkles, Wrench,
   ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Gauge, Calendar,
-  Activity, Key, AlertTriangle, GitMerge, Lock,
+  Activity, Key, AlertTriangle, GitMerge, Lock, HeartPulse,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -62,6 +62,7 @@ const NAV_GROUPS: NavGroup[] = [
       { name: "Reports",              icon: BarChart3       },
       { name: "Brand Analytics",      icon: BarChart3       },
       { name: "AI Features",          icon: Sparkles        },
+      { name: "Catalog Health",       icon: HeartPulse      },
     ],
   },
   {
