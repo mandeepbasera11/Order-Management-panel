@@ -214,7 +214,7 @@ export function CatalogHealth() {
     const patch: Record<string, string> = {};
     if (d.tire_weight !== undefined) patch.tire_weight = d.tire_weight;
     if (d.overall_diam !== undefined) patch.overall_diam = d.overall_diam;
-    const { error } = await supabase.from("products").update(patch).eq("id", row.id);
+    const { error } = await supabase.from("products").update(patch as never).eq("id", row.id);
     setSaving(null);
     if (error) { toast.error(error.message); return; }
     toast.success(`${row.sku} updated`);
@@ -278,7 +278,7 @@ export function CatalogHealth() {
           if (editable.includes(h) && cells[i]) patch[h] = cells[i];
         });
         if (!Object.keys(patch).length) continue;
-        const { error } = await supabase.from("products").update(patch).eq("sku", sku);
+        const { error } = await supabase.from("products").update(patch as never).eq("sku", sku);
         error ? fail++ : ok++;
       }
       toast.success(`Applied ${ok} fixes${fail ? `, ${fail} failed` : ""}`);
