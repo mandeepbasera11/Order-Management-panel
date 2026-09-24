@@ -38,7 +38,7 @@ const INIT_ALERTS: Alert[] = [
 ];
 
 const INIT_MESSAGES: Message[] = [
-  {id:"1",from:"James Dowell",avatar:"JD",message:"Can you check ORD-2026-0003? Customer is asking about status.",order:"ORD-2026-0003",time:"10 min ago",read:false},
+  {id:"1",from:"James Dowell",avatar:"JD",message:"Can you check <ORD-2026-0006></ORD-2026-0006>? Customer is asking about status.",order:"ORD-2026-0003",time:"10 min ago",read:false},
   {id:"2",from:"Maria Reyes",  avatar:"MR",message:"Bulk import for the new Ironman SKUs is ready. Please review.",                        time:"45 min ago",read:false},
   {id:"3",from:"Tom Keller",   avatar:"TK",message:"Vendor Cleve Tire has a new pricing sheet. Should I update?",                          time:"2 hrs ago", read:false},
   {id:"4",from:"Sarah Chen",   avatar:"SC",message:"Monthly reports are ready for review. Attached in Google Drive.",                      time:"1 day ago", read:true },
