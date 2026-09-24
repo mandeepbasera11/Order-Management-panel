@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 const FORECAST_DATA = [
+   {month:"April",actual:null,forecast:570,lower:360,upper:680},
   {month:"Jun",actual:null,forecast:520,lower:460,upper:580},
   {month:"Jul",actual:null,forecast:610,lower:540,upper:680},
   {month:"Aug",actual:null,forecast:720,lower:640,upper:800},
