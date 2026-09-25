@@ -14,6 +14,7 @@ import {
   ClipboardCheck, RefreshCw, Download, Upload, Search, Loader2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { TirePricingCalculator } from "@/components/TirePricingCalculator";
 import { toast } from "sonner";
 
 type Severity = "critical" | "high" | "medium" | "low";
@@ -470,6 +471,8 @@ export function CatalogHealth() {
           </Table>
         )}
       </Card>
+
+      <TirePricingCalculator />
     </div>
   );
 }
