@@ -24,7 +24,7 @@ import { toast } from "sonner";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Role = "Admin" | "Manager" | "Staff" | "Viewer" | "Custom";
-type Status = "Active" | "Inactive" | "Pending";
+type Status = "Active" | "Inactive" | "Pending" | "error" ;
 
 type Permission = {
   key: string;
